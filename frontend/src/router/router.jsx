@@ -30,7 +30,7 @@ export const router = createBrowserRouter([
         element: <PublicPosts />,
       },
       {
-        path: "applications",
+        path: "requests",
         element: <PendingRq />,
       },
       {

@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Workspace = () => {
+const ChatSidebar = () => {
     return (
         <div>
-            this is Workspace
+            this is ChatSidebar
             
         </div>
     );
 };
 
-export default Workspace;
+export default ChatSidebar;

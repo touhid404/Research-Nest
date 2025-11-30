@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Workspace = () => {
+const Trendingbar = () => {
     return (
         <div>
-            this is Workspace
+            this is Trendingbar
             
         </div>
     );
 };
 
-export default Workspace;
+export default Trendingbar;
