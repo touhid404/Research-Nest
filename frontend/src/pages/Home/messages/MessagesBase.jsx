@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const MessagesBase = () => {
     return (
         <div>
-            coming
+            Messages Base
             
         </div>
     );
 };
 
-export default Auth;
+export default MessagesBase;

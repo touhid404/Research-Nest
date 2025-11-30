@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const MyProfile = () => {
     return (
         <div>
-            coming
+            this is My Profile
             
         </div>
     );
 };
 
-export default Auth;
+export default MyProfile;

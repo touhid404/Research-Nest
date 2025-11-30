@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const PublicPosts = () => {
     return (
         <div>
-            coming
+            public posts
             
         </div>
     );
 };
 
-export default Auth;
+export default PublicPosts;

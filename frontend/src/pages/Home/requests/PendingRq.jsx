@@ -1,12 +1,11 @@
 import React from 'react';
 
-const Auth = () => {
+const PendingRq = () => {
     return (
         <div>
-            coming
             
         </div>
     );
 };
 
-export default Auth;
+export default PendingRq;

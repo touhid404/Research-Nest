@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const NotFound = () => {
     return (
         <div>
-            coming
+            404 Not Found
             
         </div>
     );
 };
 
-export default Auth;
+export default NotFound;

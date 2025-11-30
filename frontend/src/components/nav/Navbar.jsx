@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const Navbar = () => {
     return (
         <div>
-            coming
+            this is Navbar
             
         </div>
     );
 };
 
-export default Auth;
+export default Navbar;

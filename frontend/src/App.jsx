@@ -1,10 +1,10 @@
 import React from 'react';
+import Root from './layout/Root';
 
 const App = () => {
   return (
     <div>
-      <h1>Welcome to research-nest</h1>
-      
+      <Root />
     </div>
   );
 };

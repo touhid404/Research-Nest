@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const RightSidebar = () => {
     return (
         <div>
-            coming
+            right sidebar
             
         </div>
     );
 };
 
-export default Auth;
+export default RightSidebar;

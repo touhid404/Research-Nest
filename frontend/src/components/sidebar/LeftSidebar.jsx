@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Auth = () => {
+const LeftSidebar = () => {
     return (
         <div>
-            coming
+            left sidebar
             
         </div>
     );
 };
 
-export default Auth;
+export default LeftSidebar;

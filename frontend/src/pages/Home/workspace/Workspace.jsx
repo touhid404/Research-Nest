@@ -1,12 +1,11 @@
 import React from 'react';
 
-const Auth = () => {
+const Workspace = () => {
     return (
         <div>
-            coming
             
         </div>
     );
 };
 
-export default Auth;
+export default Workspace;
