@@ -26,7 +26,7 @@ export const router = createBrowserRouter([
     Component: Home,
     children: [
       {
-        index: true,
+        path: "posts",
         element: <PublicPosts />,
       },
       {

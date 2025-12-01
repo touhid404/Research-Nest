@@ -1,52 +1,33 @@
-import { Outlet, useLocation } from "react-router";
-import { useEffect, useState } from "react";
-
-import Navbar from "../components/nav/Navbar";
+import { Outlet } from "react-router";
 import LeftSidebar from "../components/sidebar/LeftSidebar";
-import Trendingbar from "../components/sidebar/Trendingbar";
-import ChatSidebar from "../components/sidebar/ChatSidebar";
-import ProfileSidebar from "../components/sidebar/ProfileSidebar";
-import { cn } from "../utils/cn";
+import RightSidebar from "../components/sidebar/RightSidebar";
+import Navbar from "../components/nav/Navbar";
+
 const Home = () => {
-  const [RightSidebar, setRightSidebar] = useState(() => Trendingbar);
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.pathname === "/home/messages") {
-      setRightSidebar(() => ChatSidebar);
-    } else if (location.pathname === "/home/my-profile") {
-      setRightSidebar(() => ProfileSidebar);
-    } else {
-      setRightSidebar(() => Trendingbar);
-    }
-  }, [location.pathname]);
-
   return (
-    <div className={cn("flex h-full flex-col items-center")}>
-      <Navbar className="sticky top-0" />
-      <div className="flex w-full flex-1 max-sm:flex-col sm:max-w-7xl">
-        <LeftSidebar
-          className={cn(
-            "sticky bottom-0 h-16 shrink-0",
-            "sm:top-15 sm:h-[calc(100dvh-60px)] sm:w-16 sm:border-r-1 lg:w-1/5",
-            "max-sm:items-center max-sm:justify-center",
-          )}
-        />
-        <div
-          className={cn(
-            "overflow-hidden py-2 sm:flex-1 sm:py-3",
-            "rn-scrollbar",
-          )}
-        >
-          <Outlet />
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 overflow-hidden">
+      {/* Navbar */}
+      {/* <Navbar /> */}
+
+      {/* Main Layout */}
+      <div className="flex justify-center h-[calc(100vh-20px)] overflow-hidden">
+        <div className="flex w-full max-w-[1300px]">
+          
+          {/* Left Sidebar */}
+          <div className="md:w-[280px] shrink-0 relative">
+            <LeftSidebar />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 max-w-[650px] overflow-y-auto border-r border-gray-200 dark:border-gray-700">
+            <Outlet />
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block w-[370px] shrink-0 pl-8 overflow-y-auto text-gray-900 dark:text-gray-100">
+            <RightSidebar />
+          </div>
         </div>
-        <RightSidebar
-          className={cn(
-            "border-popover sticky top-15 h-[calc(100vh-60px)] shrink-0 overflow-y-auto border-l-1",
-            "rn-scrollbar w-[23%]",
-            "transition-all max-md:hidden",
-          )}
-        />
       </div>
     </div>
   );
