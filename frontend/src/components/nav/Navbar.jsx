@@ -11,24 +11,14 @@ const Navbar = () => {
 
   return (
     <div className="sticky top-0 z-50 
-      bg-white/80 dark:bg-gray-900/80
+      bg-white dark:bg-gray-900
       backdrop-blur-lg border-b 
-      border-gray-200 dark:border-gray-700
+      border-gray-100 dark:border-gray-800
     ">
-      <div className="flex items-center justify-between px-4 py-2.5 max-w-[1300px] mx-auto">
+      <div className="flex items-center justify-between px-4 py-2 max-w-[1300px] mx-auto">
         
         {/* Left Section */}
         <div className="flex items-center gap-3">
-          
-          {/* Avatar - Mobile */}
-          <div className="avatar md:hidden">
-            <div className="w-9 h-9 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-gray-900">
-              <img
-                src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-                alt="User"
-              />
-            </div>
-          </div>
 
           {/* Logo */}
           <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
@@ -51,7 +41,7 @@ const Navbar = () => {
             <input
               type="text"
               placeholder="Search Research Nest"
-              className="w-full rounded-full pl-11 py-2.5
+              className="w-full rounded-full pl-11 py-2
               bg-gray-100 dark:bg-gray-800
               text-gray-900 dark:text-gray-100 
               placeholder-gray-500 dark:placeholder-gray-400

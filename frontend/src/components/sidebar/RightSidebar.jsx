@@ -3,7 +3,7 @@ import { FaSearch, FaEllipsisH } from "react-icons/fa";
 
 const RightSidebar = () => {
     return (
-        <div className="lg:flex flex-col gap-4 p-4 w-[320px] h-screen 
+        <div className="lg:flex rn-scrollbar flex-col gap-4 p-2 w-[310px] h-screen 
             text-gray-900 dark:text-gray-100 
             bg-white dark:bg-gray-900">
 
