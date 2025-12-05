@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router";
+import { Link, NavLink } from "react-router";
 import {
   FaHome,
   FaEnvelope,
@@ -22,14 +22,12 @@ const LeftSidebar = () => {
 
     { icon: <FaNewspaper size={22} />, text: "Paper Hub", path: "/home/paper-hub" },
     { icon: <FaBell size={22} />, text: "Notifications", path: "/home/notifications" },
-
-    { icon: <FaUser size={22} />, text: "Profile", path: "/home/my-profile" },
   ];
 
   return (
     <div
       className="
-        sticky top-0 h-[calc(100vh-60px)] 
+        sticky top-0 h-[calc(100vh-80px)] 
         flex flex-col justify-between
         py-3 px-3 md:px-5 
         border-r border-gray-100 dark:border-gray-800 
@@ -79,10 +77,10 @@ const LeftSidebar = () => {
       </div>
 
       {/* User Card */}
-      <div
+      <Link to="/home/my-profile"
         className="
           flex items-center gap-3 p-2 
-          hover:bg-gray-100 dark:hover:bg-gray-800 
+        bg-gray-100 dark:bg-gray-800 
           rounded-full cursor-pointer transition-colors duration-200 mt-auto
         "
       >
@@ -96,12 +94,11 @@ const LeftSidebar = () => {
         </div>
 
         <div className="hidden md:flex flex-col text-sm leading-tight">
-          <span className="font-bold text-[12px]">Touhidul Islam...</span>
+          <span className="font-bold text-[13px]">Touhidul Islam...</span>
           <span className="text-gray-500 dark:text-gray-400 text-[11px]">@Touhiddev</span>
         </div>
 
-        <FaEllipsisH className="hidden md:block ml-auto" />
-      </div>
+      </Link>
     </div>
   );
 };

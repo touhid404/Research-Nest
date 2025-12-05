@@ -2,6 +2,7 @@ import React from "react";
 import { FaFlask, FaBell, FaSearch } from "react-icons/fa";
 import { useTheme } from "../../provider/ThemeProvider";
 import { MoonIcon, SunIcon } from "../../assets/rawIcon/Rawicon";
+import ResearchNestLogo from "../logo/ResearchNestLogo";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -10,9 +11,10 @@ const Navbar = () => {
   };
 
   return (
-    <div className="sticky top-0 z-50 
+    <div className="
+    sticky top-0 z-50 
       bg-white dark:bg-gray-900
-      backdrop-blur-lg border-b 
+      backdrop-blur-sm border-b 
       border-gray-100 dark:border-gray-800
     ">
       <div className="flex items-center justify-between px-4 py-2 max-w-[1300px] mx-auto">
@@ -21,16 +23,11 @@ const Navbar = () => {
         <div className="flex items-center gap-3">
 
           {/* Logo */}
-          <div className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
-            <FaFlask size={24} className="text-gray-900 dark:text-gray-100" />
-            <span className="hidden sm:block font-bold text-lg text-gray-900 dark:text-gray-100">
-              Research Nest
-            </span>
-          </div>
+          <ResearchNestLogo/>
         </div>
 
         {/* Search (Desktop Only) */}
-        <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+        <div className="hidden lg:flex flex-1 max-w-xl mx-5">
           <div className="relative w-full group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none 
               text-gray-500 dark:text-gray-400 

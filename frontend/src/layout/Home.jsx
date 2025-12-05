@@ -3,7 +3,6 @@ import Navbar from "../components/nav/Navbar";
 
 import LeftSidebar from "../components/sidebar/LeftSidebar";
 import ChatSidebar from "../components/sidebar/ChatSidebar";
-import ProfileSidebar from "../components/sidebar/ProfileSidebar";
 import Trendingbar from "../components/sidebar/Trendingbar";
 
 import { useEffect, useState } from "react";
@@ -21,9 +20,7 @@ const Home = () => {
 
     if (path.startsWith("/home/messages")) {
       setRightSidebarComponent(() => ChatSidebar);
-    } else if (path.startsWith("/home/my-profile")) {
-      setRightSidebarComponent(() => ProfileSidebar);
-    } else if (path.startsWith("/home/workspace")) {
+    }  else if (path.startsWith("/home/workspace")) {
       setRightSidebarComponent(() => EmptySidebar);
     } else {
       setRightSidebarComponent(() => Trendingbar); // default
@@ -39,17 +36,17 @@ const Home = () => {
       <div className="flex justify-center h-[calc(100vh-80px)] overflow-hidden">
         <div className="flex w-full max-w-[1300px]">
           {/* Left Sidebar */}
-          <div className="md:w-[280px] shrink-0 relative">
+          <div className="md:w-[260px] shrink-0 relative">
             <LeftSidebar />
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-[650px] overflow-y-auto border-r border-gray-200 dark:border-gray-800 rn-scrollbar">
+          <div className="flex-1 max-w-[700px] overflow-y-auto border-r border-gray-200 dark:border-gray-800 rn-scrollbar">
             <Outlet />
           </div>
 
           {/* Right Sidebar */}
-          <div className="hidden lg:block w-[360px] shrink-0 p-2 overflow-y-auto text-gray-900 dark:text-gray-100">
+          <div className="hidden lg:block w-[330px] shrink-0 p-2 overflow-y-auto text-gray-900 dark:text-gray-100">
             <RightSidebarComponent />
           </div>
         </div>
