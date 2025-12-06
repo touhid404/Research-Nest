@@ -1,59 +1,62 @@
-// import mongoose from "mongoose";
+import mongoose from "mongoose";
 
-// const userSchema = new mongoose.Schema(
-//   {
-//     uid:{
-//       type: String,
-//       required: true,
-//       unique: true,
-//     },
-//     name: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//     },
-//     email: {
-//       type: String,
-//       required: true,
-//       unique: true,
-//       trim: true,
-//     },
-//     profileImage: {
-//       type: String,
-//       default: "",
-//     },
-//     bio: {
-//       type: String,
-//       default: "",
-//       maxlength: 200,
-//     },
-//     gender: {
-//       type: String,
-//       default: "",
-//     },
-//     age: {
-//       type: Number,
-//       default: null,
-//     },
-//     lifestylePreferences: {
-//       type: String,
-//       default:""
-//     },
-//     role: {
-//       type: String,
-//       enum: ["user", "admin"],
-//       default: "user",
-//     },
-//     isVerified: {
-//       type: Boolean,
-//       default: false,
-//     },
-//   },
-//   { timestamps: true }
-// );
+const userSchema = new mongoose.Schema(
+  {
+    uid: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    profileImage: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 200,
+    },
+    gender: {
+      type: String,
+      default: "",
+    },
+    role: {
+      type: String,
+      enum: ["admin", "researcher"],
+      default: "researcher", // changed default role
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    researchInterests: {
+      type: [String],
+      default: [],
+    },
+    links: {
+      personalWebsite: { type: String, default: "" },
+      linkedin: { type: String, default: "" },
+      googleScholar: { type: String, default: "" },
+      github: { type: String, default: "" },
+      other: [{ name: String, url: String }],
+    },
+  },
+  { 
+    timestamps: true,
+  }
+);
 
-// const User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
 
-// export default User;
-
-// Demo purpose only, not in use
+export default User;
