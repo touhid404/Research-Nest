@@ -2,14 +2,15 @@ import { createBrowserRouter } from "react-router";
 import Root from "../layout/Root";
 import LandingPage from "../pages/landing/LandingPage";
 import Home from "../layout/Home";
-import PublicPosts from "../pages/Home/proposalFeed/PublicPosts";
-import PendingRq from "../pages/Home/requests/PendingRq";
+
 import Workspace from "../pages/Home/workspace/Workspace";
 import MessagesBase from "../pages/Home/messages/MessagesBase";
 import MyProfile from "../pages/Home/profile/MyProfile";
 import NotFound from "../components/errors/NotFound";
 import Notifications from "../pages/Home/notifications/Notifications";
 import PaperHub from "../pages/Home/paperhub/PaperHub";
+import ProposalPostsBase from "../pages/Home/proposalFeed/ProposalPostsBase";
+import RequestBase from "../pages/Home/requests/RequestBase";
 
 export const router = createBrowserRouter([
   {
@@ -29,11 +30,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "posts",
-        element: <PublicPosts />,
+        element: <ProposalPostsBase/>,
       },
       {
         path: "requests",
-        element: <PendingRq />,
+        element: <RequestBase/>,
       },
       {
         path: "workspace",

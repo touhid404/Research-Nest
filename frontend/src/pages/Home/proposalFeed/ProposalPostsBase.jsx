@@ -1,20 +1,21 @@
-import MessageHome from "./MessageHome";
-import ChatSidebar from '../../../components/sidebar/ChatSidebar';
+import React from "react";
+import PublicPosts from "./PublicPosts";
+import RightSidebar from "../../../components/sidebar/RightSidebar";
 
-const MessagesBase = () => {
+const ProposalPostsBase = () => {
   return (
     <div className="flex h-full"> 
       {/* Posts Section */}
       <div className="flex-1 border-r border-gray-100 dark:border-gray-800 overflow-y-auto rn-scrollbar pr-2">
-        <MessageHome/>
+        <PublicPosts />
       </div>
 
       {/* Right Sidebar */}
       <div className="md:w-[330px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
-        <ChatSidebar/>
+        <RightSidebar />
       </div>
     </div>
   );
 };
 
-export default MessagesBase;
+export default ProposalPostsBase;
