@@ -1,15 +1,17 @@
-import React from "react";
 import { FaBell, FaSearch } from "react-icons/fa";
 import { useTheme } from "../../provider/ThemeProvider";
 import { MoonIcon, SunIcon } from "../../assets/rawIcon/Rawicon";
 import ResearchNestLogo from "../logo/ResearchNestLogo";
 import { Link } from "react-router";
+import useAuth from "../../hooks/useAuth";
 
 const RootNav = () => {
   const { theme, setTheme } = useTheme();
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
   };
+
+  const { user } = useAuth();
 
   return (
     <div
@@ -23,15 +25,9 @@ const RootNav = () => {
       <div className="flex items-center justify-between px-4 py-2 max-w-[1300px] mx-auto">
 
         {/* Left Section - Logo */}
-          <ResearchNestLogo />
+        <ResearchNestLogo />
 
-        {/* Center Navigation Links */}
-        <div className="hidden text-black dark:text-white lg:flex items-center gap-8">
-          <Link className="nav-link" to="/home/posts">Dashboard</Link>
-          <a className="nav-link" href="#">Tutorials</a>
-          <a className="nav-link" href="#">Research Tools</a>
-          <a className="nav-link" href="#">Community</a>
-        </div>
+
 
         {/* Right Section */}
         <div className="flex items-center gap-3">
@@ -44,7 +40,7 @@ const RootNav = () => {
             <FaSearch size={18} className="text-gray-700 dark:text-gray-300" />
           </button>
 
-        
+
 
           {/* Theme Toggle */}
           <button
@@ -65,18 +61,37 @@ const RootNav = () => {
           </button>
 
           {/* Get Started Button */}
-          <button
-            className="
-              hidden sm:block
-              bg-primary text-white font-medium
-              px-4 py-2 rounded-lg
-              hover:bg-primary/90
-              transition-all duration-300
-              shadow-sm
-            "
-          >
-            Get Started
-          </button>
+
+          {user ? (
+            <Link
+              to="/home/posts"
+              className="
+                hidden sm:block
+                bg-primary text-white font-medium
+                px-4 py-2 rounded-lg
+                hover:bg-primary/90
+                transition-all duration-300
+                shadow-sm
+              "
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              to="/auth/login"
+              className="
+                hidden sm:block
+                bg-primary text-white font-medium
+                px-4 py-2 rounded-lg
+                hover:bg-primary/90
+                transition-all duration-300
+                shadow-sm
+              "
+            >
+              Get Started
+            </Link>
+          )}
+
 
         </div>
       </div>

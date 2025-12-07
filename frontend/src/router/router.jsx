@@ -11,6 +11,11 @@ import Notifications from "../pages/Home/notifications/Notifications";
 import PaperHub from "../pages/Home/paperhub/PaperHub";
 import ProposalPostsBase from "../pages/Home/proposalFeed/ProposalPostsBase";
 import RequestBase from "../pages/Home/requests/RequestBase";
+import Auth from "../layout/Auth";
+import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
+import ForgetPassword from "../pages/auth/ForgetPassword";
+import PrivateRoute from "../privateRoutes/privateRoutes";
 
 export const router = createBrowserRouter([
   {
@@ -23,18 +28,39 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "auth",
+    Component: Auth,
+    children: [
+      {
+        path: "login",
+        Component: Login,
+      },
+      {
+        path: "register",
+        Component: Register,
+      },
+      {
+        path: "forget-pass",
+        Component: ForgetPassword,
+      },
+    ],
+
+  },
 
   {
     path: "/home",
-    Component: Home,
+    element: <PrivateRoute>
+      <Home />
+    </PrivateRoute>,
     children: [
       {
         path: "posts",
-        element: <ProposalPostsBase/>,
+        element: <ProposalPostsBase />,
       },
       {
         path: "requests",
-        element: <RequestBase/>,
+        element: <RequestBase />,
       },
       {
         path: "workspace",
@@ -43,7 +69,7 @@ export const router = createBrowserRouter([
       { path: "messages", element: <MessagesBase /> },
       { path: "my-profile", element: <MyProfile /> },
       { path: "notifications", element: <Notifications /> },
-      { path: "paper-hub", element: <PaperHub/>},
+      { path: "paper-hub", element: <PaperHub /> },
     ],
   },
   { path: "*", element: <NotFound /> },
