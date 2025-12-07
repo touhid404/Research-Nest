@@ -7,7 +7,7 @@ const Home = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen text-black dark:text-white bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500">
 
       <Navbar />
 

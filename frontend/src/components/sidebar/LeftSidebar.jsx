@@ -48,8 +48,8 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
       className="
         sticky top-0 h-[calc(100vh-80px)]
         flex flex-col justify-between
-        border-r border-gray-100 dark:border-gray-800
-        bg-white dark:bg-gray-900 py-3 px-2
+        border-r border-gray-100 dark:border-slate-900
+        bg-white dark:bg-slate-950 transition-colors duration-500 py-3 px-2
       "
     >
       {/* Navigation + Menu button ON SAME LINE */}
@@ -60,7 +60,6 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
           className="
             flex items-center gap-3 py-2 px-3 rounded-full
             hover:bg-gray-200 dark:hover:bg-gray-700 
-            text-black dark:text-gray-300 transition
           "
         >
           <FaBars size={22} />
@@ -74,13 +73,13 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
             to={item.path}
             className={({ isActive }) =>
               `
-              flex items-center gap-3 py-2 px-3 rounded-full transition-all duration-200
+              flex items-center gap-3 py-2 px-3 rounded-full
               hover:bg-gray-200 dark:hover:bg-gray-700
 
               ${
                 isActive
-                  ? "font-bold text-black dark:text-white"
-                  : "text-black dark:text-gray-300"
+                  ? "font-bold "
+                  : ""
               }
               `
             }

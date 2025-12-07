@@ -6,7 +6,7 @@ const ProposalPostsBase = () => {
   return (
     <div className="flex h-full"> 
       {/* Posts Section */}
-      <div className="flex-1 border-r border-gray-100 dark:border-gray-800 overflow-y-auto rn-scrollbar pr-2">
+      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto rn-scrollbar pr-2">
         <PublicPosts />
       </div>
 

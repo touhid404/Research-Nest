@@ -5,8 +5,7 @@ const RightSidebar = () => {
   return (
     <div
       className="lg:flex rn-scrollbar flex-col gap-4 p-2 h-screen 
-      text-gray-900 dark:text-gray-100 
-      bg-white dark:bg-gray-900"
+      "
     >
       {/* Search Bar */}
       <div className="relative group">

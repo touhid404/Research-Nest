@@ -4,7 +4,7 @@ import RootNav from '../components/nav/RootNav';
 
 const Root = () => {
     return (
-        <div className='bg-white dark:bg-gray-900'>
+        <div className='bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500'>
             <RootNav />
             <Outlet/>
         </div>
