@@ -70,7 +70,7 @@ const Register = () => {
         setError("");
 
         // --- Log Data for Backend ---
-        console.log("Full Registration Data:", formData);
+        // console.log("Full Registration Data:", formData);
         // -----------------------------
 
         try {
