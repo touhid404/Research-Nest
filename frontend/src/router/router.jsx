@@ -1,4 +1,5 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
+import MyPosts from "../pages/Home/proposalFeed/MyPosts";
 import Root from "../layout/Root";
 import LandingPage from "../pages/landing/LandingPage";
 import Home from "../layout/Home";
@@ -16,6 +17,7 @@ import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import ForgetPassword from "../pages/auth/ForgetPassword";
 import PrivateRoute from "../privateRoutes/privateRoutes";
+import PublicPosts from "../pages/Home/proposalFeed/PublicPosts";
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +59,20 @@ export const router = createBrowserRouter([
       {
         path: "posts",
         element: <ProposalPostsBase />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="explore" replace />,
+          },
+          {
+            path: "explore",
+            element: <PublicPosts/>,
+          },
+          {
+            path: "myposts",
+            element: <MyPosts />,
+          },
+        ],
       },
       {
         path: "requests",

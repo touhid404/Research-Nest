@@ -17,7 +17,7 @@ const Home = () => {
           <div
             className={`
               shrink-0 transition-all duration-300
-              ${isCollapsed ? "w-[70px]" : "md:w-[260px] w-[220px]"}
+              ${isCollapsed ? "w-[70px]" : "md:w-[250px] w-[220px]"}
             `}
           >
             <LeftSidebar 

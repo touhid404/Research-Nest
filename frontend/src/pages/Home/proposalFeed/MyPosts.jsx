@@ -1,16 +1,20 @@
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../../../lib/axios";
 import { BiLoaderAlt } from "react-icons/bi";
 import ProposalPostCard from "../../../components/posts/ProposalPostCard";
+import useAuth from "../../../hooks/useAuth";
 
-const PublicPosts = () => {
+const MyPosts = () => {
+    const { user } = useAuth();
+
     const { isPending, error, data } = useQuery({
-        queryKey: ["proposalPosts"],
+        queryKey: ["proposalPosts", user?.uid],
         queryFn: async () => {
-            const res = await axiosInstance.get("/posts");
+            if (!user?.uid) return { data: [] };
+            const res = await axiosInstance.get(`/posts/${user.uid}`);
             return res.data;
         },
+        enabled: !!user?.uid,
     });
 
     if (isPending) {
@@ -33,10 +37,10 @@ const PublicPosts = () => {
 
     return (
         <div className="min-h-screen pb-10">
-            <div className="p-4 pt-2">
+            <div className="p-4">
                 {posts.length === 0 ? (
                     <div className="text-center text-gray-500 mt-10">
-                        No proposals found. Be the first to post!
+                        You haven't created any proposals yet.
                     </div>
                 ) : (
                     posts.map((post) => <ProposalPostCard key={post._id} post={post} />)
@@ -46,4 +50,4 @@ const PublicPosts = () => {
     );
 };
 
-export default PublicPosts;
+export default MyPosts;

@@ -136,7 +136,7 @@ const HeroSection = () => {
                         transition={{ delay: 0.4, duration: 0.8 }}
                         className="flex flex-wrap gap-4 pt-2"
                     >
-                        <Link to="/home" className="btn-shine group relative px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 transition-transform flex items-center gap-2">
+                        <Link to="/home/posts" className="btn-shine group relative px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 transition-transform flex items-center gap-2">
                             <FaRocket /> Join Now
                         </Link>
                         <button className="px-8 py-4 rounded-2xl border border-slate-200 dark:border-white/20 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors font-semibold flex items-center gap-2">

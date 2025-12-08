@@ -1,13 +1,58 @@
-import React from "react";
-import PublicPosts from "./PublicPosts";
+import React, { useState } from "react";
+import { Outlet, NavLink } from "react-router";
 import RightSidebar from "../../../components/sidebar/RightSidebar";
+import CreateProposalModal from "../../../components/posts/CreateProposalModal";
 
 const ProposalPostsBase = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <div className="flex h-full"> 
+    <div className="flex h-full">
+      <CreateProposalModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
       {/* Posts Section */}
-      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto rn-scrollbar pr-2">
-        <PublicPosts />
+      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto rn-scrollbar">
+
+        {/* Header with Tabs and Action */}
+        <div className="sticky top-0 bg-transparent backdrop-blur-md z-10 border-b border-gray-100 dark:border-slate-800 px-4">
+          <div className="flex justify-between items-end">
+            {/* Navigation Tabs */}
+            <div className="flex gap-8">
+              <NavLink
+                to="explore"
+                className={({ isActive }) =>
+                  `pb-3 pt-4 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${isActive
+                    ? "border-black dark:border-white text-black dark:text-white"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`
+                }
+              >
+                Explore
+              </NavLink>
+              <NavLink
+                to="myposts"
+                className={({ isActive }) =>
+                  `pb-3 pt-4 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${isActive
+                    ? "border-black dark:border-white text-black dark:text-white"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`
+                }
+              >
+                My Posts
+              </NavLink>
+            </div>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-4 py-1.5 rounded-full hover:opacity-80 transition-all shadow-lg shadow-black/10 dark:shadow-white/5 active:scale-95 cursor-pointer mb-2"
+            >
+              + Create Post
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <Outlet />
       </div>
 
       {/* Right Sidebar */}

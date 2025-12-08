@@ -1,4 +1,4 @@
-import { createProposalPostInDB, getAllProposalPostsByUserInDB,  } from "./post.service.js";
+import { createProposalPostInDB, getAllProposalPostsByUserInDB, getAllProposalPostsInDB } from "./post.service.js";
 import User from "../../models/user.model.js";
 // OK Checked
 export const createProposalPost = async (req, res) => {
@@ -65,11 +65,10 @@ export const getAllProposalPosts = async (req, res) => {
     });
   }
 };
-
 export const getAllProposalPostsByUser = async (req, res) => {
   try {
     const { uid } = req.params;
-    if(!uid){
+    if (!uid) {
       return res.status(400).json({
         success: false,
         message: "uid is required",

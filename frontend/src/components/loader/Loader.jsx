@@ -22,7 +22,6 @@ const Loader = () => {
           </div>
 
           {/* "Create Post" Button Placeholder */}
-          <div className="h-12 w-full bg-gray-300 dark:bg-slate-700 rounded-full mb-6 animate-pulse" />
 
           {/* User Profile at Bottom */}
           <div className="flex items-center gap-3 animate-pulse mt-auto">

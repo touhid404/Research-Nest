@@ -20,7 +20,7 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const navItems = [
-    { icon: <FaHome size={22} />, text: "Home", path: "/home/posts" }, // Home
+    { icon: <FaHome size={22} />, text: "Posts", path: "/home/posts" }, // Home
     { icon: <FaListAlt size={22} />, text: "Requests", path: "/home/requests" }, // Requests / Tasks
     {
       icon: <FaBookmark size={22} />,
@@ -103,17 +103,7 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
           ))}
         </div>
 
-        {/* Create Post Button */}
-        <button
-          className={`
-          bg-black dark:bg-blue-600 text-white font-semibold
-          rounded-full min-h-[45px] mt-3 transition-all duration-300
-          flex items-center justify-center gap-2
-          ${isCollapsed ? "w-[45px]" : "w-full px-4"}
-        `}
-        >
-          {isCollapsed ? <FaFeatherAlt size={20} /> : "Create Post"}
-        </button>
+       
 
         {/* User Profile */}
         {/* Click to open log out modal */}

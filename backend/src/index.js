@@ -7,7 +7,25 @@ import { userRoutes } from "./modules/users/user.routes.js";
 import { proposalPostRoutes } from "./modules/proposalPosts/post.routes.js";
 const app = express();
 const port = config.port;
-app.use(cors());
+// Set frontend url can be multiple
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://researchnest.netlify.app",
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 // land api
 app.get('/', (req, res) => {
