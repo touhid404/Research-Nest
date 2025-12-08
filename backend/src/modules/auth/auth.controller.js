@@ -2,7 +2,6 @@ import { checkExistUser, createUser, createUserManually } from "./auth.service.j
 
 // Other endpoints
 export const signUp = async (req, res) => {
-  console.log(req.body);
   try {
     const { uid, name, email, gender, occupation, interests } = req.body;
     
@@ -54,8 +53,8 @@ export const googleLogin = async (req, res) => {
     // Check if user already exists
     const existUser = await checkExistUser(uid, email);
     if (existUser) {
-      return res.status(409).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: "User with this UID or email already exists",
       });
     }

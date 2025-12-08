@@ -111,18 +111,17 @@ const Register = () => {
             const res = await signInWithGoogle();
             // Save uid, email , name to backend
             const userDataToSend = {
-                ...formData,
                 uid: res.user.uid,     
                 email: res.user.email,       
                 name: res.user.displayName ,
                 photoURL: res.user.photoURL
             };
             const response = await axiosInstance.post("/auth/google-login", userDataToSend);
-            if(response.status === 201){
+            if(response.status === 201 || response.status === 200){
                 toast.success("Successfully Registered!");
                 navigate("/home/posts");
             }else{
-                toast.error("Registration failed.");
+                toast.error(response.data.message);
             }
         } catch (err) {
             setError("Google sign-in failed. Please try again.");

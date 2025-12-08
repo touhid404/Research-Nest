@@ -5,6 +5,7 @@ import { FaGoogle, FaEnvelope, FaLock, FaArrowLeft } from "react-icons/fa";
 import { motion } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import toast from 'react-hot-toast';
+import { axiosInstance } from "../../lib/axios";
 
 const Login = () => {
     const { signInUser, signInWithGoogle } = useAuth();
@@ -45,6 +46,32 @@ const Login = () => {
         } catch (err) {
             setError("Google sign-in failed. Please try again.");
             toast.error("Google login failed.");
+        } finally {
+            setLoading(false);
+        }
+    };
+const handleGoogleRegister = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const res = await signInWithGoogle();
+            // Save uid, email , name to backend
+            const userDataToSend = {
+                uid: res.user.uid,     
+                email: res.user.email,       
+                name: res.user.displayName ,
+                photoURL: res.user.photoURL
+            };
+            const response = await axiosInstance.post("/auth/google-login", userDataToSend);
+            if(response.status === 201 || response.status === 200){
+                toast.success("Successfully Registered!");
+                navigate("/home/posts");
+            }else{
+                toast.error(response.data.message);
+            }
+        } catch (err) {
+            setError("Google sign-in failed. Please try again.");
+            toast.error("Google signup failed.");
         } finally {
             setLoading(false);
         }
