@@ -10,9 +10,8 @@ const port = config.port;
 // Set frontend url can be multiple
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://researchnest.netlify.app",
+  "https://research-nest.netlify.app",
 ];
-
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);

@@ -1,9 +1,10 @@
 import React from "react";
 import { AiOutlinePaperClip } from "react-icons/ai";
 import useAuth from "../../hooks/useAuth";
+import toast from "react-hot-toast";
 
 const ProposalPostCard = ({ post }) => {
-    const { user: currentUser} = useAuth();
+    const { user: currentUser } = useAuth();
     const { user, title, description, researchTopic, interests, attachments, createdAt } = post;
 
     const timeAgo = (dateString) => {
@@ -19,6 +20,11 @@ const ProposalPostCard = ({ post }) => {
         if (minutes > 0) return `${minutes}m ago`;
         return "Just now";
     };
+
+    const handleDeletePost = () => {
+        toast.success("Post delete features coming soon");
+        
+    }
 
     return (
         <div className="group bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 mb-3 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
@@ -116,13 +122,22 @@ const ProposalPostCard = ({ post }) => {
                 </div>
 
                 {currentUser?.uid !== user?.uid && (
-                     <button className="cursor-pointer bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-5 py-2 rounded-full hover:opacity-80 active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5">
-                    Request
-                </button>
-                    
+                    <button className="cursor-pointer bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-5 py-2 rounded-full hover:opacity-80 active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5">
+                        Request
+                    </button>
                 )}
 
-               
+                {
+                    currentUser?.uid === user?.uid && (
+                        <button onClick={handleDeletePost} className="cursor-pointer bg-red-600 text-white  text-sm font-semibold px-5 py-2 rounded-full hover:opacity-80 active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5">
+                            Delete
+                        </button>
+                    )
+                }
+
+
+
+
             </div>
         </div>
     );

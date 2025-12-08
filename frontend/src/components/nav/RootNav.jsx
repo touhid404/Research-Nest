@@ -32,14 +32,6 @@ const RootNav = () => {
         {/* Right Section */}
         <div className="flex items-center gap-3">
 
-          {/* Mobile Search */}
-          <button
-            className="lg:hidden p-2.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"
-            aria-label="Search"
-          >
-            <FaSearch size={18} className="text-gray-700 dark:text-gray-300" />
-          </button>
-
 
 
           {/* Theme Toggle */}
@@ -66,8 +58,7 @@ const RootNav = () => {
             <Link
               to="/home/posts"
               className="
-                hidden sm:block
-                bg-primary text-white font-medium
+                bg-black dark:bg-white text-white dark:text-black  font-medium
                 px-4 py-2 rounded-lg
                 hover:bg-primary/90
                 transition-all duration-300

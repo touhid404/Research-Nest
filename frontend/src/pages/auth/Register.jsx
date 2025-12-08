@@ -4,6 +4,7 @@ import { FaGoogle, FaEnvelope, FaLock, FaUser, FaArrowLeft, FaArrowRight, FaMars
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import toast from 'react-hot-toast';
+import { axiosInstance } from "../../lib/axios";
 
 const Register = () => {
     const { createUser, updateUserProfile, signInWithGoogle } = useAuth();
@@ -18,7 +19,7 @@ const Register = () => {
         email: "",
         password: "",
         gender: "",
-        role: "",
+        occupation: "",
         interests: []
     });
 
@@ -38,10 +39,10 @@ const Register = () => {
 
     const handleNext = () => {
         setError("");
-        // Step 1: Personal (Gender/Role)
+        // Step 1: Personal (Gender/Occupation)
         if (step === 1) {
-            if (!formData.gender || !formData.role) {
-                setError("Please select your gender and role.");
+            if (!formData.gender || !formData.occupation) {
+                setError("Please select your gender and occupation.");
                 return;
             }
         }
@@ -69,21 +70,32 @@ const Register = () => {
         setLoading(true);
         setError("");
 
-        // --- Log Data for Backend ---
-        // console.log("Full Registration Data:", formData);
-        // -----------------------------
-
         try {
-            await createUser(formData.email, formData.password);
+            const res = await createUser(formData.email, formData.password);
+
             await updateUserProfile({ displayName: formData.name });
-            // Here you would typically post formData to your backend user endpoint
-            toast.success("Successfully Registered!");
-            navigate("/home/posts");
+
+            // 3️⃣ Add Firebase info to formData for backend
+            const userDataToSend = {
+                ...formData,
+                uid: res.user.uid,           // Firebase UID
+                email: res.user.email,       // Confirmed email
+                name: res.user.displayName || formData.name // Display name from Firebase
+            };
+
+            const response = await axiosInstance.post("/auth/signup", userDataToSend);
+
+            if (response.status === 201) {
+                toast.success("Successfully Registered!");
+                navigate("/home/posts");
+            } else {
+                toast.error("Registration failed.");
+            }
         } catch (err) {
             if (err.message === "Firebase: Error (auth/email-already-in-use).") {
-                setError("Email already in use")
+                setError("Email already in use");
             } else {
-                setError("Registration failed. Please try again.")
+                setError("Registration failed. Please try again.");
             }
             toast.error("Registration failed.");
         } finally {
@@ -91,13 +103,27 @@ const Register = () => {
         }
     };
 
+
     const handleGoogleRegister = async () => {
         setLoading(true);
         setError("");
         try {
-            await signInWithGoogle();
-            toast.success("Successfully Registered!");
-            navigate("/home/posts");
+            const res = await signInWithGoogle();
+            // Save uid, email , name to backend
+            const userDataToSend = {
+                ...formData,
+                uid: res.user.uid,     
+                email: res.user.email,       
+                name: res.user.displayName ,
+                photoURL: res.user.photoURL
+            };
+            const response = await axiosInstance.post("/auth/google-login", userDataToSend);
+            if(response.status === 201){
+                toast.success("Successfully Registered!");
+                navigate("/home/posts");
+            }else{
+                toast.error("Registration failed.");
+            }
         } catch (err) {
             setError("Google sign-in failed. Please try again.");
             toast.error("Google signup failed.");
@@ -216,8 +242,8 @@ const Register = () => {
                                     {roleOptions.map(role => (
                                         <button
                                             key={role}
-                                            onClick={() => updateFormData("role", role)}
-                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${formData.role === role ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-400'}`}
+                                            onClick={() => updateFormData("occupation", role)}
+                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${formData.occupation === role ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-400'}`}
                                         >
                                             {role}
                                         </button>

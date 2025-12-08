@@ -1,14 +1,16 @@
-import { checkExistUser, createUser } from "./auth.service.js";
+import { checkExistUser, createUser, createUserManually } from "./auth.service.js";
 
+// Other endpoints
 export const signUp = async (req, res) => {
+  console.log(req.body);
   try {
-    const { uid, name, email } = req.body;
-
+    const { uid, name, email, gender, occupation, interests } = req.body;
+    
     // Validate required fields
-    if (!uid || !name || !email) {
+    if (!uid || !name || !email || !gender || !occupation || !interests) {
       return res.status(400).json({
         success: false,
-        message: "UID, name, and email are required",
+        message: "UID, name, email, gender, occupation, and interests are required",
       });
     }
     // Check if user already exists
@@ -21,13 +23,14 @@ export const signUp = async (req, res) => {
     }
 
     // Create new user
-    const user = await createUser({ uid, name, email });
+    const user = await createUserManually({ uid, name, email, gender, occupation, interests });
 
     return res.status(201).json({
       success: true,
       message: "User created successfully",
       data: user,
     });
+    
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -36,23 +39,40 @@ export const signUp = async (req, res) => {
   }
 };
 
-// Other endpoints
-export const login = async (req, res) => {
-  res.send("Login endpoint");
-};
-
 export const googleLogin = async (req, res) => {
-  res.send("Google Login endpoint");
-};
+  console.log(req.body);
+  try {
+    const { uid, name, email ,photoURL} = req.body;
+    
+    // Validate required fields
+    if (!uid || !name || !email || !photoURL) {
+      return res.status(400).json({
+        success: false,
+        message: "UID, name, email, and photoURL are required",
+      });
+    }
+    // Check if user already exists
+    const existUser = await checkExistUser(uid, email);
+    if (existUser) {
+      return res.status(409).json({
+        success: false,
+        message: "User with this UID or email already exists",
+      });
+    }
 
-export const logout = async (req, res) => {
-  res.send("Logout endpoint");
-};
+    // Create new user
+    const user = await createUser({ uid, name, email,photoURL });
 
-export const forgotPassword = async (req, res) => {
-  res.send("Forgot Password endpoint");
-};
-
-export const resetPassword = async (req, res) => {
-  res.send("Reset Password endpoint");
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: user,
+    });
+    
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };

@@ -14,6 +14,7 @@ const CreateProposalModal = ({ isOpen, onClose }) => {
         description: "",
         researchTopic: "",
         interests: "",
+        attachments: [], // store files as {name, url} objects
     });
 
     const createPostMutation = useMutation({
@@ -22,20 +23,36 @@ const CreateProposalModal = ({ isOpen, onClose }) => {
             return res.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(["proposalPosts"]);
+            queryClient.invalidateQueries({ queryKey: ["proposalPosts"], exact: true });
+            if (user?.uid) queryClient.invalidateQueries({ queryKey: ["proposalPosts", user.uid] });
+            queryClient.invalidateQueries({ queryKey: ["proposalPosts"], exact: false });
+
             toast.success("Proposal created successfully!");
             onClose();
+
+            // Reset form
             setFormData({
                 title: "",
                 description: "",
                 researchTopic: "",
                 interests: "",
+                attachments: [],
             });
         },
         onError: (error) => {
             toast.error(error.response?.data?.message || "Failed to create proposal");
         },
     });
+
+    const handleFileChange = (e) => {
+        const files = Array.from(e.target.files);
+        // Convert each file to { name, url } object
+        const attachmentObjects = files.map((file) => ({
+            name: file.name,
+            url: URL.createObjectURL(file), // placeholder URL, replace with real uploaded file URL in production
+        }));
+        setFormData({ ...formData, attachments: attachmentObjects });
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -45,12 +62,16 @@ const CreateProposalModal = ({ isOpen, onClose }) => {
         }
 
         const payload = {
-            uid: user.uid, // Using uid as per backend requirement
+            uid: user.uid,
             title: formData.title,
             description: formData.description,
             researchTopic: formData.researchTopic,
-            interests: formData.interests.split(",").map((i) => i.trim()).filter(i => i),
-            attachments: [], // Placeholder for now
+            interests: formData.interests
+                ? formData.interests.split(",").map((i) => i.trim()).filter(Boolean)
+                : [],
+            attachments: formData.attachments.length > 0
+                ? formData.attachments
+                : [{ name: "demo-file.pdf", url: "https://example.com/demo-file.pdf" }], // default attachment
         };
 
         createPostMutation.mutate(payload);
@@ -132,17 +153,11 @@ const CreateProposalModal = ({ isOpen, onClose }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Attachments (Optional)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Attachments (Optional)</label>
                         <input
                             type="file"
                             multiple
-                            onChange={(e) => {
-                                // For now, just logging or storing in state if needed
-                                // In a real app, we'd handle file upload here
-                                console.log(e.target.files);
-                            }}
+                            onChange={handleFileChange}
                             className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400"
                         />
                     </div>
