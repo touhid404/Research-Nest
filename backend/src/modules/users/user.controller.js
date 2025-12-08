@@ -1,24 +1,37 @@
-import { updateUserInDB } from "./user.service.js";
+import { getAllUsersInDB, updateUserInDB } from "./user.service.js";
 
 
-export const getAllUsers = ()=>{
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await getAllUsersInDB();
 
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 }
 
 
 export const updateUser = async (req, res) => {
   try {
-    const { userId } = req.params; // assuming userId is in URL params
+    const { uid } = req.params; // assuming userId is in URL params
     const updateData = req.body;
 
-    if (!userId) {
+    if (!uid) {
       return res.status(400).json({
         success: false,
-        message: "User ID is required to update",
+        message: "uid is required to update",
       });
     }
 
-    const updatedUser = await updateUserInDB(userId, updateData);
+    const updatedUser = await updateUserInDB(uid, updateData);
 
     if (!updatedUser) {
       return res.status(404).json({

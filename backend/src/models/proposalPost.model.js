@@ -2,11 +2,13 @@ import mongoose from "mongoose";
 
 const proposalPostSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId, // reference to User
-      ref: "User",
-      required: true,
+    user: {
+      uid: { type: String, required: true },
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      photoURL: { type: String, required: true },
     },
+
     title: {
       type: String,
       required: true,
@@ -24,13 +26,13 @@ const proposalPostSchema = new mongoose.Schema(
       trim: true,
     },
     interests: {
-      type: [String], 
+      type: [String],
       default: [],
     },
     attachments: [
       {
-        name: String,
-        url: String,
+        name: { type: String, required: true },
+        url: { type: String, required: true },
       },
     ],
     status: {
@@ -38,17 +40,6 @@ const proposalPostSchema = new mongoose.Schema(
       enum: ["draft", "approved", "rejected"],
       default: "draft",
     },
-    likes: {
-      type: Number,
-      default: 0,
-    },
-    comments: [
-      {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        comment: String,
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
   },
   { timestamps: true } // adds createdAt and updatedAt
 );

@@ -2,7 +2,7 @@ import ProposalPost from "../../models/proposalPost.model.js";
 
 export const createProposalPostInDB = async (postData) => {
   const newPost = new ProposalPost({
-    userId: postData.userId,
+    user: postData.user,
     title: postData.title,
     description: postData.description,
     researchTopic: postData.researchTopic,
@@ -15,11 +15,18 @@ export const createProposalPostInDB = async (postData) => {
 
 
 export const getAllProposalPostsInDB = async () => {
-  // Fetch all posts and populate user details
+  // Fetch all posts (user details are already embedded)
   const posts = await ProposalPost.find()
-    .populate("userId", "name email profileImage role")
     .sort({ createdAt: -1 }); // newest first
 
   return posts;
 };
+
+export const getAllProposalPostsByUserInDB = async (uid) => {
+  const posts = await ProposalPost.find({ "user.uid": uid })
+    .sort({ createdAt: -1 });
+  return posts;
+};
+
+
 

@@ -1,13 +1,17 @@
 import User from "../../models/user.model.js";
 
+export const getAllUsersInDB = async () => {
+  const users = await User.find();
+  return users;
+};
+
 export const updateUserInDB = async (uid, updateData) => {
   const allowedFields = [
     "name",
     "bio",
-    "profileImage",
+    "photoURL",
     "gender",
-    "role",
-    "isVerified",
+    "occupation",
     "researchInterests",
     "links",
   ];

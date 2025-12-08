@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-    profileImage: {
+    photoURL: {
       type: String,
       default: "",
     },
@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
       maxlength: 200,
     },
     gender: {
+      type: String,
+      default: "",
+    },
+    occupation: {
       type: String,
       default: "",
     },
