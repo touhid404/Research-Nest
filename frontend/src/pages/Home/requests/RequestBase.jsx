@@ -11,7 +11,7 @@ const RequestBase = () => {
       </div>
 
       {/* Right Sidebar */}
-      <div className="md:w-[330px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
+      <div className="md:w-[450px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
         <RightSidebar />
       </div>
     </div>

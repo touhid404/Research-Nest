@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     },
     photoURL: {
       type: String,
-      default: "https://api.dicebear.com/7.x/adventurer/svg",
+      default: "https://api.dicebear.com/7.x/adventurer/png?seed=8",
     },
     bio: {
       type: String,

@@ -14,7 +14,7 @@ const Navbar = () => {
       border-b border-gray-100 dark:border-slate-900
       sticky top-0 z-50
     ">
-      <div className="flex items-center justify-between max-w-[1300px] mx-auto px-4 py-2">
+      <div className="flex items-center justify-between lg:mx-3 px-4 py-2">
 
         {/* Left: Logo */}
         <div className="flex items-center gap-3">
@@ -22,7 +22,7 @@ const Navbar = () => {
         </div>
 
         {/* Center: Search (Desktop Only) */}
-        <div className="hidden lg:flex flex-1 max-w-[500px] mx-5">
+        <div className="hidden lg:flex flex-1 max-w-[600px] mx-5">
           <div className="relative w-full group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none
               text-gray-500 dark:text-gray-400 group-focus-within:text-primary transition-colors">

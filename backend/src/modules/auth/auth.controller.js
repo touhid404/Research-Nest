@@ -39,7 +39,6 @@ export const signUp = async (req, res) => {
 };
 
 export const googleLogin = async (req, res) => {
-  console.log(req.body);
   try {
     const { uid, name, email ,photoURL} = req.body;
     

@@ -1,14 +1,13 @@
-import React, { useState } from "react";
-import { Outlet, NavLink } from "react-router";
+import { Outlet, NavLink, Link, useLocation } from "react-router";
 import RightSidebar from "../../../components/sidebar/RightSidebar";
-import CreateProposalModal from "../../../components/posts/CreateProposalModal";
 
 const ProposalPostsBase = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+   const location = useLocation();
 
+  const isCreatePage = location.pathname.includes("create-post");
   return (
     <div className="flex h-full">
-      <CreateProposalModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
 
       {/* Posts Section */}
       <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto rn-scrollbar">
@@ -42,21 +41,22 @@ const ProposalPostsBase = () => {
               </NavLink>
             </div>
 
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-4 py-1.5 rounded-full hover:opacity-80 transition-all shadow-lg shadow-black/10 dark:shadow-white/5 active:scale-95 cursor-pointer mb-2"
-            >
-              + Create Post
-            </button>
+            {!isCreatePage && (
+              <Link
+                to="create-post"
+                className="bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-4 py-1.5 rounded-full hover:opacity-80 transition-all shadow-lg active:scale-95 cursor-pointer mb-2"
+              >
+                + Create Post
+              </Link>
+            )}
           </div>
         </div>
 
         {/* Content Area */}
         <Outlet />
       </div>
-
       {/* Right Sidebar */}
-      <div className="md:w-[330px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
+      <div className="md:w-[450px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
         <RightSidebar />
       </div>
     </div>

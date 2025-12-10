@@ -92,7 +92,7 @@ const HeroSection = () => {
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
             </div>
 
-            <div className="relative z-30 max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center w-full">
+            <div className="relative z-30  lg:mx-12 px-6 grid lg:grid-cols-2 gap-12 items-center w-full">
                 {/* Left: Text Content */}
                 <motion.div
                     style={{ y, opacity }}

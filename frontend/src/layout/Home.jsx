@@ -12,7 +12,7 @@ const Home = () => {
       <Navbar />
 
       <div className="flex justify-center h-[calc(100vh-80px)] overflow-hidden">
-        <div className="flex w-full max-w-[1300px]">
+        <div className="flex w-full lg:mx-3">
 
           <div
             className={`

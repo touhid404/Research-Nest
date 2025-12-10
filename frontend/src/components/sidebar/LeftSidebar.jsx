@@ -106,6 +106,8 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
        
 
         {/* User Profile */}
+
+        {/* Swap log out icons */}
         {/* Click to open log out modal */}
         <div
           onClick={() => setIsLogoutModalOpen(true)}
@@ -115,6 +117,7 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
           cursor-pointer transition mt-5
         "
         >
+          {/* Log out */}
           <div className="avatar">
             <div className="w-9 rounded-full">
               <img src={user?.photoURL} alt={user?.displayName} />

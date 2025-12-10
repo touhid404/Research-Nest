@@ -22,7 +22,7 @@ const RootNav = () => {
         border-b border-white/20 dark:border-gray-800/20
       "
     >
-      <div className="flex items-center justify-between px-4 py-2 max-w-[1300px] mx-auto">
+      <div className="flex items-center justify-between px-4 py-2 mx-auto lg:mx-3">
 
         {/* Left Section - Logo */}
         <ResearchNestLogo />

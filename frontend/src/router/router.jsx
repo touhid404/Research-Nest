@@ -18,6 +18,7 @@ import Register from "../pages/auth/Register";
 import ForgetPassword from "../pages/auth/ForgetPassword";
 import PrivateRoute from "../privateRoutes/privateRoutes";
 import PublicPosts from "../pages/Home/proposalFeed/PublicPosts";
+import CreateProposalPost from "../components/posts/CreateProposalPost";
 
 export const router = createBrowserRouter([
   {
@@ -71,6 +72,10 @@ export const router = createBrowserRouter([
           {
             path: "myposts",
             element: <MyPosts />,
+          },
+          {
+            path: "create-post",
+            element: <CreateProposalPost />,
           },
         ],
       },
