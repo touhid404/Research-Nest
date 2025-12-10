@@ -1,9 +1,10 @@
 import React from 'react';
+import NotificationItem from '../../pages/Home/notifications/NotificationItem.jsx';
+import { getIcon, getIconBg } from '../../pages/Home/notifications/NotificationHelpers.jsx';
 import { Link } from 'react-router';
-import NotificationItem from './NotificationItem.jsx';
-import { getIcon, getIconBg } from './NotificationHelpers.jsx';
 
-const Notifications = () => {
+const NotificationDropdown = ({ onClose }) => {
+    // Mock Data - In a real app this would come from a Context or Store
     const notifications = [
         {
             id: 1,
@@ -45,52 +46,32 @@ const Notifications = () => {
             time: "1d ago",
             read: true,
         },
-        {
-            id: 4,
-            type: 'like',
-            actor: {
-                name: "Emily Chen",
-                username: "@e_chen",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "liked your research proposal",
-            time: "1d ago",
-            read: true,
-            target: "On the efficacy of..."
-        },
-        {
-            id: 5,
-            type: 'comment',
-            actor: {
-                name: "Michael Brown",
-                username: "@m_brown",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "commented: 'This is a fascinating approach, have you considered...'",
-            time: "2d ago",
-            read: true,
-        }
     ];
 
     const newNotifications = notifications.filter(n => !n.read);
     const earlierNotifications = notifications.filter(n => n.read);
 
     return (
-        <div className="w-full max-w-2xl mx-auto pb-20">
-            <div className="p-4">
-                <div className="flex items-center justify-between mb-6 px-2">
-                    <h1 className="text-2xl font-bold">Notifications</h1>
-                    <button className="cursor-pointer text-sm text-primary font-medium hover:underline">
-                        Mark all as read
-                    </button>
-                </div>
+        <div className="absolute top-full right-0 mt-2 w-96 max-h-[85vh] flex flex-col 
+            bg-white dark:bg-gray-900 
+            rounded-2xl shadow-xl 
+            border border-gray-100 dark:border-gray-800 
+            z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        >
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
+                <h2 className="font-bold text-lg">Notifications</h2>
+                <button className="text-xs font-semibold text-primary hover:underline cursor-pointer">
+                    Mark all as read
+                </button>
+            </div>
 
-                <div className="space-y-6">
+            <div className="overflow-y-auto rn-scrollbar flex-1 p-2">
+                <div className="space-y-4">
                     {/* New Notifications Section */}
                     {newNotifications.length > 0 && (
                         <div>
-                            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">New</h2>
-                            <div className="space-y-2">
+                            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-2">New</h2>
+                            <div className="space-y-1">
                                 {newNotifications.map((notif) => (
                                     <NotificationItem
                                         key={notif.id}
@@ -106,8 +87,8 @@ const Notifications = () => {
                     {/* Earlier Notifications Section */}
                     {earlierNotifications.length > 0 && (
                         <div>
-                            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Earlier</h2>
-                            <div className="space-y-2">
+                            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-4">Earlier</h2>
+                            <div className="space-y-1">
                                 {earlierNotifications.map((notif) => (
                                     <NotificationItem
                                         key={notif.id}
@@ -119,16 +100,18 @@ const Notifications = () => {
                             </div>
                         </div>
                     )}
-
-                    {notifications.length === 0 && (
-                        <div className="text-center py-20 text-gray-500">
-                            No notifications yet
-                        </div>
-                    )}
                 </div>
             </div>
+
+            <Link to="/home/notifications" onClick={onClose}>
+                <div className="p-3 border-t border-gray-100 dark:border-gray-800 text-center shrink-0">
+                    <button className="text-sm font-semibold text-primary hover:underline cursor-pointer">
+                        See all notifications
+                    </button>
+                </div>
+            </Link>
         </div>
     );
 };
 
-export default Notifications;
+export default NotificationDropdown;
