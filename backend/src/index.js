@@ -58,10 +58,8 @@ initializeServer(httpServer);
 connectDB();
 
 // Start Server (Only validation for local dev, Vercel handles this via export)
-if (process.env.NODE_ENV !== "production") {
-  httpServer.listen(port, () => {
-    console.log(`Research Nest Server running on port ${port}`);
-  });
-}
+httpServer.listen(port, () => {
+  console.log(`Research Nest Server running on port ${port}`);
+});
 
 export default app;
