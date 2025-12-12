@@ -247,6 +247,7 @@ export const sendMessage = async (req, res) => {
         // Increment unread count for receiver
         const currentUnread = conversation.unreadCount.get(receiver.toString()) || 0;
         conversation.unreadCount.set(receiver.toString(), currentUnread + 1);
+        conversation.markModified("unreadCount");
 
         await conversation.save();
 
@@ -264,6 +265,86 @@ export const sendMessage = async (req, res) => {
             message: "Failed to send message",
             error: error.message,
         });
+    }
+};
+
+
+// Delete a message
+export const deleteMessage = async (req, res) => {
+    try {
+        const uid = req.headers["x-user-id"];
+        const { messageId } = req.params;
+
+        if (!uid) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        const message = await Message.findById(messageId);
+        if (!message) {
+            return res.status(404).json({ message: "Message not found" });
+        }
+
+        // Only sender can delete their message (or maybe receiver too? usually sender)
+        // Let's allow sender to delete for everyone, or maybe just for themselves?
+        // Requirement: "delete single message... should delete message of this conversations" implies deletion for everyone or at least DB removal.
+        if (message.sender !== uid) {
+            return res.status(403).json({ message: "You can only delete your own messages" });
+        }
+
+        const conversationId = message.conversationId;
+        await Message.findByIdAndDelete(messageId);
+
+        // Update lastMessage if this was the last message
+        const conversation = await Conversation.findById(conversationId);
+        if (conversation.lastMessage?.toString() === messageId) {
+            const newLastMessage = await Message.findOne({ conversationId }).sort({ createdAt: -1 });
+            conversation.lastMessage = newLastMessage ? newLastMessage._id : null;
+            await conversation.save();
+        }
+
+        // Emit socket event (handled by frontend to remove from UI)
+        // This requires access to io structure or we just rely on clients reloading/refetching?
+        // Ideally we emit an event. But controller doesn't have direct access to io unless we pass it or import it.
+        // For now, client will remove it optimistically or we rely on re-fetch.
+        // Better: The client that triggers delete can emit "message:delete" via socket to other party.
+
+        res.status(200).json({ success: true, message: "Message deleted" });
+    } catch (error) {
+        console.error("Error deleting message:", error);
+        res.status(500).json({ message: "Failed to delete message", error: error.message });
+    }
+};
+
+// Delete a conversation
+export const deleteConversation = async (req, res) => {
+    try {
+        const uid = req.headers["x-user-id"];
+        const { conversationId } = req.params;
+
+        if (!uid) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation) {
+            return res.status(404).json({ message: "Conversation not found" });
+        }
+
+        // Verify user is participant
+        if (conversation.sender !== uid && conversation.receiver !== uid) {
+            return res.status(403).json({ message: "Not authorized to delete this conversation" });
+        }
+
+        // Delete all messages in this conversation
+        await Message.deleteMany({ conversationId });
+
+        // Delete the conversation itself
+        await Conversation.findByIdAndDelete(conversationId);
+
+        res.status(200).json({ success: true, message: "Conversation deleted" });
+    } catch (error) {
+        console.error("Error deleting conversation:", error);
+        res.status(500).json({ message: "Failed to delete conversation", error: error.message });
     }
 };
 

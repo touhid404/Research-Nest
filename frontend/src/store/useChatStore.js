@@ -39,11 +39,13 @@ const useChatStore = create((set, get) => ({
 
     // Fetch all users
     fetchUsers: async () => {
+        set({ isLoading: true });
         try {
             const response = await chatApi.getAllUsers();
-            set({ users: response.data });
+            set({ users: Array.isArray(response.data) ? response.data : [], isLoading: false });
         } catch (error) {
             console.error('Error fetching users:', error);
+            set({ error: error.message, isLoading: false, users: [] });
         }
     },
 
@@ -149,6 +151,45 @@ const useChatStore = create((set, get) => ({
         }
     },
 
+    // Delete a message
+    deleteMessage: async (messageId) => {
+        try {
+            await chatApi.deleteMessage(messageId);
+
+            // Remove from state
+            const { messages } = get();
+            set({ messages: messages.filter(m => m._id !== messageId) });
+
+            // Note: If last message was deleted, we should ideally fetch conversations again 
+            // to update the sidebar preview, or we can handle it via socket/local update.
+            // For simplicity, let's fetch conversations to ensure sync.
+            get().fetchConversations();
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            throw error;
+        }
+    },
+
+    // Delete a conversation
+    deleteConversation: async (conversationId) => {
+        try {
+            await chatApi.deleteConversation(conversationId);
+
+            // Remove from state
+            const { conversations, selectedConversation } = get();
+            const updatedConversations = conversations.filter(c => c._id !== conversationId);
+            set({ conversations: updatedConversations });
+
+            // If selected, clear it
+            if (selectedConversation && selectedConversation._id === conversationId) {
+                set({ selectedConversation: null, messages: [] });
+            }
+        } catch (error) {
+            console.error('Error deleting conversation:', error);
+            throw error;
+        }
+    },
+
     // Socket related state
     socket: null,
     typingUsers: {},
@@ -160,6 +201,11 @@ const useChatStore = create((set, get) => ({
         set({ socket });
 
         if (!socket) return;
+
+        // Listen for connection events to refresh data (e.g. after offline)
+        socket.on("connect", () => {
+            get().fetchConversations();
+        });
 
         // Listen for online users list
         socket.on("getOnlineUsers", (userIds) => {

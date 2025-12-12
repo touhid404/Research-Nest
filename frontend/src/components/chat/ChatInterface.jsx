@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaPaperPlane, FaCircle } from "react-icons/fa";
+import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft } from "react-icons/fa";
+import { useNavigate } from "react-router"; // or react-router-dom
 import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 
 const ChatInterface = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
+    /* ... existing state ... */
     const [messageText, setMessageText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
@@ -14,6 +17,7 @@ const ChatInterface = () => {
         selectedConversation,
         messages,
         sendMessage: sendMessageToStore,
+        deleteMessage,
         markAsRead,
         joinConversation,
         leaveConversation,
@@ -100,6 +104,7 @@ const ChatInterface = () => {
         return d.toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: true,
         });
     };
 
@@ -143,7 +148,16 @@ const ChatInterface = () => {
             {/* Header */}
             <div className="flex-none z-20 border-b border-slate-200/50 dark:border-slate-800/50 p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md shadow-sm">
                 <div className="flex items-center gap-4">
+                    {/* Back Button for Mobile */}
+                    <button
+                        onClick={() => navigate("/home/messages")}
+                        className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                    >
+                        <FaArrowLeft />
+                    </button>
+
                     <div className="avatar placeholder relative group cursor-pointer">
+
                         <div className="w-10 h-10 rounded-full ring ring-offset-2 ring-violet-500 ring-offset-base-100 transition-all duration-300 group-hover:scale-105">
                             {otherUser?.photoURL ? (
                                 <img src={otherUser.photoURL} alt={otherUser.name} className="object-cover" />
@@ -220,15 +234,24 @@ const ChatInterface = () => {
                                         {isOwnMessage ? "You" : otherUser?.name}
                                         <time className="text-[10px] opacity-50 ml-2">{formatTime(message.createdAt)}</time>
                                     </div>
-                                    <div
-                                        className={`chat-bubble min-h-0 text-sm shadow-md backdrop-blur-sm ${isOwnMessage
-                                            ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                                            : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
-                                            }`}
+                                    <div className={`chat-bubble min-h-0 text-sm shadow-md backdrop-blur-sm group relative pr-8 ${isOwnMessage
+                                        ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                                        }`}
                                     >
                                         {message.text && <p className="leading-relaxed">{message.text}</p>}
                                         {message.attachment && (
                                             <img src={message.attachment} alt="attachment" className="mt-2 rounded-lg max-w-xs border border-white/20" />
+                                        )}
+
+                                        {isOwnMessage && (
+                                            <button
+                                                onClick={() => deleteMessage(message._id)}
+                                                className="absolute top-1 right-1 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-white/70 hover:text-white"
+                                                title="Delete message"
+                                            >
+                                                <FaTrash className="text-xs" />
+                                            </button>
                                         )}
                                     </div>
                                     <div className="chat-footer opacity-50 text-[10px] mt-0.5 flex gap-1 items-center">
