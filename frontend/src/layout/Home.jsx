@@ -1,10 +1,23 @@
 import { Outlet } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/nav/Navbar";
 import LeftSidebar from "../components/sidebar/LeftSidebar";
+import useChatStore from "../store/useChatStore";
+import useAuth from "../hooks/useAuth";
 
 const Home = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { socket } = useAuth();
+  const { subscribeToSocket, unsubscribeFromSocket } = useChatStore();
+
+  useEffect(() => {
+    if (socket) {
+      subscribeToSocket(socket);
+    }
+    return () => {
+      unsubscribeFromSocket();
+    };
+  }, [socket, subscribeToSocket, unsubscribeFromSocket]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500">
@@ -20,9 +33,9 @@ const Home = () => {
               ${isCollapsed ? "w-[70px]" : "md:w-[250px] w-[220px]"}
             `}
           >
-            <LeftSidebar 
-              isCollapsed={isCollapsed} 
-              setIsCollapsed={setIsCollapsed} 
+            <LeftSidebar
+              isCollapsed={isCollapsed}
+              setIsCollapsed={setIsCollapsed}
             />
           </div>
 

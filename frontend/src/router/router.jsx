@@ -3,8 +3,6 @@ import MyPosts from "../pages/Home/proposalFeed/MyPosts";
 import Root from "../layout/Root";
 import LandingPage from "../pages/landing/LandingPage";
 import Home from "../layout/Home";
-
-import Workspace from "../pages/Home/workspace/Workspace";
 import MessagesBase from "../pages/Home/messages/MessagesBase";
 import MyProfile from "../pages/Home/profile/MyProfile";
 import NotFound from "../components/errors/NotFound";
@@ -19,7 +17,7 @@ import ForgetPassword from "../pages/auth/ForgetPassword";
 import PrivateRoute from "../privateRoutes/privateRoutes";
 import PublicPosts from "../pages/Home/proposalFeed/PublicPosts";
 import CreateProposalPost from "../components/posts/CreateProposalPost";
-
+import Workspace from "../pages/Home/workspace/Workspace";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -67,7 +65,7 @@ export const router = createBrowserRouter([
           },
           {
             path: "explore",
-            element: <PublicPosts/>,
+            element: <PublicPosts />,
           },
           {
             path: "myposts",
@@ -88,6 +86,7 @@ export const router = createBrowserRouter([
         element: <Workspace />,
       },
       { path: "messages", element: <MessagesBase /> },
+      { path: "messages/:uid", element: <MessagesBase /> },
       { path: "my-profile", element: <MyProfile /> },
       { path: "notifications", element: <Notifications /> },
       { path: "paper-hub", element: <PaperHub /> },

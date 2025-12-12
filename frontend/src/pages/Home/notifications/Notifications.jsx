@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import NotificationItem from './NotificationItem.jsx';
 import { getIcon, getIconBg } from './NotificationHelpers.jsx';
+import RightSidebar from '../../../components/sidebar/RightSidebar.jsx';
 
 const Notifications = () => {
     const notifications = [
@@ -76,58 +77,70 @@ const Notifications = () => {
     const earlierNotifications = notifications.filter(n => n.read);
 
     return (
-        <div className="w-full max-w-2xl mx-auto pb-20">
-            <div className="p-4">
-                <div className="flex items-center justify-between mb-6 px-2">
-                    <h1 className="text-2xl font-bold">Notifications</h1>
-                    <button className="cursor-pointer text-sm text-primary font-medium hover:underline">
-                        Mark all as read
-                    </button>
-                </div>
 
-                <div className="space-y-6">
-                    {/* New Notifications Section */}
-                    {newNotifications.length > 0 && (
-                        <div>
-                            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">New</h2>
-                            <div className="space-y-2">
-                                {newNotifications.map((notif) => (
-                                    <NotificationItem
-                                        key={notif.id}
-                                        notif={notif}
-                                        getIcon={getIcon}
-                                        getIconBg={getIconBg}
-                                    />
-                                ))}
+
+
+        <div className="flex h-full">
+            {/* Posts Section */}
+            <div className="flex-1 border-r border-gray-100 dark:border-gray-800 overflow-y-auto rn-scrollbar pr-2">
+                <div className="p-4">
+                    <div className="flex items-center justify-between mb-6 px-2">
+                        <h1 className="text-2xl font-bold">Notifications</h1>
+                        <button className="cursor-pointer text-sm text-primary font-medium hover:underline">
+                            Mark all as read
+                        </button>
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* New Notifications Section */}
+                        {newNotifications.length > 0 && (
+                            <div>
+                                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">New</h2>
+                                <div className="space-y-2">
+                                    {newNotifications.map((notif) => (
+                                        <NotificationItem
+                                            key={notif.id}
+                                            notif={notif}
+                                            getIcon={getIcon}
+                                            getIconBg={getIconBg}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Earlier Notifications Section */}
-                    {earlierNotifications.length > 0 && (
-                        <div>
-                            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Earlier</h2>
-                            <div className="space-y-2">
-                                {earlierNotifications.map((notif) => (
-                                    <NotificationItem
-                                        key={notif.id}
-                                        notif={notif}
-                                        getIcon={getIcon}
-                                        getIconBg={getIconBg}
-                                    />
-                                ))}
+                        {/* Earlier Notifications Section */}
+                        {earlierNotifications.length > 0 && (
+                            <div>
+                                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 px-2">Earlier</h2>
+                                <div className="space-y-2">
+                                    {earlierNotifications.map((notif) => (
+                                        <NotificationItem
+                                            key={notif.id}
+                                            notif={notif}
+                                            getIcon={getIcon}
+                                            getIconBg={getIconBg}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {notifications.length === 0 && (
-                        <div className="text-center py-20 text-gray-500">
-                            No notifications yet
-                        </div>
-                    )}
+                        {notifications.length === 0 && (
+                            <div className="text-center py-20 text-gray-500">
+                                No notifications yet
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Right Sidebar */}
+            <div className="md:w-[450px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
+                <RightSidebar />
+            </div>
         </div>
+
     );
 };
 
