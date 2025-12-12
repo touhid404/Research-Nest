@@ -5,7 +5,7 @@ import useAuth from "../../hooks/useAuth";
 import { BiUpload, BiX } from "react-icons/bi";
 import axios from "axios"; // standard axios for external upload if needed
 import { useNavigate } from "react-router"; // Don't forget this
-import { axiosInstance } from "../../lib/axios";
+import { proposalApi } from "../../lib/proposalApi";
 
 const CreateProposalPost = () => {
     const { user } = useAuth();
@@ -20,50 +20,32 @@ const CreateProposalPost = () => {
         attachments: [],
     });
 
-    // --- 1. Helper Function: Upload to your File Host ---
-    const uploadFileToHost = async (file) => {
-      const uploadData = new FormData();
-      uploadData.append("file", file);
 
-
-    //   // https://research-nest.temphost.top/upload
-      const response = await axios.post("https://research-nest.temphost.top/upload", uploadData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // Return the secure URL from the response
-      // Adjust 'response.data.url' based on what your upload server returns
-      return response.data.url; 
-    };
 
     const createPostMutation = useMutation({
         mutationFn: async (postData) => {
-            // --- Step 2: Upload Files First ---
-            // We map over the attachments. If it has a raw file, we upload it.
-            const uploadedAttachments = await Promise.all(
-              postData.rawAttachments.map(async (att) => {
-                try {
-                  const url = await uploadFileToHost(att.file);
-                  return { name: att.name, url: url };
-                } catch (error) {
-                  console.error("Upload failed for file:", att.name);
-                  throw new Error(`Failed to upload ${att.name}`);
-                }
-              })
-            );
+            // Build FormData
+            const formData = new FormData();
+            formData.append("uid", postData.payload.uid);
+            formData.append("title", postData.payload.title);
+            formData.append("description", postData.payload.description);
+            formData.append("researchTopic", postData.payload.researchTopic);
 
-            // --- Step 3: Prepare Final Payload ---
-            // Replace the raw files with the URLs we just got
-            const finalPayload = {
-                ...postData.payload,
-                attachments: uploadedAttachments.length > 0 
-                  ? uploadedAttachments 
-                     : [{ name: "demo-file.pdf", url: "https://example.com/demo-file.pdf" }],
-            };
+            // Handle interests array
+            if (postData.payload.interests && postData.payload.interests.length > 0) {
+                // Usually comma separated or multiple keys. Let's start with multiple keys 
+                // or send as string if backend expects string parsing (we didn't add json parsing for interests, it expects array)
+                // Simple way:
+                postData.payload.interests.forEach(interest => formData.append("interests[]", interest));
+            }
 
-            // --- Step 4: Save to Backend ---
-            const res = await axiosInstance.post("/posts", finalPayload);
-            return res.data;
+            // Append each file
+            postData.rawAttachments.forEach((att) => {
+                formData.append("attachments", att.file);
+            });
+
+            const data = await proposalApi.createProposalPost(formData);
+            return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["proposalPosts"], exact: true });

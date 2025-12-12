@@ -32,6 +32,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+// Serve static files from public directory
+app.use('/public', express.static('public'));
+app.use(express.urlencoded({ extended: true }));
 
 // Land api
 app.get('/', (req, res) => {

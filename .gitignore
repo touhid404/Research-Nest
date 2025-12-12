@@ -8,3 +8,8 @@ backend/node_modules/
 frontend/.env
 backend/.env
 backend/serviceAccountKey.json
+
+
+
+# Hide the backend public folder
+backend/public

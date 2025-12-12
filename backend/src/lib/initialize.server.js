@@ -1,10 +1,11 @@
 import { Server } from "socket.io";
 import Conversation from "../models/conversation.model.js";
+import { config } from "../config/config.js";
 
 export const initializeServer = (server) => {
     const io = new Server(server, {
         cors: {
-            origin: ["http://localhost:5173", "https://research-nest.netlify.app"],
+            origin: [config.developmentFrontendURL, config.productionFrontendURL],
             credentials: true,
         },
     });
@@ -62,11 +63,11 @@ export const initializeServer = (server) => {
                             updatedAt: new Date(),
                         });
 
-                        console.log(`✅ Message notification sent to receiver: ${receiverUid}`);
+                        console.log(`Message notification sent to receiver: ${receiverUid}`);
                     }
                 }
             } catch (error) {
-                console.error("❌ Error broadcasting message:", error);
+                console.error("Error broadcasting message:", error);
             }
         });
 
@@ -111,6 +112,6 @@ export const initializeServer = (server) => {
         });
     });
 
-    console.log("✅ Socket.IO server initialized for real-time chat");
+    console.log("Socket.IO server initialized for real-time chat");
     return io;
 };

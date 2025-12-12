@@ -3,11 +3,28 @@ import { useNavigate } from "react-router";
 import { FaCircle, FaSearch, FaTrash } from "react-icons/fa";
 import useAuth from "../../hooks/useAuth";
 import useChatStore from "../../store/useChatStore";
+import ConfirmModal from "../common/ConfirmModal";
 
 const ChatSidebar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
+
+  const confirmDeleteConversation = (e, conversationId) => {
+    e.stopPropagation();
+    setConversationToDelete(conversationId);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConversation = () => {
+    if (conversationToDelete) {
+      deleteConversation(conversationToDelete);
+      setDeleteModalOpen(false);
+      setConversationToDelete(null);
+    }
+  };
 
   const {
     conversations,
@@ -179,12 +196,7 @@ const ChatSidebar = () => {
 
                             {/* Delete Button */}
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm("Delete this conversation?")) {
-                                  deleteConversation(conversation._id);
-                                }
-                              }}
+                              onClick={(e) => confirmDeleteConversation(e, conversation._id)}
                               className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all"
                               title="Delete conversation"
                             >
@@ -251,7 +263,16 @@ const ChatSidebar = () => {
           </>
         )}
       </div>
-    </div>
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteConversation}
+        title="Delete Conversation"
+        message="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmText="Delete"
+        isDanger={true}
+      />
+    </div >
   );
 };
 

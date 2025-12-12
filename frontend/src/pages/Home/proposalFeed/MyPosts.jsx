@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { axiosInstance } from "../../../lib/axios";
+import { proposalApi } from "../../../lib/proposalApi";
 import { BiLoaderAlt } from "react-icons/bi";
 import ProposalPostCard from "../../../components/posts/ProposalPostCard";
 import useAuth from "../../../hooks/useAuth";
@@ -11,8 +11,8 @@ const MyPosts = () => {
         queryKey: ["proposalPosts", user?.uid],
         queryFn: async () => {
             if (!user?.uid) return { data: [] };
-            const res = await axiosInstance.get(`/posts/${user.uid}`);
-            return res.data;
+            const data = await proposalApi.getAllProposalPostsByUser(user.uid);
+            return data;
         },
         enabled: !!user?.uid,
     });
