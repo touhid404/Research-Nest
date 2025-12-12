@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import {  FaSearch } from "react-icons/fa";
+import { FaCircle, FaSearch, FaTrash } from "react-icons/fa";
 import useAuth from "../../hooks/useAuth";
 import useChatStore from "../../store/useChatStore";
 
@@ -11,12 +11,15 @@ const ChatSidebar = () => {
 
   const {
     conversations,
-    users,
+    users = [],
     selectedConversation,
     isLoading,
     fetchConversations,
     fetchUsers,
+    getOrCreateConversation,
+    setSelectedConversation, // Still might be useful for immediate feedback, but URL source of truth is better
     onlineUsers,
+    deleteConversation,
   } = useChatStore();
 
   // Fetch conversations and users on mount
@@ -167,11 +170,27 @@ const ChatSidebar = () => {
                           <p className={`text-sm truncate max-w-[140px] ${conversation.unreadCount > 0 ? 'font-semibold text-slate-700 dark:text-slate-300' : 'text-slate-500'}`}>
                             {conversation.lastMessage?.text || "No messages yet"}
                           </p>
-                          {conversation.unreadCount > 0 && (
-                            <span className="flex items-center justify-center p-1 min-w-[20px] h-5 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-[10px] font-bold text-white shadow-sm">
-                              {conversation.unreadCount}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {conversation.unreadCount > 0 && (
+                              <span className="flex items-center justify-center p-1 min-w-[20px] h-5 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-[10px] font-bold text-white shadow-sm">
+                                {conversation.unreadCount}
+                              </span>
+                            )}
+
+                            {/* Delete Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Delete this conversation?")) {
+                                  deleteConversation(conversation._id);
+                                }
+                              }}
+                              className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all"
+                              title="Delete conversation"
+                            >
+                              <FaTrash size={12} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

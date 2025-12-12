@@ -5,8 +5,9 @@ import { useParams } from "react-router";
 import useChatStore from "../../../store/useChatStore";
 
 const MessagesBase = () => {
+  /* import useChatStore */
   const { uid } = useParams();
-  const { getOrCreateConversation, clearSelectedConversation } = useChatStore();
+  const { selectedConversation, getOrCreateConversation, clearSelectedConversation } = useChatStore();
 
   useEffect(() => {
     if (uid) {
@@ -25,13 +26,13 @@ const MessagesBase = () => {
         <div className="absolute top-[20%] right-[30%] w-[30%] h-[30%] bg-cyan-400/20 dark:bg-cyan-900/10 rounded-full blur-[100px]" />
       </div>
 
-      {/* Chat Interface */}
-      <div className="flex-1 h-full min-w-0 bg-transparent">
+      {/* Chat Interface - Hidden on mobile if no conversation selected */}
+      <div className={`flex-1 h-full min-w-0 bg-transparent ${!selectedConversation ? "hidden md:block" : "block"}`}>
         <ChatInterface />
       </div>
 
-      {/* Sidebar */}
-      <div className="w-[450px] shrink-0 h-full">
+      {/* Sidebar - Hidden on mobile if conversation IS selected */}
+      <div className={`shrink-0 h-full ${selectedConversation ? "hidden md:block" : "w-full"} md:w-[450px]`}>
         <ChatSidebar />
       </div>
     </div>

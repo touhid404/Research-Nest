@@ -43,4 +43,16 @@ export const chatApi = {
         );
         return response.data;
     },
+
+    // Delete a message
+    deleteMessage: async (messageId) => {
+        const response = await axiosInstance.delete(`/messages/messages/${messageId}`);
+        return response.data;
+    },
+
+    // Delete a conversation
+    deleteConversation: async (conversationId) => {
+        const response = await axiosInstance.delete(`/messages/conversations/${conversationId}`);
+        return response.data;
+    },
 };
