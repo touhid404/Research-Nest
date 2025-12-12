@@ -1,16 +1,18 @@
 import express from "express";
-import { createProposalPost, getAllProposalPosts, getAllProposalPostsByUser } from "./post.controller.js";
+import { createProposalPost, getAllProposalPosts, getAllProposalPostsByUser, getProposalPostById, updateProposalPost, deleteProposalPost } from "./post.controller.js";
+import { upload } from "../../middleware/upload.middleware.js";
 
-import { authMiddleware } from "../../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// router.use(authMiddleware);
 
 
-router.post("/", createProposalPost);
+router.post("/", upload.array("attachments"), createProposalPost);
 router.get("/", getAllProposalPosts);
-router.get("/:uid", getAllProposalPostsByUser);
+router.get("/user/:uid", getAllProposalPostsByUser);
+router.get("/:id", getProposalPostById);
+router.put("/:id", updateProposalPost);
+router.delete("/:id", deleteProposalPost);
 
 
 export const proposalPostRoutes = router;

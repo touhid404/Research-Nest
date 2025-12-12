@@ -1,15 +1,17 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { axiosInstance } from "../../../lib/axios";
+import { proposalApi } from "../../../lib/proposalApi";
 import { BiLoaderAlt } from "react-icons/bi";
 import ProposalPostCard from "../../../components/posts/ProposalPostCard";
+import useAuth from "../../../hooks/useAuth";
 
 const PublicPosts = () => {
+    const { user } = useAuth();
     const { isPending, error, data } = useQuery({
-        queryKey: ["proposalPosts"],
+        queryKey: ["proposalPosts", user?.uid], // Include uid in queryKey to refetch on auth change
         queryFn: async () => {
-            const res = await axiosInstance.get("/posts");
-            return res.data;
+            const data = await proposalApi.getAllProposalPosts(user?.uid);
+            return data;
         },
     });
 

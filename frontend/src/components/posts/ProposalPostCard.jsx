@@ -1,7 +1,11 @@
 import React from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { proposalApi } from "../../lib/proposalApi";
 import { AiOutlinePaperClip } from "react-icons/ai";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
+import ConfirmModal from "../common/ConfirmModal";
+import { useState } from "react";
 
 const ProposalPostCard = ({ post }) => {
     const { user: currentUser } = useAuth();
@@ -21,9 +25,27 @@ const ProposalPostCard = ({ post }) => {
         return "Just now";
     };
 
+    const queryClient = useQueryClient();
+
+    const deleteMutation = useMutation({
+        mutationFn: (id) => proposalApi.deleteProposalPost(id),
+        onSuccess: () => {
+            toast.success("Post deleted successfully");
+            // Invalidate both public and user specific lists
+            queryClient.invalidateQueries({ queryKey: ["proposalPosts"] });
+            if (currentUser?.uid) {
+                queryClient.invalidateQueries({ queryKey: ["proposalPosts", currentUser.uid] });
+            }
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to delete post");
+        }
+    });
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
     const handleDeletePost = () => {
-        toast.success("Post delete features coming soon");
-        
+        setIsDeleteModalOpen(true);
     }
 
     return (
@@ -139,7 +161,17 @@ const ProposalPostCard = ({ post }) => {
 
 
             </div>
-        </div>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={() => deleteMutation.mutate(post._id)}
+                title="Delete Post"
+                message="Are you sure you want to delete this post? This action cannot be undone."
+                confirmText="Yes, Delete"
+                isDanger={true}
+            />
+        </div >
     );
 };
 
