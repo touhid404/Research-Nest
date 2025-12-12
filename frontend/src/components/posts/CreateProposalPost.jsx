@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { axiosInstance } from "../../lib/axios";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 import { BiUpload, BiX } from "react-icons/bi";
 import axios from "axios"; // standard axios for external upload if needed
 import { useNavigate } from "react-router"; // Don't forget this
+import { axiosInstance } from "../../lib/axios";
 
 const CreateProposalPost = () => {
     const { user } = useAuth();
@@ -21,44 +21,44 @@ const CreateProposalPost = () => {
     });
 
     // --- 1. Helper Function: Upload to your File Host ---
-    // const uploadFileToHost = async (file) => {
-    //   const uploadData = new FormData();
-    //   uploadData.append("file", file);
+    const uploadFileToHost = async (file) => {
+      const uploadData = new FormData();
+      uploadData.append("file", file);
 
 
     //   // https://research-nest.temphost.top/upload
-    //   const response = await axios.post("https://research-nest.temphost.top/upload", uploadData, {
-    //     headers: { "Content-Type": "multipart/form-data" },
-    //   });
+      const response = await axios.post("https://research-nest.temphost.top/upload", uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    //   // Return the secure URL from the response
-    //   // Adjust 'response.data.url' based on what your upload server returns
-    //   return response.data.url; 
-    // };
+      // Return the secure URL from the response
+      // Adjust 'response.data.url' based on what your upload server returns
+      return response.data.url; 
+    };
 
     const createPostMutation = useMutation({
         mutationFn: async (postData) => {
             // --- Step 2: Upload Files First ---
             // We map over the attachments. If it has a raw file, we upload it.
-            // const uploadedAttachments = await Promise.all(
-            //   postData.rawAttachments.map(async (att) => {
-            //     try {
-            //       const url = await uploadFileToHost(att.file);
-            //       return { name: att.name, url: url };
-            //     } catch (error) {
-            //       console.error("Upload failed for file:", att.name);
-            //       throw new Error(`Failed to upload ${att.name}`);
-            //     }
-            //   })
-            // );
+            const uploadedAttachments = await Promise.all(
+              postData.rawAttachments.map(async (att) => {
+                try {
+                  const url = await uploadFileToHost(att.file);
+                  return { name: att.name, url: url };
+                } catch (error) {
+                  console.error("Upload failed for file:", att.name);
+                  throw new Error(`Failed to upload ${att.name}`);
+                }
+              })
+            );
 
             // --- Step 3: Prepare Final Payload ---
             // Replace the raw files with the URLs we just got
             const finalPayload = {
                 ...postData.payload,
-                // attachments: uploadedAttachments.length > 0 
-                //   ? uploadedAttachments 
-                attachments: [{ name: "demo-file.pdf", url: "https://example.com/demo-file.pdf" }],
+                attachments: uploadedAttachments.length > 0 
+                  ? uploadedAttachments 
+                     : [{ name: "demo-file.pdf", url: "https://example.com/demo-file.pdf" }],
             };
 
             // --- Step 4: Save to Backend ---
