@@ -9,7 +9,12 @@ import {
     deleteConversation,
 } from "./message.controller.js";
 
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+
 const router = express.Router();
+
+// Protect all message routes
+// router.use(authMiddleware);
 
 // Conversation routes
 router.get("/conversations", getConversations);

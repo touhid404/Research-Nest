@@ -7,7 +7,7 @@ import { connectDB } from "./config/db.js";
 import { userRoutes } from "./modules/users/user.routes.js";
 import { proposalPostRoutes } from "./modules/proposalPosts/post.routes.js";
 import { messageRoutes } from "./modules/messages/message.routes.js";
-import {  initializeServer } from "./lib/initialize.server.js";
+import { initializeServer } from "./lib/initialize.server.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -52,9 +52,16 @@ app.use('/api/posts', proposalPostRoutes);
 app.use('/api/messages', messageRoutes);
 
 // Initialize WebSocket collaboration server
+// Initialize WebSocket collaboration server
 initializeServer(httpServer);
 
-httpServer.listen(port, () => {
-  console.log(`Research Nest Server running on port ${port}`);
-  connectDB();
-});
+connectDB();
+
+// Start Server (Only validation for local dev, Vercel handles this via export)
+if (process.env.NODE_ENV !== "production") {
+  httpServer.listen(port, () => {
+    console.log(`Research Nest Server running on port ${port}`);
+  });
+}
+
+export default app;
