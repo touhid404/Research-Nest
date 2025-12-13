@@ -27,6 +27,7 @@ export const initializeServer = (server) => {
             // Send list of online users to the confirmed user
             const onlineUsers = Array.from(connectedUsers.keys());
             io.to(socket.id).emit("getOnlineUsers", onlineUsers);
+            console.log("Online users:", onlineUsers);
         }
 
         // Join conversation room
