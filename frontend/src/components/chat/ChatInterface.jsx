@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft } from "react-icons/fa";
-import { useNavigate } from "react-router"; // or react-router-dom
+import { useNavigate } from "react-router";
 import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 
@@ -146,7 +146,7 @@ const ChatInterface = () => {
     return (
         <div className="flex flex-col h-full relative">
             {/* Header */}
-            <div className="flex-none z-20 border-b border-slate-200/50 dark:border-slate-800/50 p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md shadow-sm">
+            <div className="flex-none z-20 border-b border-gray-100 dark:border-slate-900 p-1.5 bg-transparent backdrop-blur-md">
                 <div className="flex items-center gap-4">
                     {/* Back Button for Mobile */}
                     <button
@@ -192,7 +192,7 @@ const ChatInterface = () => {
             </div>
 
             {/* Messages List */}
-            <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div className="bg-gray-100 dark:bg-slate-900 m-1 rounded-lg relative z-10 flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-3 opacity-60">
                         <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
@@ -274,7 +274,7 @@ const ChatInterface = () => {
             </div>
 
             {/* Message Input */}
-            <div className="flex-none z-20 p-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex-none z-20 p-1.5 bg-white/60 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50">
                 <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative">
                     <div className="flex gap-2 items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1.5 pr-1.5 border border-transparent focus-within:border-violet-500/30 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all shadow-sm">
                         <input

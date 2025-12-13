@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FaCircle, FaSearch, FaTrash } from "react-icons/fa";
+import { FaSearch, FaTrash } from "react-icons/fa";
 import useAuth from "../../hooks/useAuth";
 import useChatStore from "../../store/useChatStore";
 import ConfirmModal from "../common/ConfirmModal";
@@ -101,10 +101,8 @@ const ChatSidebar = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-xl">
-      <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">
-        <h2 className="text-xl font-bold mb-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">Messages</h2>
-
+    <div className="h-full flex flex-col bg-white dark:bg-slate-950 border-l border-gray-100 dark:border-slate-900">
+      <div className="p-2">
         {/* Search Bar */}
         <div className="relative group">
           <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" />
