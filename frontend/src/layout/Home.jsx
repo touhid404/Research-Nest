@@ -34,7 +34,7 @@ const Home = () => {
           <div
             className={`
               hidden md:block
-              shrink-0 transition-all duration-300
+              shrink-0 transition-all duration-300 ease-in-out
               ${isCollapsed ? "w-[70px]" : "w-[250px]"}
             `}
           >
