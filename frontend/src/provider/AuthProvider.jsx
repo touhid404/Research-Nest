@@ -14,7 +14,7 @@ import { auth } from "../firebase/firebase.init";
 import { io } from "socket.io-client";
 
 const googleProvider = new GoogleAuthProvider();
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_BACKEND_URL;
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
