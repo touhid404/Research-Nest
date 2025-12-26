@@ -16,6 +16,7 @@ const port = config.port;
 // Set frontend url can be multiple
 const allowedOrigins = [
   config.developmentFrontendURL,
+  config.productionFrontendURL
 ];
 app.use(cors({
   origin: (origin, callback) => {
