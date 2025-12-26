@@ -5,21 +5,39 @@ import { useParams } from "react-router";
 import useChatStore from "../../../store/useChatStore";
 
 const MessagesBase = () => {
-  /* import useChatStore */
-  const { uid } = useParams();
-  const { selectedConversation, getOrCreateConversation, clearSelectedConversation } = useChatStore();
+  const { uid, conversationId } = useParams();
+  const {
+    selectedConversation,
+    getOrCreateConversation,
+    clearSelectedConversation,
+    conversations,
+    setSelectedConversation
+  } = useChatStore();
 
   useEffect(() => {
     if (uid) {
-      getOrCreateConversation(uid);
+      const isCurrent = selectedConversation && !selectedConversation.isGroup &&
+        (selectedConversation.otherUser?.uid === uid || selectedConversation.otherUser?._id === uid);
+
+      if (!isCurrent) {
+        getOrCreateConversation(uid);
+      }
+    } else if (conversationId) {
+      const conv = conversations.find(c => c._id === conversationId);
+      if (conv) {
+        if (selectedConversation?._id !== conversationId) {
+          setSelectedConversation(conv);
+          useChatStore.getState().fetchMessages(conversationId);
+        }
+      }
     } else {
       clearSelectedConversation();
     }
-  }, [uid, getOrCreateConversation, clearSelectedConversation]);
+  }, [uid, conversationId, conversations, selectedConversation, getOrCreateConversation, clearSelectedConversation, setSelectedConversation]);
 
   return (
     <div className="h-full w-full flex overflow-hidden relative isolate">
-      
+
 
       {/* Chat Interface - Hidden on mobile if no conversation selected */}
       <div className={`flex-1 h-full  min-w-0 bg-transparent ${!selectedConversation ? "hidden md:block" : "block"}`}>

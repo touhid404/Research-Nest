@@ -16,7 +16,6 @@ const port = config.port;
 // Set frontend url can be multiple
 const allowedOrigins = [
   config.developmentFrontendURL,
-  config.productionFrontendURL,
 ];
 app.use(cors({
   origin: (origin, callback) => {
@@ -54,15 +53,15 @@ app.use('/api/posts', proposalPostRoutes);
 // Message routes
 app.use('/api/messages', messageRoutes);
 
-// Initialize WebSocket collaboration server
-// Initialize WebSocket collaboration server
-initializeServer(httpServer);
+// Initialize WebSocket server
+const io = initializeServer(httpServer);
+app.set("io", io);
 
 connectDB();
 
-// Start Server (Only validation for local dev, Vercel handles this via export)
 httpServer.listen(port, () => {
   console.log(`Research Nest Server running on port ${port}`);
 });
+
 
 export default app;

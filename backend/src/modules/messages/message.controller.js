@@ -22,8 +22,33 @@ export const getConversations = async (req, res) => {
         }
 
         // Find conversations where user is either sender or receiver
+        // Find conversations where user is either sender or receiver OR in participants
+        // Find conversations where user is involved AND has not deleted the conversation
+        // For groups: Must be in participants (ignore sender/receiver fields which might be creator)
+        // For 1-on-1: Sender or Receiver
         const conversations = await Conversation.find({
-            $or: [{ sender: uid }, { receiver: uid }]
+            $and: [
+                {
+                    $or: [
+                        // 1-on-1 logic: Sender or Receiver, AND isGroup is false/undefined
+                        {
+                            $and: [
+                                { $or: [{ sender: uid }, { receiver: uid }] },
+                                { $or: [{ isGroup: false }, { isGroup: { $exists: false } }] }
+                            ]
+                        },
+                        // Group logic: Must be in participants
+                        {
+                            $and: [
+                                { isGroup: true },
+                                { participants: { $in: [uid] } }
+                            ]
+                        }
+                    ]
+                },
+                // Exclude if user deleted it
+                { deletedBy: { $ne: uid } }
+            ]
         })
             .populate("lastMessage")
             .sort({ updatedAt: -1 });
@@ -34,13 +59,26 @@ export const getConversations = async (req, res) => {
         const userMap = new Map(users.map(u => [u.uid, u]));
 
         // Format response with participant details
+        // Format response with participant details
         const formattedConversations = conversations.map((conv) => {
-            const otherUserUid = conv.sender === uid ? conv.receiver : conv.sender;
+            // Logic for 1-on-1: existing logic
+            // Logic for group: otherUser is null or we provide group info
+
+            // For 1-on-1, determine "otherUser"
+            let otherUserUid = null;
+            if (!conv.isGroup) {
+                otherUserUid = conv.sender === uid ? conv.receiver : conv.sender;
+            }
+
             return {
                 _id: conv._id,
-                sender: userMap.get(conv.sender) || { uid: conv.sender },
-                receiver: userMap.get(conv.receiver) || { uid: conv.receiver },
-                otherUser: userMap.get(otherUserUid) || { uid: otherUserUid },
+                isGroup: conv.isGroup,
+                groupName: conv.groupName,
+                groupAdmin: conv.groupAdmin, // Return admin ID
+                participants: (conv.participants || []).map(pId => userMap.get(pId) || { uid: pId }), // Populate participants
+                sender: userMap.get(conv.sender) || (conv.sender ? { uid: conv.sender } : null),
+                receiver: userMap.get(conv.receiver) || (conv.receiver ? { uid: conv.receiver } : null),
+                otherUser: otherUserUid ? (userMap.get(otherUserUid) || { uid: otherUserUid }) : null,
                 lastMessage: conv.lastMessage,
                 unreadCount: conv.unreadCount.get(uid.toString()) || 0,
                 updatedAt: conv.updatedAt,
@@ -82,10 +120,22 @@ export const getOrCreateConversation = async (req, res) => {
         }
 
         // Find existing conversation (check both directions)
+        // Find existing conversation (check both directions), ensuring it is NOT a group
+        // legacy documents might not have isGroup field, so check if it is false OR doesn't exist
         let conversation = await Conversation.findOne({
-            $or: [
-                { sender: uid, receiver: otherUserId },
-                { sender: otherUserId, receiver: uid }
+            $and: [
+                {
+                    $or: [
+                        { isGroup: false },
+                        { isGroup: { $exists: false } }
+                    ]
+                },
+                {
+                    $or: [
+                        { sender: uid, receiver: otherUserId },
+                        { sender: otherUserId, receiver: uid }
+                    ]
+                }
             ]
         }).populate("lastMessage");
 
@@ -145,7 +195,12 @@ export const getMessages = async (req, res) => {
         }
 
         // Check if user is sender or receiver
-        if (conversation.sender !== uid && conversation.receiver !== uid) {
+        // Check if user is sender or receiver OR participant
+        const isParticipant = (conversation.participants && conversation.participants.includes(uid)) ||
+            conversation.sender === uid ||
+            conversation.receiver === uid;
+
+        if (!isParticipant) {
             return res.status(403).json({
                 success: false,
                 message: "You are not a participant in this conversation",
@@ -217,24 +272,41 @@ export const sendMessage = async (req, res) => {
         }
 
         // Check if user is sender or receiver
-        if (conversation.sender !== uid && conversation.receiver !== uid) {
+        // Check if user is participant
+        const isParticipant = (conversation.participants && conversation.participants.includes(uid)) ||
+            conversation.sender === uid ||
+            conversation.receiver === uid;
+
+        if (!isParticipant) {
             return res.status(403).json({
                 success: false,
                 message: "You are not a participant in this conversation",
             });
         }
 
-        // Determine receiver
-        const receiver = conversation.sender === uid ? conversation.receiver : conversation.sender;
+        // Determine receivers
+        let receivers = [];
+        if (conversation.isGroup) {
+            receivers = conversation.participants.filter(p => p !== uid);
+        } else {
+            const singleReceiver = conversation.sender === uid ? conversation.receiver : conversation.sender;
+            receivers = [singleReceiver];
+        }
 
         // Create message
         const message = new Message({
             conversationId: conversationId,
             sender: uid,
-            receiver: receiver,
+            receiver: conversation.isGroup ? null : receivers[0], // For group, receiver is null or handled differently
             text: text || "",
             attachment: attachment || null,
         });
+
+        // Revive conversation if it was deleted by any participant
+        if (conversation.deletedBy && conversation.deletedBy.length > 0) {
+            conversation.deletedBy = []; // Clear deletedBy array to show to everyone again
+            // Or specifically remove receivers? Usually a new message brings it back for everyone.
+        }
 
         await message.save();
 
@@ -244,9 +316,11 @@ export const sendMessage = async (req, res) => {
         // Update conversation
         conversation.lastMessage = message._id;
 
-        // Increment unread count for receiver
-        const currentUnread = conversation.unreadCount.get(receiver.toString()) || 0;
-        conversation.unreadCount.set(receiver.toString(), currentUnread + 1);
+        // Increment unread count for receivers
+        receivers.forEach(receiverId => {
+            const currentUnread = conversation.unreadCount.get(receiverId.toString()) || 0;
+            conversation.unreadCount.set(receiverId.toString(), currentUnread + 1);
+        });
         conversation.markModified("unreadCount");
 
         await conversation.save();
@@ -315,6 +389,55 @@ export const deleteMessage = async (req, res) => {
     }
 };
 
+export const createGroupConversation = async (req, res) => {
+    try {
+        const uid = req.headers["x-user-id"];
+        const { participantIds, groupName } = req.body;
+
+        if (!uid) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
+            return res.status(400).json({ message: "Participants are required" });
+        }
+
+        if (!groupName) {
+            return res.status(400).json({ message: "Group name is required" });
+        }
+
+        // Add creator to participants if not already there
+        const allParticipants = [...new Set([...participantIds, uid])];
+
+        const newConversation = new Conversation({
+            isGroup: true,
+            groupName,
+            groupAdmin: uid,
+            participants: allParticipants,
+            // sender/receiver can be left empty or set to creator for reference, but we rely on participants
+            sender: uid, // Optional: keep sender as creator
+        });
+
+        await newConversation.save();
+
+        // Fetch user details for response
+        const users = await getUsersByUids(allParticipants);
+        const userMap = new Map(users.map(u => [u.uid, u]));
+
+        res.status(201).json({
+            success: true,
+            data: {
+                ...newConversation.toObject(),
+                participants: allParticipants.map(uid => userMap.get(uid) || { uid })
+            }
+        });
+
+    } catch (error) {
+        console.error("Error creating group:", error);
+        res.status(500).json({ message: "Failed to create group", error: error.message });
+    }
+};
+
 // Delete a conversation
 export const deleteConversation = async (req, res) => {
     try {
@@ -330,21 +453,151 @@ export const deleteConversation = async (req, res) => {
             return res.status(404).json({ message: "Conversation not found" });
         }
 
-        // Verify user is participant
-        if (conversation.sender !== uid && conversation.receiver !== uid) {
-            return res.status(403).json({ message: "Not authorized to delete this conversation" });
+        // ONE-TO-ONE: Soft Delete (hide from user)
+        if (!conversation.isGroup) {
+            if (conversation.sender !== uid && conversation.receiver !== uid) {
+                return res.status(403).json({ message: "Not authorized to delete this conversation" });
+            }
+
+            // Ensure deletedBy is an array
+            if (!Array.isArray(conversation.deletedBy)) {
+                conversation.deletedBy = [];
+            }
+
+            // Add user to deletedBy array
+            if (!conversation.deletedBy.includes(uid)) {
+                conversation.deletedBy.push(uid);
+                await conversation.save();
+            }
+
+            return res.status(200).json({ success: true, message: "Conversation deleted" });
         }
 
-        // Delete all messages in this conversation
-        await Message.deleteMany({ conversationId });
+        // GROUP: Only admin can delete entirely
+        if (conversation.isGroup) {
+            if (conversation.groupAdmin !== uid) {
+                return res.status(403).json({ message: "Only group admin can delete this group" });
+            }
 
-        // Delete the conversation itself
-        await Conversation.findByIdAndDelete(conversationId);
+            // Hard delete for group (admin action destroys group)
+            await Message.deleteMany({ conversationId });
+            await Conversation.findByIdAndDelete(conversationId);
 
-        res.status(200).json({ success: true, message: "Conversation deleted" });
+            return res.status(200).json({ success: true, message: "Group deleted" });
+        }
+
     } catch (error) {
         console.error("Error deleting conversation:", error);
         res.status(500).json({ message: "Failed to delete conversation", error: error.message });
+    }
+};
+
+export const leaveGroup = async (req, res) => {
+    try {
+        const uid = req.headers["x-user-id"];
+        const { conversationId } = req.params;
+
+        if (!uid) return res.status(400).json({ message: "User ID is required" });
+
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation || !conversation.isGroup) {
+            return res.status(404).json({ message: "Group conversation not found" });
+        }
+
+        if (!conversation.participants.includes(uid)) {
+            return res.status(400).json({ message: "You are not a participant" });
+        }
+
+        // Remove user
+        conversation.participants = conversation.participants.filter(p => p !== uid);
+
+        // If admin leaves, assign new admin if participants remain
+        if (conversation.groupAdmin === uid) {
+            if (conversation.participants.length > 0) {
+                conversation.groupAdmin = conversation.participants[0];
+            } else {
+                // Empty group - delete it? or leave it empty?
+                // Let's delete it if empty
+                await Conversation.findByIdAndDelete(conversationId);
+                await Message.deleteMany({ conversationId });
+                return res.status(200).json({ success: true, message: "Group left and deleted (empty)" });
+            }
+        }
+
+        await conversation.save();
+
+        // Emit socket event
+        const io = req.app.get("io");
+        if (io) {
+            // Fetch updated participants details to send to clients
+            const updatedParticipants = await getUsersByUids(conversation.participants);
+            const userMap = new Map(updatedParticipants.map(u => [u.uid, u]));
+            const fullParticipants = conversation.participants.map(p => userMap.get(p) || { uid: p });
+
+            io.to(`conversation:${conversationId}`).emit("group:update", {
+                conversationId,
+                participants: fullParticipants,
+                groupAdmin: conversation.groupAdmin
+            });
+        }
+
+        res.status(200).json({ success: true, message: "Left group successfully" });
+    } catch (error) {
+        console.error("Error leaving group:", error);
+        res.status(500).json({ message: "Failed to leave group", error: error.message });
+    }
+};
+
+export const removeMember = async (req, res) => {
+    try {
+        const uid = req.headers["x-user-id"];
+        const { conversationId } = req.params;
+        const { memberId } = req.body;
+
+        if (!uid) return res.status(400).json({ message: "User ID is required" });
+
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation || !conversation.isGroup) {
+            return res.status(404).json({ message: "Group conversation not found" });
+        }
+
+        // Only admin can remove
+        if (conversation.groupAdmin !== uid) {
+            return res.status(403).json({ message: "Only admin can remove members" });
+        }
+
+        if (!conversation.participants.includes(memberId)) {
+            return res.status(400).json({ message: "User is not in this group" });
+        }
+
+        // Remove
+        conversation.participants = conversation.participants.filter(p => p !== memberId);
+        await conversation.save();
+
+        // Emit socket event
+        const io = req.app.get("io");
+        if (io) {
+            // Fetch updated participants details to send to clients
+            const updatedParticipants = await getUsersByUids(conversation.participants);
+            const userMap = new Map(updatedParticipants.map(u => [u.uid, u]));
+            const fullParticipants = conversation.participants.map(p => userMap.get(p) || { uid: p });
+
+            io.to(`conversation:${conversationId}`).emit("group:update", {
+                conversationId,
+                participants: fullParticipants,
+                groupAdmin: conversation.groupAdmin
+            });
+
+            // Also notify the removed user specifically (if they are not in the room anymore? Or if they face delay)
+            // Ideally we find their socket and tell them "you have been removed" so they can update their list
+            // However, "group:update" logic on frontend should handle "if I am not in participants, remove it".
+        }
+
+        res.status(200).json({ success: true, message: "Member removed successfully" });
+
+    } catch (error) {
+        console.error("Error removing member:", error);
+        res.status(500).json({ message: "Failed to remove member", error: error.message });
     }
 };
 
@@ -370,25 +623,31 @@ export const markAsRead = async (req, res) => {
             });
         }
 
-        // Check if user is sender or receiver
-        if (conversation.sender !== uid && conversation.receiver !== uid) {
+        // Check if user is sender or receiver OR participant
+        const isParticipant = (conversation.participants && conversation.participants.includes(uid)) ||
+            conversation.sender === uid ||
+            conversation.receiver === uid;
+
+        if (!isParticipant) {
             return res.status(403).json({
                 success: false,
                 message: "You are not a participant in this conversation",
             });
         }
 
-        // Mark all unread messages as read (where user is receiver)
-        await Message.updateMany(
-            {
-                conversationId: conversationId,
-                receiver: uid,
-                isRead: false,
-            },
-            {
-                isRead: true,
-            }
-        );
+        // Mark all unread messages as read (where user is receiver) - Only for 1-v-1 for now or if we adjust schema
+        if (!conversation.isGroup) {
+            await Message.updateMany(
+                {
+                    conversationId: conversationId,
+                    receiver: uid,
+                    isRead: false,
+                },
+                {
+                    isRead: true,
+                }
+            );
+        }
 
         // Reset unread count for this user
         conversation.unreadCount.set(uid.toString(), 0);

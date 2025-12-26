@@ -21,6 +21,24 @@ export const chatApi = {
         return response.data;
     },
 
+    // Create group conversation
+    createGroupConversation: async (data) => {
+        const response = await axiosInstance.post("/messages/conversations/group", data);
+        return response.data;
+    },
+
+    // Leave group
+    leaveGroup: async (conversationId) => {
+        const response = await axiosInstance.put(`/messages/conversations/${conversationId}/leave`);
+        return response.data;
+    },
+
+    // Remove member from group
+    removeMember: async (conversationId, memberId) => {
+        const response = await axiosInstance.put(`/messages/conversations/${conversationId}/kick`, { memberId });
+        return response.data;
+    },
+
     // Get messages for a conversation
     getMessages: async (conversationId, params) => {
         const response = await axiosInstance.get(

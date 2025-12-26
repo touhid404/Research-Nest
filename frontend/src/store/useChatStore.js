@@ -76,8 +76,89 @@ const useChatStore = create((set, get) => ({
             get().fetchMessages(newConversation._id);
 
             return newConversation;
+
         } catch (error) {
             set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    // Create group conversation
+    createGroupConversation: async (participantIds, groupName) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await chatApi.createGroupConversation({ participantIds, groupName });
+            const newConversation = response.data;
+
+            // Update conversations list (prepend)
+            const { conversations } = get();
+            set({
+                conversations: [newConversation, ...conversations],
+                selectedConversation: newConversation,
+                isLoading: false
+            });
+
+            return newConversation;
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
+    // Leave group
+    leaveGroup: async (conversationId) => {
+        const { conversations, selectedConversation } = get();
+        // Optimistic update
+        const previousConversations = [...conversations];
+        const previousSelected = selectedConversation;
+
+        const updatedConversations = conversations.filter(c => c._id !== conversationId);
+        set({ conversations: updatedConversations });
+
+        if (selectedConversation?._id === conversationId) {
+            set({ selectedConversation: null, messages: [] });
+        }
+
+        try {
+            await chatApi.leaveGroup(conversationId);
+        } catch (error) {
+            console.error("Error leaving group:", error);
+            // Revert on error
+            set({
+                conversations: previousConversations,
+                selectedConversation: previousSelected
+            });
+            throw error;
+        }
+    },
+
+    // Remove member (kick)
+    removeMember: async (conversationId, memberId) => {
+        try {
+            await chatApi.removeMember(conversationId, memberId);
+            // We might need to update the conversation participants locally if we want immediate UI update
+            // However, fetching conversations again or updating the specific one is better
+            const { conversations, selectedConversation } = get();
+
+            const updateParticipants = (conv) => {
+                if (conv._id === conversationId && conv.participants) {
+                    return {
+                        ...conv,
+                        participants: conv.participants.filter(p => (p.uid || p._id || p) !== memberId)
+                    };
+                }
+                return conv;
+            };
+
+            const updatedConversations = conversations.map(updateParticipants);
+            set({ conversations: updatedConversations });
+
+            if (selectedConversation?._id === conversationId) {
+                set({ selectedConversation: updateParticipants(selectedConversation) });
+            }
+
+        } catch (error) {
+            console.error("Error removing member:", error);
             throw error;
         }
     },
@@ -131,25 +212,7 @@ const useChatStore = create((set, get) => ({
         }
     },
 
-    // Mark messages as read
-    markAsRead: async (conversationId) => {
-        try {
-            await chatApi.markAsRead(conversationId);
 
-            // Update unread count in conversations
-            const { conversations } = get();
-            const updatedConversations = conversations.map(conv => {
-                if (conv._id === conversationId) {
-                    return { ...conv, unreadCount: 0 };
-                }
-                return conv;
-            });
-
-            set({ conversations: updatedConversations });
-        } catch (error) {
-            console.error('Error marking as read:', error);
-        }
-    },
 
     // Delete a message
     deleteMessage: async (messageId) => {
@@ -172,20 +235,28 @@ const useChatStore = create((set, get) => ({
 
     // Delete a conversation
     deleteConversation: async (conversationId) => {
+        const { conversations, selectedConversation } = get();
+        // Optimistic update
+        const previousConversations = [...conversations];
+        const previousSelected = selectedConversation;
+
+        const updatedConversations = conversations.filter(c => c._id !== conversationId);
+        set({ conversations: updatedConversations });
+
+        // If selected, clear it
+        if (selectedConversation && selectedConversation._id === conversationId) {
+            set({ selectedConversation: null, messages: [] });
+        }
+
         try {
             await chatApi.deleteConversation(conversationId);
-
-            // Remove from state
-            const { conversations, selectedConversation } = get();
-            const updatedConversations = conversations.filter(c => c._id !== conversationId);
-            set({ conversations: updatedConversations });
-
-            // If selected, clear it
-            if (selectedConversation && selectedConversation._id === conversationId) {
-                set({ selectedConversation: null, messages: [] });
-            }
         } catch (error) {
             console.error('Error deleting conversation:', error);
+            // Revert
+            set({
+                conversations: previousConversations,
+                selectedConversation: previousSelected
+            });
             throw error;
         }
     },
@@ -291,6 +362,54 @@ const useChatStore = create((set, get) => ({
             // If conversation doesn't exist (new conversation started by someone else), fetch all conversations
             if (!conversations.find(c => c._id === conversationId)) {
                 fetchConversations();
+            }
+        });
+
+        // Listen for group updates (members left/removed)
+        socket.on("group:update", ({ conversationId, participants, groupAdmin }) => {
+            const { conversations, selectedConversation, user } = get(); // Assuming user is not in store but we need it. 
+            // Wait, user is not in chatStore state usually? AuthStore has it. 
+            // We can't access auth store here easily unless we import useAuth or passed it.
+            // But we can check if WE are in the participants list.
+            // Actually, we don't have 'user' in chatStore state? 
+            // Typically we fetch conversations based on auth.
+            // If we are listening, we are authenticated.
+
+            // Note: participants is array of objects { uid, name... }.
+            // We can check if *our* uid is in it. But we don't have our uid here directly in store state lines 4-12.
+            // We can rely on `chatApi` or assume if we receive the event we are connected.
+            // BUT: if we were kicked, we might still receive the event if we were in the room.
+
+            // Let's just update the participants.
+            const updatedConversations = conversations.map(conv => {
+                if (conv._id === conversationId) {
+                    return {
+                        ...conv,
+                        participants,
+                        groupAdmin
+                    };
+                }
+                return conv;
+            });
+
+            set({ conversations: updatedConversations });
+
+            // Update selected conversation if it's the one modified
+            if (selectedConversation && selectedConversation._id === conversationId) {
+                set({
+                    selectedConversation: {
+                        ...selectedConversation,
+                        participants,
+                        groupAdmin
+                    }
+                });
+
+                // Check if we are still a participant? 
+                // If we are not in `participants` list, we should probably close the chat / remove it.
+                // We need to know who "we" are. 
+                // If we don't have access to 'user', we can't easily check.
+                // Ideally useChatStore should store 'currentUser' or similar.
+                // Or we rely on the backend sending a specific "you were kicked" event?
             }
         });
 

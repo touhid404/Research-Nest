@@ -4,11 +4,29 @@ const conversationSchema = new mongoose.Schema(
   {
     sender: {
       type: String,
-      required: true,
+      required: false, // Not required for groups
     },
     receiver: {
       type: String,
-      required: true,
+      required: false, // Not required for groups
+    },
+    participants: [
+      {
+        type: String,
+        required: true
+      }
+    ],
+    isGroup: {
+      type: Boolean,
+      default: false
+    },
+    groupName: {
+      type: String,
+      default: ""
+    },
+    groupAdmin: {
+      type: String, // UID of admin
+      default: null
     },
 
     // Stores the last message ID from Message collection
@@ -24,6 +42,10 @@ const conversationSchema = new mongoose.Schema(
       of: Number,
       default: {},
     },
+    deletedBy: {
+      type: [String],
+      default: []
+    }
   },
   {
     timestamps: true,
