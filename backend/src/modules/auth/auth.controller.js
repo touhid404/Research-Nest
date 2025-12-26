@@ -3,8 +3,8 @@ import { checkExistUser, createUser, createUserManually } from "./auth.service.j
 // Other endpoints
 export const signUp = async (req, res) => {
   try {
-    const { uid, name, email, gender, occupation, interests } = req.body;
-    
+    const { uid, name, email, gender, occupation, interests, photoURL } = req.body;
+
     // Validate required fields
     if (!uid || !name || !email || !gender || !occupation || !interests) {
       return res.status(400).json({
@@ -22,14 +22,14 @@ export const signUp = async (req, res) => {
     }
 
     // Create new user
-    const user = await createUserManually({ uid, name, email, gender, occupation, interests });
+    const user = await createUserManually({ uid, name, email, gender, occupation, interests, photoURL });
 
     return res.status(201).json({
       success: true,
       message: "User created successfully",
       data: user,
     });
-    
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -40,8 +40,8 @@ export const signUp = async (req, res) => {
 
 export const googleLogin = async (req, res) => {
   try {
-    const { uid, name, email ,photoURL} = req.body;
-    
+    const { uid, name, email, photoURL } = req.body;
+
     // Validate required fields
     if (!uid || !name || !email || !photoURL) {
       return res.status(400).json({
@@ -59,14 +59,14 @@ export const googleLogin = async (req, res) => {
     }
 
     // Create new user
-    const user = await createUser({ uid, name, email,photoURL });
+    const user = await createUser({ uid, name, email, photoURL });
 
     return res.status(201).json({
       success: true,
       message: "User created successfully",
       data: user,
     });
-    
+
   } catch (error) {
     return res.status(500).json({
       success: false,

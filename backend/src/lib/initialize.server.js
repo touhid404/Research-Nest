@@ -43,7 +43,6 @@ export const initializeServer = (server) => {
         // Handle new message
         socket.on("message:send", async ({ conversationId, message }) => {
             try {
-                console.log(`Broadcasting message in conversation: ${conversationId}`);
 
                 // Broadcast to conversation room
                 socket.to(`conversation:${conversationId}`).emit("message:new", message);
@@ -107,7 +106,6 @@ export const initializeServer = (server) => {
 
         // Handle disconnect
         socket.on("disconnect", () => {
-            console.log(`User disconnected: ${userId}, Socket ID: ${socket.id}`);
 
             if (userId) {
                 connectedUsers.delete(userId);
@@ -118,6 +116,6 @@ export const initializeServer = (server) => {
         });
     });
 
-    console.log("Socket.IO server initialized for real-time chat");
+    console.log("Socket.IO server initialized");
     return io;
 };

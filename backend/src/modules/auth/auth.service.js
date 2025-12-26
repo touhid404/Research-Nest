@@ -6,7 +6,7 @@ export const checkExistUser = async (uid, email) => {
 };
 
 
-export const createUser = async ({ uid, name, email,photoURL }) => {
+export const createUser = async ({ uid, name, email, photoURL }) => {
   const newUser = new User({
     uid,
     name,
@@ -16,7 +16,7 @@ export const createUser = async ({ uid, name, email,photoURL }) => {
   return await newUser.save();
 };
 
-export const createUserManually = async ({ uid, name, email, gender, occupation, interests }) => {
+export const createUserManually = async ({ uid, name, email, gender, occupation, interests, photoURL }) => {
   const newUser = new User({
     uid,
     name,
@@ -24,6 +24,7 @@ export const createUserManually = async ({ uid, name, email, gender, occupation,
     gender,
     occupation,
     researchInterests: interests,
+    photoURL,
   });
   return await newUser.save();
 };

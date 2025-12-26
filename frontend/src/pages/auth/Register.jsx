@@ -73,14 +73,22 @@ const Register = () => {
         try {
             const res = await createUser(formData.email, formData.password);
 
-            await updateUserProfile({ displayName: formData.name });
+            // Generate Random Avatar
+            const randomSeed = Math.random().toString(36).substring(7);
+            const randomAvatar = `https://api.dicebear.com/7.x/adventurer/png?seed=${randomSeed}`;
+
+            await updateUserProfile({
+                displayName: formData.name,
+                photoURL: randomAvatar
+            });
 
             // 3️⃣ Add Firebase info to formData for backend
             const userDataToSend = {
                 ...formData,
                 uid: res.user.uid,           // Firebase UID
                 email: res.user.email,       // Confirmed email
-                name: res.user.displayName || formData.name // Display name from Firebase
+                name: res.user.displayName || formData.name, // Display name from Firebase
+                photoURL: randomAvatar       // Send generated avatar to backend
             };
 
             const response = await axiosInstance.post("/auth/signup", userDataToSend);
@@ -111,16 +119,16 @@ const Register = () => {
             const res = await signInWithGoogle();
             // Save uid, email , name to backend
             const userDataToSend = {
-                uid: res.user.uid,     
-                email: res.user.email,       
-                name: res.user.displayName ,
+                uid: res.user.uid,
+                email: res.user.email,
+                name: res.user.displayName,
                 photoURL: res.user.photoURL
             };
             const response = await axiosInstance.post("/auth/google-login", userDataToSend);
-            if(response.status === 201 || response.status === 200){
+            if (response.status === 201 || response.status === 200) {
                 toast.success("Successfully Registered!");
                 navigate("/home/posts");
-            }else{
+            } else {
                 toast.error(response.data.message);
             }
         } catch (err) {
