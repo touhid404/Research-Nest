@@ -15,7 +15,7 @@ const messageSchema = new mongoose.Schema(
 
     receiver: {
       type: String,
-      required: true,
+      required: false, // Not required for group chats
     },
 
     text: {

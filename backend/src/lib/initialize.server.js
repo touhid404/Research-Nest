@@ -33,13 +33,11 @@ export const initializeServer = (server) => {
         // Join conversation room
         socket.on("conversation:join", (conversationId) => {
             socket.join(`conversation:${conversationId}`);
-            console.log(`User ${userId} joined conversation: ${conversationId}`);
         });
 
         // Leave conversation room
         socket.on("conversation:leave", (conversationId) => {
             socket.leave(`conversation:${conversationId}`);
-            console.log(`User ${userId} left conversation: ${conversationId}`);
         });
 
         // Handle new message
@@ -50,22 +48,29 @@ export const initializeServer = (server) => {
                 // Broadcast to conversation room
                 socket.to(`conversation:${conversationId}`).emit("message:new", message);
 
-                // Get conversation to find receiver
+                // Get conversation to find receiver(s)
                 const conversation = await Conversation.findById(conversationId);
                 if (conversation) {
-                    const receiverUid = conversation.sender === userId ? conversation.receiver : conversation.sender;
-                    const receiverSocketId = connectedUsers.get(receiverUid);
-
-                    if (receiverSocketId) {
-                        // Update conversation list for receiver (this triggers sidebar update)
-                        io.to(receiverSocketId).emit("conversation:update", {
-                            conversationId,
-                            lastMessage: message,
-                            updatedAt: new Date(),
-                        });
-
-                        console.log(`Message notification sent to receiver: ${receiverUid}`);
+                    let receiverUids = [];
+                    if (conversation.isGroup && conversation.participants) {
+                        receiverUids = conversation.participants.filter(p => p !== userId);
+                    } else {
+                        const receiverUid = conversation.sender === userId ? conversation.receiver : conversation.sender;
+                        receiverUids = [receiverUid];
                     }
+
+                    // Notify all receivers
+                    receiverUids.forEach(receiverUid => {
+                        const receiverSocketId = connectedUsers.get(receiverUid);
+                        if (receiverSocketId) {
+                            // Update conversation list for receiver (this triggers sidebar update)
+                            io.to(receiverSocketId).emit("conversation:update", {
+                                conversationId,
+                                lastMessage: message,
+                                updatedAt: new Date(),
+                            });
+                        }
+                    });
                 }
             } catch (error) {
                 console.error("Error broadcasting message:", error);

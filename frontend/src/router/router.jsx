@@ -87,6 +87,7 @@ export const router = createBrowserRouter([
       },
       { path: "messages", element: <MessagesBase /> },
       { path: "messages/:uid", element: <MessagesBase /> },
+      { path: "messages/c/:conversationId", element: <MessagesBase /> },
       { path: "my-profile", element: <MyProfile /> },
       { path: "notifications", element: <Notifications /> },
       { path: "paper-hub", element: <PaperHub /> },
