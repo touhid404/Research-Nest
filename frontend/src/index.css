@@ -1,34 +1,43 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
 
+
 @import "tailwindcss";
 @plugin "daisyui";
+
 
 * {
   font-family: "Quicksand", sans-serif;
 }
 
+
 @custom-variant dark (&:where(.dark, .dark *));
 
+
 /* --- Custom Animations --- */
+
 
 @keyframes marquee {
   0% {
     transform: translateX(0);
   }
 
+
   100% {
     transform: translateX(-50%);
   }
 }
 
+
 .animate-marquee {
   animation: marquee 30s linear infinite;
 }
+
 
 .btn-shine {
   position: relative;
   overflow: hidden;
 }
+
 
 .btn-shine::after {
   content: '';
@@ -45,28 +54,34 @@
   animation: shine 4s infinite;
 }
 
+
 @keyframes shine {
   0% {
     left: -100%;
   }
 
+
   20% {
     left: 200%;
   }
+
 
   100% {
     left: 200%;
   }
 }
 
+
 .animate-spin-slow {
   animation: spin 15s linear infinite;
 }
+
 
 @keyframes spin {
   from {
     transform: translate(-50%, -50%) rotate(0deg);
   }
+
 
   to {
     transform: translate(-50%, -50%) rotate(360deg);
@@ -74,11 +89,69 @@
 }
 
 
+
+
 @keyframes fade {
-  0% { opacity: 0; transform: scale(0.9); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
+
 
 .animate-fade {
   animation: fade 0.7s ease-in-out;
 }
+
+
+/* --- Custom Uniform Scrollbar --- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  transition: background 0.3s ease;
+}
+
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+
+.dark .custom-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+

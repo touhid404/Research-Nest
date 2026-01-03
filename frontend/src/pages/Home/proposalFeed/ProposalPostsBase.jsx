@@ -1,19 +1,24 @@
 import { Outlet, NavLink, Link, useLocation } from "react-router";
 import RightSidebar from "../../../components/sidebar/RightSidebar";
 
+
 const ProposalPostsBase = () => {
    const location = useLocation();
+
 
   const isCreatePage = location.pathname.includes("create-post");
   return (
     <div className="flex h-full">
 
 
+
+
       {/* Posts Section */}
-      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto rn-scrollbar">
+      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto custom-scrollbar">
+
 
         {/* Header with Tabs and Action */}
-        <div className="sticky top-0 bg-transparent backdrop-blur-md z-10 border-b border-gray-100 dark:border-slate-800 px-4">
+        <div className="sticky top-0 bg-transparent backdrop-blur-md z-10 px-4">
           <div className="flex justify-between items-end">
             {/* Navigation Tabs */}
             <div className="flex gap-8">
@@ -41,6 +46,7 @@ const ProposalPostsBase = () => {
               </NavLink>
             </div>
 
+
             {!isCreatePage && (
               <Link
                 to="create-post"
@@ -52,15 +58,17 @@ const ProposalPostsBase = () => {
           </div>
         </div>
 
+
         {/* Content Area */}
         <Outlet />
       </div>
       {/* Right Sidebar */}
-      <div className="md:w-[450px] hidden lg:block shrink-0 overflow-y-auto rn-scrollbar pl-2">
+      <div className="md:w-[450px] hidden lg:block shrink-0 overflow-y-auto pl-2">
         <RightSidebar />
       </div>
     </div>
   );
 };
+
 
 export default ProposalPostsBase;
