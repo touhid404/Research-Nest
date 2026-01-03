@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { proposalApi } from "../../lib/proposalApi";
 import { AiOutlinePaperClip } from "react-icons/ai";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 import ConfirmModal from "../common/ConfirmModal";
-import { useState } from "react";
+import RequestModal from "./RequestModal";
+
 
 const ProposalPostCard = ({ post }) => {
     const { user: currentUser } = useAuth();
     const { user, title, description, researchTopic, interests, attachments, createdAt } = post;
+
 
     const timeAgo = (dateString) => {
         const date = new Date(dateString);
@@ -19,13 +21,16 @@ const ProposalPostCard = ({ post }) => {
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
+
         if (days > 0) return `${days}d ago`;
         if (hours > 0) return `${hours}h ago`;
         if (minutes > 0) return `${minutes}m ago`;
         return "Just now";
     };
 
+
     const queryClient = useQueryClient();
+
 
     const deleteMutation = useMutation({
         mutationFn: (id) => proposalApi.deleteProposalPost(id),
@@ -42,16 +47,21 @@ const ProposalPostCard = ({ post }) => {
         }
     });
 
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+
 
     const handleDeletePost = () => {
         setIsDeleteModalOpen(true);
     }
 
+
     return (
         <div className="group bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 mb-3 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
             {/* Decoration gradient */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
+
 
             {/* Header: User Info */}
             <div className="flex justify-between items-start mb-3">
@@ -66,6 +76,7 @@ const ProposalPostCard = ({ post }) => {
                             {user?.name}
                         </h3>
 
+
                         <div className="flex items-center gap-2 mt-1">
                             <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
                                 {timeAgo(createdAt)}
@@ -74,10 +85,16 @@ const ProposalPostCard = ({ post }) => {
                             <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border border-slate-100 dark:border-slate-700">
                                 {researchTopic}
                             </span>
+                            {post.status === "group_formed" && (
+                                <span className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-green-100 dark:border-green-800/30">
+                                    Group Formed
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
 
             {/* Body */}
             <div className="mb-3">
@@ -89,6 +106,7 @@ const ProposalPostCard = ({ post }) => {
                 </p>
             </div>
 
+
             {/* Attachments Section */}
             {attachments && attachments.length > 0 && (
                 <div className="mb-3 bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-700 rounded-xl p-3">
@@ -99,6 +117,7 @@ const ProposalPostCard = ({ post }) => {
                         </span>
                     </div>
 
+
                     <div className="space-y-2">
                         {attachments.map((file, index) => (
                             <div
@@ -108,6 +127,7 @@ const ProposalPostCard = ({ post }) => {
                                 <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[70%]">
                                     {file.name}
                                 </span>
+
 
                                 <a
                                     href={file.url}
@@ -123,8 +143,10 @@ const ProposalPostCard = ({ post }) => {
                 </div>
             )}
 
+
             {/* Footer */}
             <div className="mt-3 pt-3 border-t border-gray-50 dark:border-slate-800 flex items-center justify-between">
+
 
                 {/* Interests */}
                 <div className="flex flex-wrap gap-2">
@@ -143,11 +165,20 @@ const ProposalPostCard = ({ post }) => {
                     )}
                 </div>
 
+
                 {currentUser?.uid !== user?.uid && (
-                    <button className="cursor-pointer bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-5 py-2 rounded-full hover:opacity-80 active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5">
-                        Request
+                    <button
+                        onClick={() => setIsRequestModalOpen(true)}
+                        disabled={post.status === "group_formed"}
+                        className={`cursor-pointer text-sm font-semibold px-5 py-2 rounded-full active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5 ${post.status === "group_formed"
+                                ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed uppercase"
+                                : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80"
+                            }`}
+                    >
+                        {post.status === "group_formed" ? "Full" : "Request"}
                     </button>
                 )}
+
 
                 {
                     currentUser?.uid === user?.uid && (
@@ -156,11 +187,8 @@ const ProposalPostCard = ({ post }) => {
                         </button>
                     )
                 }
-
-
-
-
             </div>
+
 
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
@@ -171,8 +199,16 @@ const ProposalPostCard = ({ post }) => {
                 confirmText="Yes, Delete"
                 isDanger={true}
             />
+
+
+            <RequestModal
+                isOpen={isRequestModalOpen}
+                onClose={() => setIsRequestModalOpen(false)}
+                post={post}
+            />
         </div >
     );
 };
+
 
 export default ProposalPostCard;
