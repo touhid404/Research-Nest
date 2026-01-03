@@ -10,6 +10,9 @@ import Notifications from "../pages/Home/notifications/Notifications";
 import PaperHub from "../pages/Home/paperhub/PaperHub";
 import ProposalPostsBase from "../pages/Home/proposalFeed/ProposalPostsBase";
 import RequestBase from "../pages/Home/requests/RequestBase";
+import PendingRequests from "../pages/Home/requests/PendingRequests";
+import AcceptedRequests from "../pages/Home/requests/AcceptedRequests";
+import SentRequests from "../pages/Home/requests/SentRequests";
 import Auth from "../layout/Auth";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -47,7 +50,9 @@ export const router = createBrowserRouter([
       },
     ],
 
+
   },
+
 
   {
     path: "/home",
@@ -80,6 +85,24 @@ export const router = createBrowserRouter([
       {
         path: "requests",
         element: <RequestBase />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="pending" replace />,
+          },
+          {
+            path: "pending",
+            element: <PendingRequests />,
+          },
+          {
+            path: "accepted",
+            element: <AcceptedRequests />,
+          },
+          {
+            path: "sent",
+            element: <SentRequests />,
+          },
+        ],
       },
       {
         path: "workspace",
@@ -90,7 +113,33 @@ export const router = createBrowserRouter([
       { path: "messages/c/:conversationId", element: <MessagesBase /> },
       { path: "my-profile", element: <MyProfile /> },
       { path: "notifications", element: <Notifications /> },
-      { path: "paper-hub", element: <PaperHub /> },
+      {path: "paper-hub", element: <PaperHub />},
+      // {
+      //   path: "paper-hub",
+      //   element: <PaperHubBase />,
+      //   children: [
+      //     {
+      //       index: true,
+      //       element: <Navigate to="explore-papers" replace />,
+      //     },
+      //     {
+      //       path: "explore-papers",
+      //       element: <PublicPapers />,
+      //     },
+      //     {
+      //       path: "my-papers",
+      //       element: <MyPapers />,
+      //     },
+      //     {
+      //       path: "share-my-paper",
+      //       element: <CreatePaper />,
+      //     },
+      //     {
+      //       path: "paper/:id",
+      //       element: <PaperDetails />,
+      //     },
+      //   ],
+      // },
     ],
   },
   { path: "*", element: <NotFound /> },
