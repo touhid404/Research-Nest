@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 
 
+
+
 export const createProposalPostInDB = async (postData) => {
   const newPost = new ProposalPost({
     user: postData.user,
@@ -13,12 +15,15 @@ export const createProposalPostInDB = async (postData) => {
     attachments: postData.attachments || [],
   });
 
+
   return await newPost.save();
 };
 
 
+
+
 export const getAllProposalPostsInDB = async (options = {}) => {
-  const query = {};
+  const query = { status: { $ne: "group_formed" } };
   if (options.excludeUid) {
     query["user.uid"] = { $ne: options.excludeUid };
   }
@@ -27,16 +32,19 @@ export const getAllProposalPostsInDB = async (options = {}) => {
   return posts;
 };
 
+
 export const getAllProposalPostsByUserInDB = async (uid) => {
   const posts = await ProposalPost.find({ "user.uid": uid })
     .sort({ createdAt: -1 });
   return posts;
 };
 
+
 export const getProposalPostByIdInDB = async (id) => {
   const post = await ProposalPost.findById(id);
   return post;
 };
+
 
 export const updateProposalPostInDB = async (id, updateData) => {
   const updatedPost = await ProposalPost.findByIdAndUpdate(
@@ -46,6 +54,8 @@ export const updateProposalPostInDB = async (id, updateData) => {
   );
   return updatedPost;
 };
+
+
 
 
 // Helper to extract filename
@@ -59,9 +69,11 @@ const getFilePathFromUrl = (url) => {
   return null;
 }
 
+
 export const deleteProposalPostInDB = async (id) => {
   const post = await ProposalPost.findById(id);
   if (!post) return null;
+
 
   // Delete attachments
   if (post.attachments && post.attachments.length > 0) {
@@ -79,9 +91,7 @@ export const deleteProposalPostInDB = async (id) => {
     });
   }
 
+
   const deletedPost = await ProposalPost.findByIdAndDelete(id);
   return deletedPost;
 };
-
-
-

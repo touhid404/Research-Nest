@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const proposalPostSchema = new mongoose.Schema(
   {
     user: {
@@ -8,6 +9,7 @@ const proposalPostSchema = new mongoose.Schema(
       email: { type: String, required: true },
       photoURL: { type: String, required: true },
     },
+
 
     title: {
       type: String,
@@ -37,13 +39,15 @@ const proposalPostSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["draft", "approved", "rejected"],
-      default: "draft",
+      enum: ["draft", "published", "rejected", "group_formed"],
+      default: "published",
     },
   },
-  { timestamps: true } // adds createdAt and updatedAt
+  { timestamps: true }
 );
 
+
 const ProposalPost = mongoose.model("ProposalPost", proposalPostSchema);
+
 
 export default ProposalPost;
