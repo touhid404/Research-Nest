@@ -20,13 +20,6 @@ const MyProfile = () => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Mock data for missing backend fields
-    const stats = [
-        { label: 'Posts', value: '15', icon: <IoDocumentsOutline size={20} /> },
-        { label: 'Workspaces', value: '5', icon: <IoLayersOutline size={20} /> },
-        { label: 'Connections', value: '120', icon: <FaUsers size={20} /> },
-    ];
-
     const socialLinks = [
         { icon: <FaLinkedin size={20} />, url: user?.links?.linkedin || '#', label: 'LinkedIn' },
         { icon: <FaGithub size={20} />, url: user?.links?.github || '#', label: 'GitHub' },
@@ -36,96 +29,49 @@ const MyProfile = () => {
 
     const tabs = [
         { id: 'overview', label: 'Overview' },
-        { id: 'proposals', label: 'My Proposals' },
+        { id: 'proposals', label: 'My Posts' },
         { id: 'workspaces', label: 'Workspaces' },
     ];
 
     return (
         <div className="min-h-screen bg-transparent pb-10 custom-scrollbar overflow-y-auto">
             {/* Header Section */}
-            <div className="relative">
-                {/* Cover Image */}
-                <div className="h-48 w-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 dark:from-blue-900/40 dark:to-purple-900/40 relative overflow-hidden rounded-b-3xl">
-                    <div className="absolute inset-0 backdrop-blur-[2px]"></div>
-                    {/* Abstract shapes for academic feel */}
-                    <div className="absolute top-10 left-10 w-24 h-24 bg-white/5 rounded-full blur-2xl"></div>
-                    <div className="absolute bottom-10 right-20 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+            <div className="w-full max-w-7xl bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-slate-800">
+                <div className="relative h-48 md:h-64 w-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop')]">
+                    <div className="absolute -bottom-12 left-10">
+                        <div className="relative">
+                            <div className="w-32 h-32 rounded-full border-[8px] border-white dark:border-slate-900 shadow-xl overflow-hidden bg-gray-200">
+                                <img className="w-full h-full object-cover" src={user?.photoURL} alt={user?.displayName} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                {/* Profile Info Card */}
-                <div className="px-6 -mt-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/20 dark:border-slate-800/50"
-                    >
-                        <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
-                            {/* Avatar */}
-                            <div className="relative group">
-                                <div className="w-32 h-32 rounded-full ring-4 ring-white dark:ring-slate-800 overflow-hidden bg-gray-200 shadow-2xl">
-                                    <img
-                                        src={user?.photoURL}
-                                        alt={user?.displayName}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform hidden">
-                                    <FaEdit size={14} />
-                                </div>
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 text-center md:text-left">
-                                <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                                    <h1 className="text-2xl md:text-3xl font-bold dark:text-white">
-                                        {user?.displayName}
-                                    </h1>
-                                    {user?.isVerified && (
-                                        <FaCheckCircle className="text-blue-500" title="Verified Researcher" />
-                                    )}
-                                </div>
-                                <p className="text-gray-600 dark:text-gray-400 font-medium mb-3">
-                                    {user?.role === 'researcher' ? 'Researcher' : 'Administrator'} • {user?.occupation || 'Scholar'}
-                                </p>
-
-                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                                    {socialLinks.map((link, idx) => (
-                                        <a
-                                            key={idx}
-                                            href={link.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors p-1"
-                                            title={link.label}
-                                        >
-                                            {link.icon}
-                                        </a>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Action Button */}
-                            <div className="mt-4 md:mt-0">
-                                <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full font-semibold transition-all active:scale-95 shadow-lg flex items-center gap-2">
-                                    <FaEdit size={16} />
-                                    Edit Profile
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-gray-100 dark:border-slate-800">
-                            {stats.map((stat, idx) => (
-                                <div key={idx} className="text-center group cursor-default">
-                                    <div className="flex items-center justify-center text-primary mb-1 group-hover:scale-110 transition-transform">
-                                        {stat.icon}
+                <div className="pt-16 px-10 pb-12 space-y-10">
+                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-1">
+                                <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-quicksand">{user?.displayName}</h1>
+                                {user?.isVerified || (
+                                    <div className="mt-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="25" fill="none" viewBox="0 0 24 24" className="text-[#0081f5]">
+                                            <path fill="currentColor" fillRule="evenodd" d="M9.592 3.2c-.243.208-.365.312-.495.399-.298.2-.633.338-.985.408-.153.03-.313.043-.632.068-.801.064-1.202.096-1.536.214a2.713 2.713 0 0 0-1.655 1.655c-.118.334-.15.735-.214 1.536-.025.319-.038.479-.068.632-.07.352-.208.687-.408.985-.087.13-.191.252-.399.495-.521.612-.782.918-.935 1.238-.353.74-.353 1.6 0 2.34.153.32.414.626.935 1.238.208.243.312.365.399.495.2.298.338.633.408.985.03.153.043.313.068.632.064.801.096 1.202.214 1.536a2.713 2.713 0 0 0 1.655 1.655c.334.118.735.15 1.536.214.319.025.479.038.632.068.352.07.687.209.985.408.13.087.252.191.495.399.612.521.918.782 1.238.935.74.353 1.6.353 2.34 0 .32-.153.626-.414 1.238-.935.243-.208.365-.312.495-.399.298-.2.633-.338.985-.408.153-.03.313-.043.632-.068.801-.064 1.202-.096 1.536-.214a2.713 2.713 0 0 0 1.655-1.655c.118-.334.15-.735.214-1.536.025-.319.038-.479.068-.632.07-.352.209-.687.408-.985.087-.13.191-.252.399-.495.521-.612.782-.918.935-1.238.353-.74.353-1.6 0-2.34-.153-.32-.414-.626-.935-1.238-.208-.243-.312-.365-.399-.495a2.713 2.713 0 0 1-.408-.985 5.72 5.72 0 0 1-.068-.632c-.064-.801-.096-1.202-.214-1.536a2.713 2.713 0 0 0-1.655-1.655c-.334-.118-.735-.15-1.536-.214-.319-.025-.479-.038-.632-.068a2.713 2.713 0 0 1-.985-.408 5.73 5.73 0 0 1-.495-.399c-.612-.521-.918-.782-1.238-.935a2.713 2.713 0 0 0-2.34 0c-.32.153-.626.414-1.238.935Zm6.781 6.663a.814.814 0 0 0-1.15-1.15l-4.85 4.85-1.596-1.595a.814.814 0 0 0-1.15 1.15l2.17 2.17a.814.814 0 0 0 1.15 0l5.427-5.425Z" clipRule="evenodd"></path>
+                                        </svg>
                                     </div>
-                                    <div className="text-xl font-bold dark:text-white">{stat.value}</div>
-                                    <div className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</div>
-                                </div>
-                            ))}
+                                )}
+                            </div>
+                            <p className="text-md font-bold text-gray-400 dark:text-gray-500">@{user?.username || "username"}</p>
                         </div>
-                    </motion.div>
+                        <div className="flex gap-10 lg:gap-16 items-center text-left">
+                            <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
+                                <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em]">Connections</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white">32,086</p>
+                            </div>
+                            <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
+                                <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em]">Workspace</p>
+                                <p className="text-xl font-black text-gray-900 dark:text-white">24</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -137,8 +83,8 @@ const MyProfile = () => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`pb-3 text-sm font-semibold transition-all relative ${activeTab === tab.id
-                                    ? 'text-primary'
-                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                ? 'text-primary'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                 }`}
                         >
                             {tab.label}
