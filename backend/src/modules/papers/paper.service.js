@@ -1,22 +1,44 @@
-import express from "express";
-import { createPaper, getAllPapers, getAllPapersByUser, getPaperById, deletePaper } from "./paper.controller.js";
-import { paperUpload } from "../../middleware/paperUpload.middleware.js";
+import Paper from "../../models/paper.model.js";
 
 
-const router = express.Router();
+export const createPaperInDB = async (paperData) => {
+    const result = await Paper.create(paperData);
+    return result;
+};
 
 
-// Route: /api/papers
+export const getAllPapersInDB = async (query = {}) => {
+    const { excludeUid } = query;
+    let filter = {};
+    if (excludeUid) {
+        filter = { "user.uid": { $ne: excludeUid } };
+    }
 
 
-router.post("/", paperUpload.single("paperFile"), createPaper);
-router.get("/", getAllPapers);
-router.get("/user/:uid", getAllPapersByUser);
-router.get("/:id", getPaperById);
-router.delete("/:id", deletePaper);
+    // Sort by newest first
+    const result = await Paper.find(filter).sort({ createdAt: -1 });
+    return result;
+};
 
 
-export const paperRoutes = router;
+export const getAllPapersByUserInDB = async (uid) => {
+    const result = await Paper.find({ "user.uid": uid }).sort({ createdAt: -1 });
+    return result;
+};
+
+
+export const getPaperByIdInDB = async (id) => {
+    const result = await Paper.findById(id);
+    return result;
+};
+
+
+export const deletePaperInDB = async (id) => {
+    const result = await Paper.findByIdAndDelete(id);
+    return result;
+};
+
+
 
 
 

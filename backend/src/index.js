@@ -9,7 +9,7 @@ import { proposalPostRoutes } from "./modules/proposalPosts/post.routes.js";
 import proposalApplicationRoutes from "./modules/proposalApplications/proposalApplication.routes.js";
 import { messageRoutes } from "./modules/messages/message.routes.js";
 import { initializeServer } from "./lib/initialize.server.js";
-import { paperRoutes } from "./modules/papers/paper.service.js";
+import { paperRoutes } from "./modules/papers/paper.routes.js";
 
 
 const app = express();
