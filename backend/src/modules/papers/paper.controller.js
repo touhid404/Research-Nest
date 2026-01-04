@@ -1,0 +1,201 @@
+import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB } from "./paper.service.js";
+import User from "../../models/user.model.js";
+
+
+export const createPaper = async (req, res) => {
+    try {
+
+
+        const { uid, title, abstract, researchDomain, tags, paperLink, coAuthors, publicationDate, publicationName, doi } = req.body;
+
+
+        // Handle file upload (paperFile)
+        let paperFile = null;
+        if (req.file) {
+            paperFile = {
+                name: req.file.originalname,
+                url: `${req.protocol}://${req.get("host")}/public/papers-hub/${req.file.filename}`
+            };
+        }
+
+
+        // Validate required fields
+        if (!uid || !title || !abstract || !researchDomain) {
+            return res.status(400).json({
+                success: false,
+                message: "uid, title, abstract, and researchDomain are required",
+            });
+        }
+
+
+        // Fetch user details
+        const findUser = await User.findOne({ uid });
+        if (!findUser) {
+            return res.status(404).json({
+                success: false,
+                message: "Provided uid does not exist",
+            });
+        }
+
+
+        // Parse tags if sent as string
+        let parsedTags = [];
+        if (tags) {
+            if (Array.isArray(tags)) parsedTags = tags;
+            else if (typeof tags === 'string') {
+                parsedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
+            }
+        }
+
+
+        // Parse coAuthors if sent as string (comma separated) or array
+        let parsedCoAuthors = [];
+        if (coAuthors) {
+            if (Array.isArray(coAuthors)) parsedCoAuthors = coAuthors;
+            else if (typeof coAuthors === 'string') {
+                parsedCoAuthors = coAuthors.split(',').map(name => name.trim()).filter(Boolean);
+            }
+        }
+
+
+
+
+        const paper = await createPaperInDB({
+            user: {
+                uid: findUser.uid,
+                name: findUser.name,
+                email: findUser.email,
+                photoURL: findUser.photoURL,
+            },
+            title,
+            abstract,
+            researchDomain,
+            tags: parsedTags,
+            paperLink,
+            paperFile,
+            // New fields
+            coAuthors: parsedCoAuthors,
+            publicationDate: publicationDate || new Date(), // Default to now if not provided
+            publicationName,
+            doi,
+        });
+
+
+
+
+        return res.status(201).json({
+            success: true,
+            message: "Paper published successfully",
+            data: paper,
+        });
+    } catch (error) {
+        console.error("Error inside createPaper controller:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+export const getAllPapers = async (req, res) => {
+    try {
+        const { excludeUid } = req.query;
+        const papers = await getAllPapersInDB({ excludeUid });
+
+
+        return res.status(200).json({
+            success: true,
+            count: papers.length,
+            data: papers,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+export const getAllPapersByUser = async (req, res) => {
+    try {
+        const { uid } = req.params;
+        if (!uid) {
+            return res.status(400).json({
+                success: false,
+                message: "uid is required",
+            });
+        }
+        const papers = await getAllPapersByUserInDB(uid);
+
+
+        return res.status(200).json({
+            success: true,
+            count: papers.length,
+            data: papers,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+export const getPaperById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const paper = await getPaperByIdInDB(id);
+
+
+        if (!paper) {
+            return res.status(404).json({
+                success: false,
+                message: "Paper not found",
+            });
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            data: paper,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+export const deletePaper = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedPaper = await deletePaperInDB(id);
+
+
+        if (!deletedPaper) {
+            return res.status(404).json({
+                success: false,
+                message: "Paper not found or could not be deleted",
+            });
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Paper deleted successfully",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+
