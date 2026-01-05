@@ -14,4 +14,10 @@ export const userApi = {
         const response = await axiosInstance.put(`/users/${uid}`, updateData);
         return response.data;
     },
+
+    // Get user by UID
+    getUserByUid: async (uid) => {
+        const response = await axiosInstance.get(`/users/${uid}`);
+        return response.data;
+    },
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaEdit,
@@ -15,6 +15,7 @@ import {
     FaTimes,
     FaSave
 } from 'react-icons/fa';
+import { SiGooglescholar } from 'react-icons/si';
 import { IoDocumentsOutline, IoLayersOutline } from 'react-icons/io5';
 import useAuth from '../../../hooks/useAuth';
 import MyPosts from '../proposalFeed/MyPosts';
@@ -37,6 +38,36 @@ const MyProfile = () => {
     });
     const [isEditingInterests, setIsEditingInterests] = useState(false);
     const [tempInterests, setTempInterests] = useState(user?.researchInterests || []);
+    const [profileData, setProfileData] = useState(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+    const fetchUserProfile = async () => {
+        if (!user?.uid) return;
+        setIsLoadingProfile(true);
+        try {
+            const res = await userApi.getUserByUid(user.uid);
+            if (res.success) {
+                setProfileData(res.data);
+                setTempBio(res.data.bio || '');
+                setTempInterests(res.data.researchInterests || []);
+                setTempLinks({
+                    linkedin: res.data.links?.linkedin || '',
+                    github: res.data.links?.github || '',
+                    googleScholar: res.data.links?.googleScholar || '',
+                    personalWebsite: res.data.links?.personalWebsite || ''
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            toast.error('Failed to load profile details');
+        } finally {
+            setIsLoadingProfile(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUserProfile();
+    }, [user?.uid]);
 
     const interestTags = [
         "Artificial Intelligence", "Biotechnology", "Quantum Computing",
@@ -55,10 +86,10 @@ const MyProfile = () => {
     };
 
     const socialLinks = [
-        { icon: <FaLinkedin size={20} />, url: user?.links?.linkedin || '#', label: 'LinkedIn' },
-        { icon: <FaGithub size={20} />, url: user?.links?.github || '#', label: 'GitHub' },
-        { icon: <FaGoogle size={20} />, url: user?.links?.googleScholar || '#', label: 'Google Scholar' },
-        { icon: <FaGlobe size={20} />, url: user?.links?.personalWebsite || '#', label: 'Website' },
+        { icon: <FaLinkedin size={20} />, url: profileData?.links?.linkedin || '#', label: 'LinkedIn', color: '#0077b5' },
+        { icon: <FaGithub size={20} />, url: profileData?.links?.github || '#', label: 'GitHub', color: '#333' },
+        { icon: <SiGooglescholar size={20} />, url: profileData?.links?.googleScholar || '#', label: "Google Scholar", color: '#4285f4' },
+        { icon: <FaGlobe size={20} />, url: profileData?.links?.personalWebsite || '#', label: 'Website', color: '#4f46e5' },
     ];
 
     const tabs = [
@@ -67,15 +98,27 @@ const MyProfile = () => {
         { id: 'workspaces', label: 'Workspaces' },
     ];
 
+    if (isLoadingProfile) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="relative">
+                    <div className="w-16 h-16 border-4 border-indigo-100 dark:border-slate-800 rounded-full animate-spin"></div>
+                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-transparent pb-10 custom-scrollbar overflow-y-auto">
+            {/* Header Section */}
             {/* Header Section */}
             <div className="w-full max-w-7xl bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-slate-800">
                 <div className="relative h-48 md:h-64 w-full bg-cover bg-center bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop')]">
                     <div className="absolute -bottom-12 left-10">
                         <div className="relative">
                             <div className="w-32 h-32 rounded-full border-[8px] border-white dark:border-slate-900 shadow-xl overflow-hidden bg-gray-200">
-                                <img className="w-full h-full object-cover" src={user?.photoURL} alt={user?.displayName} />
+                                <img className="w-full h-full object-cover" src={profileData?.photoURL || user?.photoURL} alt={profileData?.name || user?.displayName} />
                             </div>
                         </div>
                     </div>
@@ -84,8 +127,8 @@ const MyProfile = () => {
                     <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
                         <div className="space-y-2">
                             <div className="flex items-center gap-1">
-                                <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-quicksand">{user?.displayName}</h1>
-                                {user?.isVerified || (
+                                <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-quicksand">{profileData?.name || user?.displayName}</h1>
+                                {(profileData?.isVerified || user?.isVerified) && (
                                     <div className="mt-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="25" fill="none" viewBox="0 0 24 24" className="text-[#0081f5]">
                                             <path fill="currentColor" fillRule="evenodd" d="M9.592 3.2c-.243.208-.365.312-.495.399-.298.2-.633.338-.985.408-.153.03-.313.043-.632.068-.801.064-1.202.096-1.536.214a2.713 2.713 0 0 0-1.655 1.655c-.118.334-.15.735-.214 1.536-.025.319-.038.479-.068.632-.07.352-.208.687-.408.985-.087.13-.191.252-.399.495-.521.612-.782.918-.935 1.238-.353.74-.353 1.6 0 2.34.153.32.414.626.935 1.238.208.243.312.365.399.495.2.298.338.633.408.985.03.153.043.313.068.632.064.801.096 1.202.214 1.536a2.713 2.713 0 0 0 1.655 1.655c.334.118.735.15 1.536.214.319.025.479.038.632.068.352.07.687.209.985.408.13.087.252.191.495.399.612.521.918.782 1.238.935.74.353 1.6.353 2.34 0 .32-.153.626-.414 1.238-.935.243-.208.365-.312.495-.399.298-.2.633-.338.985-.408.153-.03.313-.043.632-.068.801-.064 1.202-.096 1.536-.214a2.713 2.713 0 0 0 1.655-1.655c.118-.334.15-.735.214-1.536.025-.319.038-.479.068-.632.07-.352.209-.687.408-.985.087-.13.191-.252.399-.495.521-.612.782-.918.935-1.238.353-.74.353-1.6 0-2.34-.153-.32-.414-.626-.935-1.238-.208-.243-.312-.365-.399-.495a2.713 2.713 0 0 1-.408-.985 5.72 5.72 0 0 1-.068-.632c-.064-.801-.096-1.202-.214-1.536a2.713 2.713 0 0 0-1.655-1.655c-.334-.118-.735-.15-1.536-.214-.319-.025-.479-.038-.632-.068a2.713 2.713 0 0 1-.985-.408 5.73 5.73 0 0 1-.495-.399c-.612-.521-.918-.782-1.238-.935a2.713 2.713 0 0 0-2.34 0c-.32.153-.626.414-1.238.935Zm6.781 6.663a.814.814 0 0 0-1.15-1.15l-4.85 4.85-1.596-1.595a.814.814 0 0 0-1.15 1.15l2.17 2.17a.814.814 0 0 0 1.15 0l5.427-5.425Z" clipRule="evenodd"></path>
@@ -93,7 +136,7 @@ const MyProfile = () => {
                                     </div>
                                 )}
                             </div>
-                            <p className="text-md font-bold text-gray-400 dark:text-gray-500">@{user?.username || "username"}</p>
+                            <p className="text-md font-bold text-gray-400 dark:text-gray-500">@{profileData?.username || user?.username || "username"}</p>
                         </div>
                         <div className="flex gap-10 lg:gap-16 items-center text-left">
                             <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
@@ -153,7 +196,7 @@ const MyProfile = () => {
                                             {!isEditingBio ? (
                                                 <button
                                                     onClick={() => {
-                                                        setTempBio(user?.bio || '');
+                                                        setTempBio(profileData?.bio || '');
                                                         setIsEditingBio(true);
                                                     }}
                                                     className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors"
@@ -176,8 +219,7 @@ const MyProfile = () => {
                                                                 await userApi.updateUser(user.uid, { bio: tempBio });
                                                                 toast.success('Bio updated successfully');
                                                                 setIsEditingBio(false);
-                                                                // Note: we might need a way to refresh user context here
-                                                                // For now assuming AuthProvider handles sync or refresh is manual
+                                                                fetchUserProfile();
                                                             } catch (error) {
                                                                 toast.error('Failed to update bio');
                                                             } finally {
@@ -204,8 +246,8 @@ const MyProfile = () => {
                                                 <p className="text-right text-xs text-slate-400">{tempBio.length}/200</p>
                                             </div>
                                         ) : (
-                                            <p className="text-gray-600 dark:text-gray-400 leading-relaxed italic">
-                                                {user?.bio || <span className="text-gray-400">No bio added yet. Update your profile to share your journey.</span>}
+                                            <p className="text-black dark:text-gray-400 leading-relaxed">
+                                                {profileData?.bio || <span className="text-gray-500 text-center block mb-2">No bio added yet. Update your profile to share your journey.</span>}
                                             </p>
                                         )}
                                     </section>
@@ -218,8 +260,8 @@ const MyProfile = () => {
                                             </button>
                                         </div>
                                         <div className="space-y-8">
-                                            {user?.education?.length > 0 ? (
-                                                user.education.map((edu, idx) => (
+                                            {profileData?.education?.length > 0 ? (
+                                                profileData.education.map((edu, idx) => (
                                                     <div key={idx} className="flex gap-5 relative group">
                                                         <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
                                                             <FaGraduationCap size={24} className="text-indigo-600 dark:text-indigo-400" />
@@ -237,7 +279,7 @@ const MyProfile = () => {
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        {idx !== user.education.length - 1 && (
+                                                        {idx !== profileData.education.length - 1 && (
                                                             <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
                                                         )}
                                                     </div>
@@ -258,8 +300,8 @@ const MyProfile = () => {
                                             </button>
                                         </div>
                                         <div className="space-y-8">
-                                            {user?.experience?.length > 0 ? (
-                                                user.experience.map((exp, idx) => (
+                                            {profileData?.experience?.length > 0 ? (
+                                                profileData.experience.map((exp, idx) => (
                                                     <div key={idx} className="flex gap-5 relative group">
                                                         <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
                                                             <FaBriefcase size={22} className="text-indigo-600 dark:text-indigo-400" />
@@ -277,7 +319,7 @@ const MyProfile = () => {
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        {idx !== user.experience.length - 1 && (
+                                                        {idx !== profileData.experience.length - 1 && (
                                                             <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
                                                         )}
                                                     </div>
@@ -299,7 +341,7 @@ const MyProfile = () => {
                                             {!isEditingInterests ? (
                                                 <button
                                                     onClick={() => {
-                                                        setTempInterests(user?.researchInterests || []);
+                                                        setTempInterests(profileData?.researchInterests || []);
                                                         setIsEditingInterests(true);
                                                     }}
                                                     className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors"
@@ -317,18 +359,23 @@ const MyProfile = () => {
                                                     </button>
                                                     <button
                                                         onClick={async () => {
+                                                            if (tempInterests.length === 0) {
+                                                                toast.error('Choose at least 1 interest to save');
+                                                                return;
+                                                            }
                                                             setIsUpdating(true);
                                                             try {
                                                                 await userApi.updateUser(user.uid, { researchInterests: tempInterests });
                                                                 toast.success('Interests updated successfully');
                                                                 setIsEditingInterests(false);
+                                                                fetchUserProfile();
                                                             } catch (error) {
                                                                 toast.error('Failed to update interests');
                                                             } finally {
                                                                 setIsUpdating(false);
                                                             }
                                                         }}
-                                                        className="text-green-600 hover:text-green-700 p-2 rounded-xl bg-green-50 dark:bg-green-900/20 transition-colors"
+                                                        className={`p-2 rounded-xl transition-colors ${tempInterests.length === 0 ? 'text-gray-300 bg-gray-50' : 'text-green-600 hover:text-green-700 bg-green-50 dark:bg-green-900/20'}`}
                                                         disabled={isUpdating}
                                                     >
                                                         {isUpdating ? <div className="w-3.5 h-3.5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div> : <FaSave size={14} />}
@@ -336,6 +383,11 @@ const MyProfile = () => {
                                                 </div>
                                             )}
                                         </div>
+                                        {isEditingInterests && (
+                                            <p className="text-[11px] font-bold text-indigo-500 mb-4 animate-pulse uppercase tracking-wider">
+                                                * User must need to choose atleast 1 interests from the list
+                                            </p>
+                                        )}
                                         <div className="flex flex-wrap gap-2">
                                             {isEditingInterests ? (
                                                 interestTags.map(tag => {
@@ -354,14 +406,26 @@ const MyProfile = () => {
                                                     );
                                                 })
                                             ) : (
-                                                (user?.researchInterests?.length > 0 ? user.researchInterests : ['Machine Learning', 'AI Ethics', 'Network Security', 'Quantum Computing']).map((tech, idx) => (
-                                                    <span
-                                                        key={idx}
-                                                        className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-semibold"
-                                                    >
-                                                        {tech}
-                                                    </span>
-                                                ))
+                                                profileData?.researchInterests?.length > 0 ? (
+                                                    profileData.researchInterests.map((tech, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-semibold"
+                                                        >
+                                                            {tech}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <div className="w-full flex flex-col items-center py-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                                                        <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-2">
+                                                            <FaPlus className="text-indigo-400" size={12} />
+                                                        </div>
+                                                        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 text-center px-4">
+                                                            Ready to share your expertise? <br />
+                                                            <span className="text-indigo-500/70">Select your first interest to get started.</span>
+                                                        </p>
+                                                    </div>
+                                                )
                                             )}
                                         </div>
                                     </section>
@@ -372,10 +436,10 @@ const MyProfile = () => {
                                             <button
                                                 onClick={() => {
                                                     setTempLinks({
-                                                        linkedin: user?.links?.linkedin || '',
-                                                        github: user?.links?.github || '',
-                                                        googleScholar: user?.links?.googleScholar || '',
-                                                        personalWebsite: user?.links?.personalWebsite || ''
+                                                        linkedin: profileData?.links?.linkedin || '',
+                                                        github: profileData?.links?.github || '',
+                                                        googleScholar: profileData?.links?.googleScholar || '',
+                                                        personalWebsite: profileData?.links?.personalWebsite || ''
                                                     });
                                                     setIsSocialModalOpen(true);
                                                 }}
@@ -394,14 +458,17 @@ const MyProfile = () => {
                                                         rel="noopener noreferrer"
                                                         className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-all group"
                                                     >
-                                                        <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                        <div
+                                                            className="w-8 h-8 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+                                                            style={{ backgroundColor: `${link.color}15`, color: link.color }}
+                                                        >
                                                             {link.icon}
                                                         </div>
                                                         <span className="text-sm font-medium">{link.label}</span>
                                                     </a>
                                                 ))
                                             ) : (
-                                                <p className="text-sm text-gray-500 italic">No social links added yet.</p>
+                                                <p className="text-sm text-center text-gray-500 italic">No social links added yet.</p>
                                             )}
                                         </div>
                                     </section>
@@ -453,10 +520,10 @@ const MyProfile = () => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         {[
-                                            { id: 'linkedin', icon: <FaLinkedin className="text-blue-600" />, label: 'LinkedIn URL' },
-                                            { id: 'github', icon: <FaGithub className="text-gray-900 dark:text-white" />, label: 'GitHub URL' },
-                                            { id: 'googleScholar', icon: <FaGoogle className="text-red-500" />, label: 'Google Scholar URL' },
-                                            { id: 'personalWebsite', icon: <FaGlobe className="text-indigo-600" />, label: 'Personal Website URL' }
+                                            { id: 'linkedin', icon: <FaLinkedin className="text-[#0077b5]" />, label: 'LinkedIn URL' },
+                                            { id: 'github', icon: <FaGithub className="text-[#333] dark:text-white" />, label: 'GitHub URL' },
+                                            { id: 'googleScholar', icon: <SiGooglescholar className="text-[#4285f4]" />, label: 'Google Scholar URL' },
+                                            { id: 'personalWebsite', icon: <FaGlobe className="text-[#4f46e5]" />, label: 'Personal Website URL' }
                                         ].map(field => (
                                             <div key={field.id} className="space-y-1.5">
                                                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">{field.label}</label>
@@ -491,6 +558,7 @@ const MyProfile = () => {
                                                     await userApi.updateUser(user.uid, { links: tempLinks });
                                                     toast.success('Social links updated successfully');
                                                     setIsSocialModalOpen(false);
+                                                    fetchUserProfile();
                                                 } catch (error) {
                                                     toast.error('Failed to update social links');
                                                 } finally {

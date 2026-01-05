@@ -5,6 +5,11 @@ export const getAllUsersInDB = async () => {
     return users;
 };
 
+export const getUserByUidFromDB = async (uid) => {
+    const user = await User.findOne({ uid });
+    return user;
+};
+
 export const updateUserInDB = async (uid, updateData) => {
     const allowedFields = [
         "username",
