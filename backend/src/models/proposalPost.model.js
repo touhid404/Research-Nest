@@ -3,13 +3,10 @@ import mongoose from "mongoose";
 
 const proposalPostSchema = new mongoose.Schema(
   {
-    user: {
-      uid: { type: String, required: true },
-      name: { type: String, required: true },
-      email: { type: String, required: true },
-      photoURL: { type: String, required: true },
+    ownerUid: {
+      type: String,
+      required: true,
     },
-
 
     title: {
       type: String,

@@ -1,6 +1,5 @@
 import { createProposalPostInDB, getAllProposalPostsByUserInDB, getAllProposalPostsInDB, getProposalPostByIdInDB, updateProposalPostInDB, deleteProposalPostInDB } from "./post.service.js";
 import User from "../../models/user.model.js";
-// OK Checked
 export const createProposalPost = async (req, res) => {
   try {
     const { uid, title, description, researchTopic, interests } = req.body;
@@ -10,10 +9,9 @@ export const createProposalPost = async (req, res) => {
     if (req.files && req.files.length > 0) {
       attachments = req.files.map(file => ({
         name: file.originalname,
-        url: `${req.protocol}://${req.get("host")}/public/uploads/${file.filename}`
+        url: `${req.protocol}://${req.get("host")}/public/proposal-papers/${file.filename}`
       }));
     } else if (req.body.attachments) {
-      // If attachments is sent as JSON string (fallback or if no files)
       try {
         const parsed = JSON.parse(req.body.attachments);
         if (Array.isArray(parsed)) attachments = parsed;
@@ -40,12 +38,7 @@ export const createProposalPost = async (req, res) => {
     }
 
     const post = await createProposalPostInDB({
-      user: {
-        uid: findUser.uid,
-        name: findUser.name,
-        email: findUser.email,
-        photoURL: findUser.photoURL,
-      },
+      ownerUid: findUser.uid,
       title,
       description,
       researchTopic,
@@ -160,8 +153,15 @@ export const updateProposalPost = async (req, res) => {
 
 export const deleteProposalPost = async (req, res) => {
   try {
+    const uid = req.headers["x-user-id"];
+    if (!uid) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required in headers",
+      });
+    }
     const { id } = req.params;
-    const deletedPost = await deleteProposalPostInDB(id);
+    const deletedPost = await deleteProposalPostInDB(id, uid);
 
     if (!deletedPost) {
       return res.status(404).json({

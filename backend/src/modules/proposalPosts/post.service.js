@@ -1,4 +1,5 @@
 import ProposalPost from "../../models/proposalPost.model.js";
+import User from "../../models/user.model.js";
 import fs from "fs";
 import path from "path";
 
@@ -7,7 +8,7 @@ import path from "path";
 
 export const createProposalPostInDB = async (postData) => {
   const newPost = new ProposalPost({
-    user: postData.user,
+    ownerUid: postData.ownerUid,
     title: postData.title,
     description: postData.description,
     researchTopic: postData.researchTopic,
@@ -25,24 +26,58 @@ export const createProposalPostInDB = async (postData) => {
 export const getAllProposalPostsInDB = async (options = {}) => {
   const query = { status: { $ne: "group_formed" } };
   if (options.excludeUid) {
-    query["user.uid"] = { $ne: options.excludeUid };
+    query["ownerUid"] = { $ne: options.excludeUid };
   }
+
   const posts = await ProposalPost.find(query)
-    .sort({ createdAt: -1 });
-  return posts;
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // Get all owner UIDs
+  const ownerUids = [...new Set(posts.map(post => post.ownerUid))];
+
+  // Fetch users
+  const users = await User.find({ uid: { $in: ownerUids } })
+    .select("uid name email photoURL");
+
+  // Create a map of uid -> user
+  const userMap = users.reduce((acc, user) => {
+    acc[user.uid] = user;
+    return acc;
+  }, {});
+
+  // Attach user to each post
+  return posts.map(post => ({
+    ...post,
+    user: userMap[post.ownerUid] || null
+  }));
 };
 
 
 export const getAllProposalPostsByUserInDB = async (uid) => {
-  const posts = await ProposalPost.find({ "user.uid": uid })
-    .sort({ createdAt: -1 });
-  return posts;
+  const posts = await ProposalPost.find({ "ownerUid": uid })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const user = await User.findOne({ uid }).select("uid name email photoURL");
+
+  return posts.map(post => ({
+    ...post,
+    user: user || null
+  }));
 };
 
 
 export const getProposalPostByIdInDB = async (id) => {
-  const post = await ProposalPost.findById(id);
-  return post;
+  const post = await ProposalPost.findById(id).lean();
+  if (!post) return null;
+
+  const user = await User.findOne({ uid: post.ownerUid }).select("uid name email photoURL");
+
+  return {
+    ...post,
+    user: user || null
+  };
 };
 
 
@@ -60,19 +95,23 @@ export const updateProposalPostInDB = async (id, updateData) => {
 
 // Helper to extract filename
 const getFilePathFromUrl = (url) => {
-  // URL: http://host/public/uploads/filename.pdf
-  // We want: public/uploads/filename.pdf
-  const parts = url.split("/public/uploads/");
+  // URL: http://host/public/proposal-papers/filename.pdf
+  // We want: public/proposal-papers/filename.pdf
+  const parts = url.split("/public/proposal-papers/");
   if (parts.length > 1) {
-    return path.join("public", "uploads", parts[1]);
+    return path.join("public", "proposal-papers", parts[1]);
   }
   return null;
 }
 
 
-export const deleteProposalPostInDB = async (id) => {
+export const deleteProposalPostInDB = async (id, uid) => {
   const post = await ProposalPost.findById(id);
   if (!post) return null;
+  // Check if the post belongs to the user
+  if (post.ownerUid !== uid) {
+    return null;
+  }
 
 
   // Delete attachments
