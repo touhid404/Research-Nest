@@ -74,13 +74,13 @@ const SentRequestCard = ({ req }) => {
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700">
                         <img
-                            src={req.proposalPostId?.user?.photoURL || `https://ui-avatars.com/api/?name=${req.proposalPostId?.user?.name || 'User'}`}
+                            src={req.user?.photoURL || `https://ui-avatars.com/api/?name=${req.user?.name || 'User'}`}
                             alt="Owner"
                             className="w-full h-full object-cover"
                         />
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        {req.proposalPostId?.user?.name || "Unknown"}
+                        {req.user?.name || "Unknown"}
                     </span>
                 </div>
 

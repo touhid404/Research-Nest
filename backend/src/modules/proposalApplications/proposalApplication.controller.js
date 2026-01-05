@@ -28,14 +28,14 @@ export const sendRequest = async (req, res) => {
 
 
         // Check if user is the owner of the post
-        if (post.user.uid === uid) {
+        if (post.ownerUid === uid) {
             return res.status(400).json({ message: "You cannot request to collaborate on your own post" });
         }
 
 
         // Check if request already exists
         const existingRequest = await ProposalApplication.findOne({
-            "sender.uid": uid,
+            senderId: uid,
             proposalPostId,
         });
 
@@ -46,13 +46,8 @@ export const sendRequest = async (req, res) => {
 
 
         const newRequest = new ProposalApplication({
-            sender: {
-                uid: uid,
-                name: sender.name,
-                email: sender.email,
-                photoURL: sender.photoURL,
-            },
-            receiverId: post.user.uid,
+            senderId: uid,
+            receiverId: post.ownerUid,
             proposalPostId,
             description,
         });
@@ -93,10 +88,30 @@ export const getMyReceivedRequests = async (req, res) => {
 
         const requests = await ProposalApplication.find(query)
             .sort({ createdAt: -1 })
-            .populate("proposalPostId", "title"); // Optional: populate post title
+            .populate("proposalPostId", "title")
+            .populate("senderId", "name photoURL")
+            .lean();
 
+        // Get all sender IDs
+        const senderIds = [...new Set(requests.map(req => req.senderId))];
 
-        res.status(200).json(requests);
+        // Fetch users
+        const users = await User.find({ uid: { $in: senderIds } })
+            .select("uid name email photoURL");
+
+        // Create a map of uid -> user
+        const userMap = users.reduce((acc, user) => {
+            acc[user.uid] = user;
+            return acc;
+        }, {});
+
+        // Attach sender to each request
+        const mappedRequests = requests.map(req => ({
+            ...req,
+            sender: userMap[req.senderId] || null
+        }));
+
+        res.status(200).json(mappedRequests);
     } catch (error) {
         console.error("Error fetching received requests:", error);
         res.status(500).json({ message: "Server error", error: error.message });
@@ -110,13 +125,21 @@ export const getMySentRequests = async (req, res) => {
         const currentUserUid = req.headers["x-user-id"];
         if (!currentUserUid) return res.status(401).json({ message: "Unauthorized" });
 
-
-        const requests = await ProposalApplication.find({ "sender.uid": currentUserUid })
+        const requests = await ProposalApplication.find({ senderId: currentUserUid })
             .sort({ createdAt: -1 })
-            .populate("proposalPostId", "title user"); // Populate post info
+            .populate("proposalPostId", "title user")
+            .lean();
+
+        // Fetch the sender (current user) once
+        const user = await User.findOne({ uid: currentUserUid }).select("uid name email photoURL");
+
+        const requestsWithUser = requests.map(request => ({
+            ...request,
+            user
+        }));
 
 
-        res.status(200).json(requests);
+        res.status(200).json(requestsWithUser);
     } catch (error) {
         console.error("Error fetching sent requests:", error);
         res.status(500).json({ message: "Server error", error: error.message });
@@ -184,7 +207,7 @@ export const formGroup = async (req, res) => {
         // 1. Find the post (to ensure ownership)
         const post = await ProposalPost.findById(proposalPostId);
         if (!post) return res.status(404).json({ message: "Post not found" });
-        if (post.user.uid !== currentUserUid) {
+        if (post.ownerUid !== currentUserUid) {
             return res.status(403).json({ message: "Unauthorized: You are not the owner of this post" });
         }
 
@@ -204,7 +227,7 @@ export const formGroup = async (req, res) => {
         // 3. Prepare participants list (Admin + Accepted Users)
         // Use Set to avoid duplicates if any
         const participantUids = new Set([currentUserUid]);
-        acceptedRequests.forEach(req => participantUids.add(req.sender.uid));
+        acceptedRequests.forEach(req => participantUids.add(req.senderId));
 
 
         const participants = Array.from(participantUids);
@@ -264,7 +287,7 @@ export const cancelRequest = async (req, res) => {
 
 
         // Verify authorized user (sender)
-        if (request.sender.uid !== currentUserUid) {
+        if (request.senderId !== currentUserUid) {
             return res.status(403).json({ message: "Unauthorized: Only the sender can cancel this request" });
         }
 
