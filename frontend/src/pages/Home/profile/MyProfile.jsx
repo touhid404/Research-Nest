@@ -9,16 +9,50 @@ import {
     FaCheckCircle,
     FaBriefcase,
     FaGraduationCap,
-    FaUsers
+    FaUsers,
+    FaCheck,
+    FaPlus,
+    FaTimes,
+    FaSave
 } from 'react-icons/fa';
 import { IoDocumentsOutline, IoLayersOutline } from 'react-icons/io5';
 import useAuth from '../../../hooks/useAuth';
 import MyPosts from '../proposalFeed/MyPosts';
 import Workspace from '../workspace/Workspace';
+import { userApi } from '../../../lib/userApi';
+import toast from 'react-hot-toast';
 
 const MyProfile = () => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('overview');
+    const [isEditingBio, setIsEditingBio] = useState(false);
+    const [tempBio, setTempBio] = useState(user?.bio || '');
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
+    const [tempLinks, setTempLinks] = useState({
+        linkedin: user?.links?.linkedin || '',
+        github: user?.links?.github || '',
+        googleScholar: user?.links?.googleScholar || '',
+        personalWebsite: user?.links?.personalWebsite || ''
+    });
+    const [isEditingInterests, setIsEditingInterests] = useState(false);
+    const [tempInterests, setTempInterests] = useState(user?.researchInterests || []);
+
+    const interestTags = [
+        "Artificial Intelligence", "Biotechnology", "Quantum Computing",
+        "Robotics", "Neuroscience", "Blockchain", "Sustainability",
+        "Space Science", "Nanotechnology", "Psychology",
+        "Machine Learning", "AI Ethics", "Network Security", "Data Science",
+        "IoT", "Cybersecurity", "Human-Computer Interaction"
+    ];
+
+    const toggleInterest = (interest) => {
+        setTempInterests(prev => {
+            const exists = prev.includes(interest);
+            if (exists) return prev.filter(i => i !== interest);
+            return [...prev, interest];
+        });
+    };
 
     const socialLinks = [
         { icon: <FaLinkedin size={20} />, url: user?.links?.linkedin || '#', label: 'LinkedIn' },
@@ -114,37 +148,145 @@ const MyProfile = () => {
                                 {/* Bio & Interests */}
                                 <div className="lg:col-span-2 space-y-6">
                                     <section className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-100 dark:border-slate-800">
-                                        <h3 className="text-lg font-bold mb-4 dark:text-white">Biography</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                                            {user?.bio || "No biography added yet. Update your profile to share your research journey and academic background with the community."}
-                                        </p>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-bold dark:text-white">Bio</h3>
+                                            {!isEditingBio ? (
+                                                <button
+                                                    onClick={() => {
+                                                        setTempBio(user?.bio || '');
+                                                        setIsEditingBio(true);
+                                                    }}
+                                                    className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors"
+                                                >
+                                                    <FaEdit size={14} />
+                                                </button>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setIsEditingBio(false)}
+                                                        className="text-gray-500 hover:text-gray-700 p-2 rounded-xl bg-gray-50 dark:bg-slate-800 transition-colors"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        <FaTimes size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            setIsUpdating(true);
+                                                            try {
+                                                                await userApi.updateUser(user.uid, { bio: tempBio });
+                                                                toast.success('Bio updated successfully');
+                                                                setIsEditingBio(false);
+                                                                // Note: we might need a way to refresh user context here
+                                                                // For now assuming AuthProvider handles sync or refresh is manual
+                                                            } catch (error) {
+                                                                toast.error('Failed to update bio');
+                                                            } finally {
+                                                                setIsUpdating(false);
+                                                            }
+                                                        }}
+                                                        className="text-green-600 hover:text-green-700 p-2 rounded-xl bg-green-50 dark:bg-green-900/20 transition-colors"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        {isUpdating ? <div className="w-3.5 h-3.5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div> : <FaSave size={14} />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isEditingBio ? (
+                                            <div className="space-y-4">
+                                                <textarea
+                                                    value={tempBio}
+                                                    onChange={(e) => setTempBio(e.target.value)}
+                                                    className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-4 text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-indigo-500 transition-all min-h-[120px]"
+                                                    placeholder="Share your research journey and academic background..."
+                                                    maxLength={200}
+                                                />
+                                                <p className="text-right text-xs text-slate-400">{tempBio.length}/200</p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-600 dark:text-gray-400 leading-relaxed italic">
+                                                {user?.bio || <span className="text-gray-400">No bio added yet. Update your profile to share your journey.</span>}
+                                            </p>
+                                        )}
                                     </section>
 
-                                    <section className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-100 dark:border-slate-800 text-black dark:text-white">
-                                        <h3 className="text-lg font-bold mb-4">Experience</h3>
-                                        <div className="space-y-6">
-                                            {/* Experience Item Placeholder */}
-                                            <div className="flex gap-4">
-                                                <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
-                                                    <FaBriefcase className="text-gray-400" />
+                                    <section className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 text-black dark:text-white shadow-sm overflow-hidden relative">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-xl font-bold">Education</h3>
+                                            <button className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors">
+                                                <FaEdit size={14} />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-8">
+                                            {user?.education?.length > 0 ? (
+                                                user.education.map((edu, idx) => (
+                                                    <div key={idx} className="flex gap-5 relative group">
+                                                        <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+                                                            <FaGraduationCap size={24} className="text-indigo-600 dark:text-indigo-400" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <h4 className="font-bold text-lg">{edu.school}</h4>
+                                                            <p className="text-indigo-600 dark:text-indigo-400 font-medium">{edu.degree} • {edu.fieldOfStudy}</p>
+                                                            <p className="text-sm text-gray-500 font-medium capitalize">
+                                                                {new Date(edu.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} -
+                                                                {edu.endDate ? new Date(edu.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Present'}
+                                                            </p>
+                                                            {edu.description && (
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
+                                                                    {edu.description}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        {idx !== user.education.length - 1 && (
+                                                            <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-6">
+                                                    <p className="text-gray-500 italic">No education details added yet.</p>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold">Senior Research Scholar</h4>
-                                                    <p className="text-sm text-gray-500">Institute of Technology • 2021 - Present</p>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                                        Leading collaborative research projects in Distributed Systems and Cloud Computing architecture.
-                                                    </p>
+                                            )}
+                                        </div>
+                                    </section>
+
+                                    <section className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-3xl border border-gray-100 dark:border-slate-800 text-black dark:text-white shadow-sm overflow-hidden relative">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-xl font-bold">Experience</h3>
+                                            <button className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors">
+                                                <FaEdit size={14} />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-8">
+                                            {user?.experience?.length > 0 ? (
+                                                user.experience.map((exp, idx) => (
+                                                    <div key={idx} className="flex gap-5 relative group">
+                                                        <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+                                                            <FaBriefcase size={22} className="text-indigo-600 dark:text-indigo-400" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <h4 className="font-bold text-lg">{exp.title}</h4>
+                                                            <p className="text-indigo-600 dark:text-indigo-400 font-medium">{exp.company}{exp.location ? ` • ${exp.location}` : ''}</p>
+                                                            <p className="text-sm text-gray-500 font-medium capitalize">
+                                                                {new Date(exp.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} -
+                                                                {exp.endDate ? new Date(exp.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Present'}
+                                                            </p>
+                                                            {exp.description && (
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
+                                                                    {exp.description}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        {idx !== user.experience.length - 1 && (
+                                                            <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-6">
+                                                    <p className="text-gray-500 italic">No experience details added yet.</p>
                                                 </div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div className="w-12 h-12 bg-gray-100 dark:bg-slate-800 rounded-lg flex items-center justify-center shrink-0">
-                                                    <FaGraduationCap size={20} className="text-gray-400" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold">PhD in Computer Science</h4>
-                                                    <p className="text-sm text-gray-500">Stanford University • 2017 - 2021</p>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     </section>
                                 </div>
@@ -152,16 +294,115 @@ const MyProfile = () => {
                                 {/* Sidebar info: Interests */}
                                 <div className="space-y-6">
                                     <section className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-100 dark:border-slate-800">
-                                        <h3 className="text-lg font-bold mb-4 dark:text-white">Research Interests</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            {(user?.researchInterests?.length > 0 ? user.researchInterests : ['Machine Learning', 'AI Ethics', 'Network Security', 'Quantum Computing']).map((tech, idx) => (
-                                                <span
-                                                    key={idx}
-                                                    className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-semibold"
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-bold dark:text-white">Research Interests</h3>
+                                            {!isEditingInterests ? (
+                                                <button
+                                                    onClick={() => {
+                                                        setTempInterests(user?.researchInterests || []);
+                                                        setIsEditingInterests(true);
+                                                    }}
+                                                    className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors"
                                                 >
-                                                    {tech}
-                                                </span>
-                                            ))}
+                                                    <FaEdit size={14} />
+                                                </button>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setIsEditingInterests(false)}
+                                                        className="text-gray-500 hover:text-gray-700 p-2 rounded-xl bg-gray-50 dark:bg-slate-800 transition-colors"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        <FaTimes size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            setIsUpdating(true);
+                                                            try {
+                                                                await userApi.updateUser(user.uid, { researchInterests: tempInterests });
+                                                                toast.success('Interests updated successfully');
+                                                                setIsEditingInterests(false);
+                                                            } catch (error) {
+                                                                toast.error('Failed to update interests');
+                                                            } finally {
+                                                                setIsUpdating(false);
+                                                            }
+                                                        }}
+                                                        className="text-green-600 hover:text-green-700 p-2 rounded-xl bg-green-50 dark:bg-green-900/20 transition-colors"
+                                                        disabled={isUpdating}
+                                                    >
+                                                        {isUpdating ? <div className="w-3.5 h-3.5 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div> : <FaSave size={14} />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {isEditingInterests ? (
+                                                interestTags.map(tag => {
+                                                    const active = tempInterests.includes(tag);
+                                                    return (
+                                                        <button
+                                                            key={tag}
+                                                            onClick={() => toggleInterest(tag)}
+                                                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 ${active
+                                                                ? 'bg-indigo-600 text-white border-transparent'
+                                                                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-gray-600 dark:text-gray-400'}`}
+                                                        >
+                                                            {active ? <FaCheck size={8} /> : <FaPlus size={8} />}
+                                                            {tag}
+                                                        </button>
+                                                    );
+                                                })
+                                            ) : (
+                                                (user?.researchInterests?.length > 0 ? user.researchInterests : ['Machine Learning', 'AI Ethics', 'Network Security', 'Quantum Computing']).map((tech, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-semibold"
+                                                    >
+                                                        {tech}
+                                                    </span>
+                                                ))
+                                            )}
+                                        </div>
+                                    </section>
+
+                                    <section className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-bold dark:text-white">Social Links</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setTempLinks({
+                                                        linkedin: user?.links?.linkedin || '',
+                                                        github: user?.links?.github || '',
+                                                        googleScholar: user?.links?.googleScholar || '',
+                                                        personalWebsite: user?.links?.personalWebsite || ''
+                                                    });
+                                                    setIsSocialModalOpen(true);
+                                                }}
+                                                className="text-indigo-600 hover:text-indigo-700 p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 transition-colors"
+                                            >
+                                                <FaEdit size={14} />
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-col gap-3">
+                                            {socialLinks.filter(link => link.url && link.url !== '#').length > 0 ? (
+                                                socialLinks.filter(link => link.url && link.url !== '#').map((link, idx) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={link.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-all group"
+                                                    >
+                                                        <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                            {link.icon}
+                                                        </div>
+                                                        <span className="text-sm font-medium">{link.label}</span>
+                                                    </a>
+                                                ))
+                                            ) : (
+                                                <p className="text-sm text-gray-500 italic">No social links added yet.</p>
+                                            )}
                                         </div>
                                     </section>
                                 </div>
@@ -180,6 +421,101 @@ const MyProfile = () => {
                     </motion.div>
                 </AnimatePresence>
             </div>
+
+            {/* Social Links Modal */}
+            <AnimatePresence>
+                {isSocialModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsSocialModalOpen(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-slate-800"
+                        >
+                            <div className="p-8">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h2 className="text-2xl font-bold dark:text-white">Edit Social Links</h2>
+                                    <button
+                                        onClick={() => setIsSocialModalOpen(false)}
+                                        className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl text-gray-400 dark:text-gray-500 transition-colors"
+                                    >
+                                        <FaTimes size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="space-y-4">
+                                        {[
+                                            { id: 'linkedin', icon: <FaLinkedin className="text-blue-600" />, label: 'LinkedIn URL' },
+                                            { id: 'github', icon: <FaGithub className="text-gray-900 dark:text-white" />, label: 'GitHub URL' },
+                                            { id: 'googleScholar', icon: <FaGoogle className="text-red-500" />, label: 'Google Scholar URL' },
+                                            { id: 'personalWebsite', icon: <FaGlobe className="text-indigo-600" />, label: 'Personal Website URL' }
+                                        ].map(field => (
+                                            <div key={field.id} className="space-y-1.5">
+                                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">{field.label}</label>
+                                                <div className="relative group">
+                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 transition-transform group-focus-within:scale-110">
+                                                        {field.icon}
+                                                    </div>
+                                                    <input
+                                                        type="url"
+                                                        value={tempLinks[field.id]}
+                                                        onChange={(e) => setTempLinks(prev => ({ ...prev, [field.id]: e.target.value }))}
+                                                        placeholder={`https://${field.id}.com/in/username`}
+                                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 pl-12 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex gap-3 mt-8">
+                                        <button
+                                            onClick={() => setIsSocialModalOpen(false)}
+                                            className="flex-1 px-6 py-3.5 rounded-2xl font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
+                                            disabled={isUpdating}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                setIsUpdating(true);
+                                                try {
+                                                    await userApi.updateUser(user.uid, { links: tempLinks });
+                                                    toast.success('Social links updated successfully');
+                                                    setIsSocialModalOpen(false);
+                                                } catch (error) {
+                                                    toast.error('Failed to update social links');
+                                                } finally {
+                                                    setIsUpdating(false);
+                                                }
+                                            }}
+                                            className="flex-1 px-6 py-3.5 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                            disabled={isUpdating}
+                                        >
+                                            {isUpdating ? (
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <>
+                                                    <FaSave />
+                                                    Save Changes
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

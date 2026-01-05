@@ -1,46 +1,49 @@
 import User from "../../models/user.model.js";
 
 export const getAllUsersInDB = async () => {
-  const users = await User.find();
-  return users;
+    const users = await User.find();
+    return users;
 };
 
 export const updateUserInDB = async (uid, updateData) => {
-  const allowedFields = [
-    "name",
-    "bio",
-    "photoURL",
-    "gender",
-    "occupation",
-    "researchInterests",
-    "links",
-  ];
+    const allowedFields = [
+        "username",
+        "name",
+        "bio",
+        "photoURL",
+        "gender",
+        "occupation",
+        "researchInterests",
+        "links",
+        "experience",
+        "education",
+    ];
 
-  const filteredData = {};
+    const filteredData = {};
 
-  Object.keys(updateData).forEach((key) => {
-    if (allowedFields.includes(key)) {
-      if (key === "links" && typeof updateData.links === "object") {
-        filteredData.links = { ...updateData.links };
-      } else {
-        filteredData[key] = updateData[key];
-      }
+    Object.keys(updateData).forEach((key) => {
+        if (allowedFields.includes(key)) {
+            if (key === "links" && typeof updateData.links === "object") {
+                filteredData.links = { ...updateData.links };
+            } else {
+                filteredData[key] = updateData[key];
+            }
+        }
+    });
+
+    if (Object.keys(filteredData).length === 0) {
+        throw new Error("No valid fields provided to update");
     }
-  });
 
-  if (Object.keys(filteredData).length === 0) {
-    throw new Error("No valid fields provided to update");
-  }
+    const updatedUser = await User.findOneAndUpdate(
+        { uid },       // search by uid (string)
+        { $set: filteredData },
+        { new: true }
+    );
 
-  const updatedUser = await User.findOneAndUpdate(
-    { uid },       // search by uid (string)
-    { $set: filteredData },
-    { new: true }
-  );
+    if (!updatedUser) {
+        throw new Error("User not found");
+    }
 
-  if (!updatedUser) {
-    throw new Error("User not found");
-  }
-
-  return updatedUser;
+    return updatedUser;
 };
