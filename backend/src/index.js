@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import cors from "cors";
 import { createServer } from "http";
 import { authRoutes } from "./modules/auth/auth.routes.js";
@@ -19,21 +20,21 @@ const port = config.port;
 
 // Set frontend url can be multiple
 const allowedOrigins = [
-  config.developmentFrontendURL,
-  config.productionFrontendURL
+    config.developmentFrontendURL,
+    config.productionFrontendURL
 ];
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
 
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true,
 }));
 
 
@@ -45,7 +46,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Land api
 app.get('/', (req, res) => {
-  res.send('welcome to research nest')
+    res.send('welcome to research nest')
 })
 
 
@@ -80,12 +81,25 @@ app.use('/api/messages', messageRoutes);
 const io = initializeServer(httpServer);
 app.set("io", io);
 
+// Error handling middleware (must be after routes)
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ success: false, message: 'File is too large! Maximum limit is 10MB per file.' });
+        }
+        return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
+    } else if (err) {
+        // Handle custom filter errors (like "Only PDF files are allowed!")
+        return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+});
 
 connectDB();
 
 
 httpServer.listen(port, () => {
-  console.log(`Research Nest Server running on port ${port}`);
+    console.log(`Research Nest Server running on port ${port}`);
 });
 
 

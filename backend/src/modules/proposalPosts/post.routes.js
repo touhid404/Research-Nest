@@ -11,7 +11,7 @@ router.post("/", upload.array("attachments"), createProposalPost);
 router.get("/", getAllProposalPosts);
 router.get("/user/:uid", getAllProposalPostsByUser);
 router.get("/:id", getProposalPostById);
-router.put("/:id", updateProposalPost);
+router.put("/:id", upload.array("attachments"), updateProposalPost);
 router.delete("/:id", deleteProposalPost);
 
 
