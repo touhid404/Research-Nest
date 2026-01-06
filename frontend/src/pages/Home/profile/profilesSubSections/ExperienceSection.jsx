@@ -226,13 +226,14 @@ const ExperienceSection = ({ profileData, user, fetchUserProfile }) => {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">End Date (or blank for present)</label>
+                                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">End Date</label>
                                             <input
                                                 type="date"
                                                 value={experienceForm.endDate ? new Date(experienceForm.endDate).toISOString().split('T')[0] : ''}
                                                 onChange={(e) => setExperienceForm({ ...experienceForm, endDate: e.target.value })}
                                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
                                             />
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Leave blank if present</span>
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
@@ -240,7 +241,7 @@ const ExperienceSection = ({ profileData, user, fetchUserProfile }) => {
                                         <textarea
                                             value={experienceForm.description}
                                             onChange={(e) => setExperienceForm({ ...experienceForm, description: e.target.value })}
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white min-h-[100px]"
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-sla-te200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white min-h-[100px]"
                                             placeholder="Description of your role, responsibilities, projects, etc."
                                         />
                                     </div>
