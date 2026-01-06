@@ -90,7 +90,12 @@ const EducationSection = ({ profileData, user, fetchUserProfile }) => {
                 </div>
                 <div className="space-y-6">
                     {profileData?.education?.length > 0 ? (
-                        profileData.education.map((edu, idx) => (
+                        [...(profileData.education)].sort((a, b) => {
+                            const dateA = a.endDate ? new Date(a.endDate) : new Date(8640000000000000);
+                            const dateB = b.endDate ? new Date(b.endDate) : new Date(8640000000000000);
+                            if (dateB - dateA !== 0) return dateB - dateA;
+                            return new Date(b.startDate) - new Date(a.startDate);
+                        }).map((edu, idx, sortedArr) => (
                             <div key={idx} className="flex gap-4 relative group">
                                 <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
                                     <FaGraduationCap size={24} className="text-indigo-600 dark:text-indigo-400" />
@@ -130,7 +135,7 @@ const EducationSection = ({ profileData, user, fetchUserProfile }) => {
                                         </p>
                                     )}
                                 </div>
-                                {idx !== profileData.education.length - 1 && (
+                                {idx !== sortedArr.length - 1 && (
                                     <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
                                 )}
                             </div>
