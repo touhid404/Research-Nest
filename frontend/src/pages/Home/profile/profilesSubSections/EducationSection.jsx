@@ -90,56 +90,59 @@ const EducationSection = ({ profileData, user, fetchUserProfile }) => {
                 </div>
                 <div className="space-y-6">
                     {profileData?.education?.length > 0 ? (
-                        [...(profileData.education)].sort((a, b) => {
-                            const dateA = a.endDate ? new Date(a.endDate) : new Date(8640000000000000);
-                            const dateB = b.endDate ? new Date(b.endDate) : new Date(8640000000000000);
-                            if (dateB - dateA !== 0) return dateB - dateA;
-                            return new Date(b.startDate) - new Date(a.startDate);
-                        }).map((edu, idx, sortedArr) => (
-                            <div key={idx} className="flex gap-4 relative group">
-                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
-                                    <FaGraduationCap size={24} className="text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <div className="space-y-1 flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h4 className="font-bold text-lg">{edu.school}</h4>
-                                            <p className="text-indigo-600 dark:text-indigo-400 font-medium">{edu.degree} • {edu.fieldOfStudy}</p>
-                                        </div>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => {
-                                                    setEducationForm(edu);
-                                                    setEditingEducationIndex(idx);
-                                                    setIsEducationModalOpen(true);
-                                                }}
-                                                className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
-                                            >
-                                                <FaEdit size={12} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteClick(idx)}
-                                                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                                            >
-                                                <FaTimes size={12} />
-                                            </button>
-                                        </div>
+                        profileData.education
+                            .map((edu, originalIdx) => ({ ...edu, originalIdx }))
+                            .sort((a, b) => {
+                                const dateA = a.endDate ? new Date(a.endDate) : new Date(8640000000000000);
+                                const dateB = b.endDate ? new Date(b.endDate) : new Date(8640000000000000);
+                                if (dateB - dateA !== 0) return dateB - dateA;
+                                return new Date(b.startDate) - new Date(a.startDate);
+                            }).map((edu, idx, sortedArr) => (
+                                <div key={edu.originalIdx} className="flex gap-4 relative group">
+                                    <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+                                        <FaGraduationCap size={24} className="text-indigo-600 dark:text-indigo-400" />
                                     </div>
-                                    <p className="text-sm text-gray-500 font-medium capitalize">
-                                        {new Date(edu.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} -
-                                        {edu.endDate ? new Date(edu.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Present'}
-                                    </p>
-                                    {edu.description && (
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
-                                            {edu.description}
+                                    <div className="space-y-1 flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-bold text-lg">{edu.school}</h4>
+                                                <p className="text-indigo-600 dark:text-indigo-400 font-medium">{edu.degree} • {edu.fieldOfStudy}</p>
+                                            </div>
+                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => {
+                                                        const { originalIdx, ...cleanEdu } = edu;
+                                                        setEducationForm(cleanEdu);
+                                                        setEditingEducationIndex(edu.originalIdx);
+                                                        setIsEducationModalOpen(true);
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
+                                                >
+                                                    <FaEdit size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(edu.originalIdx)}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    <FaTimes size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 font-medium capitalize">
+                                            {new Date(edu.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} -
+                                            {edu.endDate ? new Date(edu.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Present'}
                                         </p>
+                                        {edu.description && (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
+                                                {edu.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {idx !== sortedArr.length - 1 && (
+                                        <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
                                     )}
                                 </div>
-                                {idx !== sortedArr.length - 1 && (
-                                    <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
-                                )}
-                            </div>
-                        ))
+                            ))
                     ) : (
                         <div className="text-center py-6">
                             <p className="text-gray-500 italic">No education details added yet.</p>

@@ -90,56 +90,84 @@ const ExperienceSection = ({ profileData, user, fetchUserProfile }) => {
                 </div>
                 <div className="space-y-6">
                     {profileData?.experience?.length > 0 ? (
-                        [...(profileData.experience)].sort((a, b) => {
-                            const dateA = a.endDate ? new Date(a.endDate) : new Date(8640000000000000);
-                            const dateB = b.endDate ? new Date(b.endDate) : new Date(8640000000000000);
-                            if (dateB - dateA !== 0) return dateB - dateA;
-                            return new Date(b.startDate) - new Date(a.startDate);
-                        }).map((exp, idx, sortedArr) => (
-                            <div key={idx} className="flex gap-4 relative group">
-                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
-                                    <FaBriefcase size={22} className="text-indigo-600 dark:text-indigo-400" />
-                                </div>
-                                <div className="space-y-1 flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h4 className="font-bold text-lg">{exp.title}</h4>
-                                            <p className="text-indigo-600 dark:text-indigo-400 font-medium">{exp.company}{exp.location ? ` • ${exp.location}` : ''}</p>
-                                        </div>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => {
-                                                    setExperienceForm(exp);
-                                                    setEditingExperienceIndex(idx);
-                                                    setIsExperienceModalOpen(true);
-                                                }}
-                                                className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
-                                            >
-                                                <FaEdit size={12} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteClick(idx)}
-                                                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                                            >
-                                                <FaTimes size={12} />
-                                            </button>
-                                        </div>
+                        profileData.experience
+                            .map((exp, originalIdx) => ({ ...exp, originalIdx }))
+                            .sort((a, b) => {
+                                const dateA = a.endDate ? new Date(a.endDate) : new Date(8640000000000000);
+                                const dateB = b.endDate ? new Date(b.endDate) : new Date(8640000000000000);
+                                if (dateB - dateA !== 0) return dateB - dateA;
+                                return new Date(b.startDate) - new Date(a.startDate);
+                            }).map((exp, idx, sortedArr) => (
+                                <div key={exp.originalIdx} className="flex gap-4 relative group">
+                                    <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+                                        <FaBriefcase size={22} className="text-indigo-600 dark:text-indigo-400" />
                                     </div>
-                                    <p className="text-sm text-gray-500 font-medium capitalize">
-                                        {new Date(exp.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} -
-                                        {exp.endDate ? new Date(exp.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Present'}
-                                    </p>
-                                    {exp.description && (
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
-                                            {exp.description}
+                                    <div className="space-y-1 flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-bold text-lg">{exp.title}</h4>
+                                                <p className="font-medium">
+                                                    <span className="text-indigo-600 dark:text-indigo-400">{exp.company}</span>
+                                                    <span className="">{exp.location ? ` • ${exp.location}` : ''}</span>
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => {
+                                                        const { originalIdx, ...cleanExp } = exp;
+                                                        setExperienceForm(cleanExp);
+                                                        setEditingExperienceIndex(exp.originalIdx);
+                                                        setIsExperienceModalOpen(true);
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
+                                                >
+                                                    <FaEdit size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(exp.originalIdx)}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    <FaTimes size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 font-medium capitalize">
+                                            <span>
+                                                {new Date(exp.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                                            </span>
+                                            &nbsp;-&nbsp;
+                                            <span>
+                                                {exp.endDate ? new Date(exp.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Present'}
+                                            </span>
+                                            &nbsp; • &nbsp;
+                                            <span>
+                                                {(() => {
+                                                    const start = new Date(exp.startDate);
+                                                    const end = exp.endDate ? new Date(exp.endDate) : new Date();
+                                                    const totalMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+
+                                                    if (totalMonths < 1) {
+                                                        const days = Math.max(1, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
+                                                        return `${days} day${days > 1 ? 's' : ''}`;
+                                                    }
+
+                                                    const yrs = Math.floor(totalMonths / 12);
+                                                    const mos = totalMonths % 12;
+                                                    return `${yrs > 0 ? `${yrs} year${yrs > 1 ? 's' : ''} ` : ''}${mos > 0 ? `${mos} month${mos > 1 ? 's' : ''}` : ''}`.trim();
+                                                })()}
+                                            </span>
                                         </p>
+                                        {exp.description && (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-relaxed">
+                                                {exp.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {idx !== sortedArr.length - 1 && (
+                                        <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
                                     )}
                                 </div>
-                                {idx !== sortedArr.length - 1 && (
-                                    <div className="absolute left-7 top-16 bottom-[-2rem] w-[2px] bg-slate-100 dark:bg-slate-800"></div>
-                                )}
-                            </div>
-                        ))
+                            ))
                     ) : (
                         <div className="text-center py-6">
                             <p className="text-gray-500 italic">No experience details added yet.</p>
