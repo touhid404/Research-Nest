@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    FaUsers,
+    FaUsers, FaEdit, FaCamera, FaSave, FaTimes, FaCheck, FaExclamationCircle, FaSpinner
 } from 'react-icons/fa';
 import useAuth from '../../../hooks/useAuth';
 import { userApi } from '../../../lib/userApi';
@@ -14,6 +14,60 @@ const MyProfile = () => {
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Edit Profile Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editForm, setEditForm] = useState({
+        name: '',
+        username: ''
+    });
+    const [usernameStatus, setUsernameStatus] = useState({
+        checking: false,
+        available: null,
+        message: '',
+        suggestions: []
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Debounce username check
+    const [debouncedUsername, setDebouncedUsername] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedUsername(editForm.username);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [editForm.username]);
+
+    useEffect(() => {
+        const checkAvailability = async () => {
+            if (!debouncedUsername || debouncedUsername === profileData?.username) {
+                setUsernameStatus({ checking: false, available: true, message: '', suggestions: [] });
+                return;
+            }
+
+            setUsernameStatus(prev => ({ ...prev, checking: true }));
+            try {
+                const res = await userApi.checkUsername(debouncedUsername, user?.uid);
+                if (res.success) {
+                    setUsernameStatus({
+                        checking: false,
+                        available: res.available,
+                        message: res.message,
+                        suggestions: res.suggestions || []
+                    });
+                }
+            } catch (error) {
+                console.error('Error checking username:', error);
+            } finally {
+                setUsernameStatus(prev => ({ ...prev, checking: false }));
+            }
+        };
+
+        if (isEditModalOpen) {
+            checkAvailability();
+        }
+    }, [debouncedUsername, isEditModalOpen, profileData?.username, user?.uid]);
 
     const fetchUserProfile = async () => {
         if (!user?.uid) return;
@@ -28,6 +82,40 @@ const MyProfile = () => {
             toast.error('Failed to load profile details');
         } finally {
             setIsLoadingProfile(false);
+        }
+    };
+
+    const handleUpdateProfile = async () => {
+        if (!editForm.name.trim()) {
+            toast.error("Name cannot be empty");
+            return;
+        }
+        if (!editForm.username.trim()) {
+            toast.error("Username cannot be empty");
+            return;
+        }
+        if (!usernameStatus.available && editForm.username !== profileData?.username) {
+            toast.error("Please choose an available username");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const res = await userApi.updateUser(user.uid, {
+                name: editForm.name,
+                username: editForm.username.toLowerCase()
+            });
+
+            if (res.success) {
+                toast.success("Profile updated successfully");
+                setIsEditModalOpen(false);
+                fetchUserProfile();
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -68,9 +156,9 @@ const MyProfile = () => {
                         </div>
                     </div>
                 </div>
-                <div className="pt-14 px-6 pb-4">
-                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-                        <div className="space-y-2">
+                <div className="pt-14 px-6 pb-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                        <div className="space-y-3">
                             <div className="flex items-center gap-1">
                                 <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white font-quicksand">{profileData?.name || user?.displayName}</h1>
                                 {(profileData?.isVerified || user?.isVerified) && (
@@ -83,15 +171,32 @@ const MyProfile = () => {
                             </div>
                             <p className="text-md font-bold text-gray-400 dark:text-gray-500">@{profileData?.username || user?.username || "username"}</p>
                         </div>
-                        <div className="flex gap-10 lg:gap-16 items-center text-left">
-                            <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
-                                <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em]">Connections</p>
-                                <p className="text-xl font-black text-gray-900 dark:text-white">32,086</p>
+
+                        <div className="flex flex-wrap gap-4 md:gap-8 items-center">
+                            <div className="flex gap-10 lg:gap-16 items-center text-left">
+                                <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
+                                    <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em]">Connections</p>
+                                    <p className="text-xl font-black text-gray-900 dark:text-white">32,086</p>
+                                </div>
+                                <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
+                                    <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em]">Workspace</p>
+                                    <p className="text-xl font-black text-gray-900 dark:text-white">24</p>
+                                </div>
                             </div>
-                            <div className="space-y-1 group transition-transform hover:translate-y-[-2px]">
-                                <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-[0.2em]">Workspace</p>
-                                <p className="text-xl font-black text-gray-900 dark:text-white">24</p>
-                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setEditForm({
+                                        name: profileData?.name || user?.displayName || '',
+                                        username: profileData?.username || ''
+                                    });
+                                    setIsEditModalOpen(true);
+                                }}
+                                className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-sm font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+                            >
+                                <FaEdit size={14} />
+                                Edit Profile
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -129,6 +234,173 @@ const MyProfile = () => {
             <div className="px-6 mt-6">
                 <Outlet context={{ profileData, user, fetchUserProfile }} />
             </div>
+
+            {/* Edit Profile Modal */}
+            <AnimatePresence>
+                {isEditModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsEditModalOpen(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+                        >
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <FaEdit className="text-primary" />
+                                    Edit Profile
+                                </h3>
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                >
+                                    <FaTimes className="text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                {/* Avatar Section */}
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="relative group">
+                                        <div className="w-28 h-28 rounded-full border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden bg-slate-200 dark:bg-slate-800">
+                                            <img
+                                                src={profileData?.photoURL || user?.photoURL}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
+                                            />
+                                        </div>
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <div className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:scale-110">
+                                                <FaCamera size={18} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Profile Picture</span>
+                                </div>
+
+                                <div className="space-y-5">
+                                    {/* Name Input */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.name}
+                                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
+                                            placeholder="Enter your name"
+                                        />
+                                    </div>
+
+                                    {/* Username Input */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300 ml-1">Username</label>
+                                            {editForm.username && usernameStatus.checking && (
+                                                <div className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
+                                                    <FaSpinner className="animate-spin" size={10} />
+                                                    Checking availability...
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">@</span>
+                                            <input
+                                                type="text"
+                                                value={editForm.username}
+                                                onChange={(e) => setEditForm({ ...editForm, username: e.target.value.replace(/\s+/g, '').toLowerCase() })}
+                                                className={`w-full bg-slate-50 dark:bg-slate-800 border ${usernameStatus.available === false ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} rounded-2xl p-3.5 pl-8 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white`}
+                                                placeholder="username"
+                                            />
+                                            {usernameStatus.available !== null && editForm.username !== profileData?.username && (
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    {usernameStatus.available ? (
+                                                        <FaCheck className="text-emerald-500" />
+                                                    ) : (
+                                                        <FaExclamationCircle className="text-red-500" />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Status Message & Suggestions */}
+                                        <AnimatePresence>
+                                            {usernameStatus.available === false && editForm.username !== profileData?.username && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <p className="text-[11px] font-bold text-red-500 mt-1 ml-1">
+                                                        This username is already taken. Try these:
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                        {usernameStatus.suggestions.map((suggestion) => (
+                                                            <button
+                                                                key={suggestion}
+                                                                onClick={() => setEditForm(prev => ({ ...prev, username: suggestion }))}
+                                                                className="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary rounded-lg text-[11px] font-bold text-gray-600 dark:text-gray-400 border border-transparent hover:border-primary/20 transition-all"
+                                                            >
+                                                                {suggestion}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* Email Input (Disabled) */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-bold text-gray-500 dark:text-gray-500 ml-1">Email Address (Cannot be changed)</label>
+                                        <input
+                                            type="email"
+                                            value={user?.email || ''}
+                                            disabled
+                                            className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-sm text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateProfile}
+                                    disabled={isSaving || (usernameStatus.available === false && editForm.username !== profileData?.username)}
+                                    className="flex-1 px-4 py-3 bg-primary text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <FaSpinner className="animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaSave />
+                                            Save Changes
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

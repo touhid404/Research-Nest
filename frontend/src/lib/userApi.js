@@ -20,4 +20,10 @@ export const userApi = {
         const response = await axiosInstance.get(`/users/${uid}`);
         return response.data;
     },
+
+    // Check username availability
+    checkUsername: async (username, uid = '') => {
+        const response = await axiosInstance.get(`/users/check-username/${username}${uid ? `?uid=${uid}` : ''}`);
+        return response.data;
+    },
 };
