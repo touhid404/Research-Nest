@@ -25,126 +25,148 @@ import MyPapers from "../pages/Home/paperhub/MyPapers";
 import CreatePaper from "../components/papers/CreatePaper";
 import PaperDetails from "../pages/Home/paperhub/PaperDetails";
 import PaperHub from "../pages/Home/paperhub/PaperHubBase";
+import Overview from "../pages/Home/profile/Overview";
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    Component: Root,
-    children: [
-      {
-        index: true,
-        Component: LandingPage,
-      },
-    ],
-  },
-  {
-    path: "auth",
-    Component: Auth,
-    children: [
-      {
-        path: "login",
-        Component: Login,
-      },
-      {
-        path: "register",
-        Component: Register,
-      },
-      {
-        path: "forget-pass",
-        Component: ForgetPassword,
-      },
-    ],
-
-
-  },
-
-
-  {
-    path: "/home",
-    element: <PrivateRoute>
-      <Home />
-    </PrivateRoute>,
-    children: [
-      {
-        path: "posts",
-        element: <ProposalPostsBase />,
+    {
+        path: "/",
+        Component: Root,
         children: [
-          {
-            index: true,
-            element: <Navigate to="explore" replace />,
-          },
-          {
-            path: "explore",
-            element: <PublicPosts />,
-          },
-          {
-            path: "myposts",
-            element: <MyPosts />,
-          },
-          {
-            path: "create-post",
-            element: <CreateProposalPost />,
-          },
+            {
+                index: true,
+                Component: LandingPage,
+            },
         ],
-      },
-      {
-        path: "requests",
-        element: <RequestBase />,
+    },
+    {
+        path: "auth",
+        Component: Auth,
         children: [
-          {
-            index: true,
-            element: <Navigate to="pending" replace />,
-          },
-          {
-            path: "pending",
-            element: <PendingRequests />,
-          },
-          {
-            path: "accepted",
-            element: <AcceptedRequests />,
-          },
-          {
-            path: "sent",
-            element: <SentRequests />,
-          },
+            {
+                path: "login",
+                Component: Login,
+            },
+            {
+                path: "register",
+                Component: Register,
+            },
+            {
+                path: "forget-pass",
+                Component: ForgetPassword,
+            },
         ],
-      },
-      {
-        path: "workspace",
-        element: <Workspace />,
-      },
-      { path: "messages", element: <MessagesBase /> },
-      { path: "messages/:uid", element: <MessagesBase /> },
-      { path: "messages/c/:conversationId", element: <MessagesBase /> },
-      { path: "my-profile", element: <MyProfile /> },
-      { path: "notifications", element: <Notifications /> },
-      {
-        path: "paper-hub",
-        element: <PaperHub />,
+
+
+    },
+
+
+    {
+        path: "/home",
+        element: <PrivateRoute>
+            <Home />
+        </PrivateRoute>,
         children: [
-          {
-            index: true,
-            element: <Navigate to="explore-papers" replace />,
-          },
-          {
-            path: "explore-papers",
-            element: <PublicPapers />,
-          },
-          {
-            path: "my-papers",
-            element: <MyPapers />,
-          },
-          {
-            path: "share-my-paper",
-            element: <CreatePaper />,
-          },
-          {
-            path: "paper/:id",
-            element: <PaperDetails />,
-          },
+            {
+                path: "posts",
+                element: <ProposalPostsBase />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="explore" replace />,
+                    },
+                    {
+                        path: "explore",
+                        element: <PublicPosts />,
+                    },
+                    {
+                        path: "myposts",
+                        element: <MyPosts />,
+                    },
+                    {
+                        path: "create-post",
+                        element: <CreateProposalPost />,
+                    },
+                ],
+            },
+            {
+                path: "requests",
+                element: <RequestBase />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="pending" replace />,
+                    },
+                    {
+                        path: "pending",
+                        element: <PendingRequests />,
+                    },
+                    {
+                        path: "accepted",
+                        element: <AcceptedRequests />,
+                    },
+                    {
+                        path: "sent",
+                        element: <SentRequests />,
+                    },
+                ],
+            },
+            {
+                path: "workspace",
+                element: <Workspace />,
+            },
+            { path: "messages", element: <MessagesBase /> },
+            { path: "messages/:uid", element: <MessagesBase /> },
+            { path: "messages/c/:conversationId", element: <MessagesBase /> },
+            {
+                path: "my-profile",
+                element: <MyProfile />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="overview" replace />,
+                    },
+                    {
+                        path: "overview",
+                        element: <Overview />,
+                    },
+                    {
+                        path: "posts",
+                        element: <MyPosts />,
+                    },
+                    {
+                        path: "workspace",
+                        element: <Workspace />,
+                    },
+                ],
+            },
+            { path: "notifications", element: <Notifications /> },
+            {
+                path: "paper-hub",
+                element: <PaperHub />,
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="explore-papers" replace />,
+                    },
+                    {
+                        path: "explore-papers",
+                        element: <PublicPapers />,
+                    },
+                    {
+                        path: "my-papers",
+                        element: <MyPapers />,
+                    },
+                    {
+                        path: "share-my-paper",
+                        element: <CreatePaper />,
+                    },
+                    {
+                        path: "paper/:id",
+                        element: <PaperDetails />,
+                    },
+                ],
+            },
         ],
-      },
-    ],
-  },
-  { path: "*", element: <NotFound /> },
+    },
+    { path: "*", element: <NotFound /> },
 ]);
