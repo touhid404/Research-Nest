@@ -6,6 +6,8 @@ import useAuth from "../../hooks/useAuth";
 import { HiTrendingUp } from "react-icons/hi";
 import { FiMessageCircle } from "react-icons/fi";
 
+import { TrendingSkeleton, ResearchersSkeleton } from "../loader/RightSidebarLoader";
+
 const RightSidebar = () => {
   const { user: currentUser } = useAuth();
 
@@ -68,7 +70,7 @@ const RightSidebar = () => {
 
           <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar flex flex-col gap-5">
             {postsLoading ? (
-              <div className="h-full flex items-center justify-center"><span className="loading loading-spinner loading-md text-blue-600"></span></div>
+              <TrendingSkeleton />
             ) : trendingTopics.length > 0 ? (
               trendingTopics.map((topic, idx) => (
                 <div key={idx} className="group/item cursor-pointer flex items-center justify-between hover:translate-x-1 transition-all duration-200 shrink-0 gap-3">
@@ -104,7 +106,7 @@ const RightSidebar = () => {
 
           <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar flex flex-col gap-4">
             {usersLoading ? (
-              <div className="h-full flex items-center justify-center"><span className="loading loading-spinner loading-md text-blue-600"></span></div>
+              <ResearchersSkeleton />
             ) : recommendedResearchers.length > 0 ? (
               recommendedResearchers.map((resUser) => (
                 <div key={resUser.uid} className="flex items-center justify-between group/user shrink-0">
