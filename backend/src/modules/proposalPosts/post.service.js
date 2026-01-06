@@ -1,10 +1,8 @@
 import ProposalPost from "../../models/proposalPost.model.js";
 import User from "../../models/user.model.js";
+import ProposalApplication from "../../models/proposalApplication.model.js";
 import fs from "fs";
 import path from "path";
-
-
-
 
 export const createProposalPostInDB = async (postData) => {
     const newPost = new ProposalPost({
@@ -46,37 +44,69 @@ export const getAllProposalPostsInDB = async (options = {}) => {
         return acc;
     }, {});
 
-    // Attach user to each post
+    // Get application status if viewerUid is provided
+    let viewerApplications = new Set();
+    if (options.viewerUid) {
+        const apps = await ProposalApplication.find({
+            senderId: options.viewerUid,
+            proposalPostId: { $in: posts.map(p => p._id) }
+        }).select("proposalPostId");
+        viewerApplications = new Set(apps.map(a => a.proposalPostId.toString()));
+    }
+
+    // Attach user and application status to each post
     return posts.map(post => ({
         ...post,
-        user: userMap[post.ownerUid] || null
+        user: userMap[post.ownerUid] || null,
+        hasApplied: viewerApplications.has(post._id.toString())
     }));
 };
 
 
-export const getAllProposalPostsByUserInDB = async (uid) => {
+export const getAllProposalPostsByUserInDB = async (uid, viewerUid = null) => {
     const posts = await ProposalPost.find({ "ownerUid": uid })
         .sort({ createdAt: -1 })
         .lean();
 
     const user = await User.findOne({ uid }).select("uid name email photoURL isVerified");
 
+    // Get application status if viewerUid is provided
+    let viewerApplications = new Set();
+    if (viewerUid) {
+        const apps = await ProposalApplication.find({
+            senderId: viewerUid,
+            proposalPostId: { $in: posts.map(p => p._id) }
+        }).select("proposalPostId");
+        viewerApplications = new Set(apps.map(a => a.proposalPostId.toString()));
+    }
+
     return posts.map(post => ({
         ...post,
-        user: user || null
+        user: user || null,
+        hasApplied: viewerApplications.has(post._id.toString())
     }));
 };
 
 
-export const getProposalPostByIdInDB = async (id) => {
+export const getProposalPostByIdInDB = async (id, viewerUid = null) => {
     const post = await ProposalPost.findById(id).lean();
     if (!post) return null;
 
     const user = await User.findOne({ uid: post.ownerUid }).select("uid name email photoURL isVerified");
 
+    let hasApplied = false;
+    if (viewerUid) {
+        const app = await ProposalApplication.findOne({
+            senderId: viewerUid,
+            proposalPostId: id
+        });
+        hasApplied = !!app;
+    }
+
     return {
         ...post,
-        user: user || null
+        user: user || null,
+        hasApplied
     };
 };
 

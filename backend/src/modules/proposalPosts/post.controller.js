@@ -88,7 +88,8 @@ export const createProposalPost = async (req, res) => {
 export const getAllProposalPosts = async (req, res) => {
     try {
         const { excludeUid } = req.query;
-        const posts = await getAllProposalPostsInDB({ excludeUid });
+        const viewerUid = req.headers["x-user-id"];
+        const posts = await getAllProposalPostsInDB({ excludeUid, viewerUid });
 
         return res.status(200).json({
             success: true,
@@ -105,13 +106,14 @@ export const getAllProposalPosts = async (req, res) => {
 export const getAllProposalPostsByUser = async (req, res) => {
     try {
         const { uid } = req.params;
+        const viewerUid = req.headers["x-user-id"];
         if (!uid) {
             return res.status(400).json({
                 success: false,
                 message: "uid is required",
             });
         }
-        const posts = await getAllProposalPostsByUserInDB(uid);
+        const posts = await getAllProposalPostsByUserInDB(uid, viewerUid);
 
         return res.status(200).json({
             success: true,
@@ -129,7 +131,8 @@ export const getAllProposalPostsByUser = async (req, res) => {
 export const getProposalPostById = async (req, res) => {
     try {
         const { id } = req.params;
-        const post = await getProposalPostByIdInDB(id);
+        const viewerUid = req.headers["x-user-id"];
+        const post = await getProposalPostByIdInDB(id, viewerUid);
 
         if (!post) {
             return res.status(404).json({

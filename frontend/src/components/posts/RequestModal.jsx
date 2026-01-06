@@ -14,7 +14,8 @@ const RequestModal = ({ isOpen, onClose, post }) => {
         mutationFn: (data) => proposalApplicationApi.sendRequest(data),
         onSuccess: () => {
             toast.success("Request sent successfully!");
-            // Invalidate relevant queries if needed, e.g. sent requests list
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({ queryKey: ["proposalPosts"] });
             queryClient.invalidateQueries({ queryKey: ["sentRequests"] });
             onClose();
             setDescription("");
