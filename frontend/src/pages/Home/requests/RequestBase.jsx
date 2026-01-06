@@ -7,7 +7,7 @@ const RequestBase = () => {
   return (
     <div className="flex h-full">
       {/* Requests Section */}
-      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto rn-scrollbar">
+      <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto custom-scrollbar">
 
 
         {/* Sticky Header with Tabs */}

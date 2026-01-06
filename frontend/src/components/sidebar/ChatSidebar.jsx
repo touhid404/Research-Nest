@@ -7,6 +7,7 @@ import SidebarHeader from "../chat/SidebarHeader";
 import SidebarConversationItem from "../chat/SidebarConversationItem";
 import SidebarUserItem from "../chat/SidebarUserItem";
 import SidebarModals from "../chat/SidebarModals";
+import ChatSidebarLoader from "../loader/ChatSidebarLoader";
 
 const ChatSidebar = () => {
   const { user } = useAuth();
@@ -149,10 +150,7 @@ const ChatSidebar = () => {
 
       <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
         {isLoading && conversations.length === 0 ? (
-          <div className="p-2 flex flex-col items-center justify-center space-y-3 mt-10 opacity-50">
-            <span className="loading loading-spinner loading-lg text-violet-500"></span>
-            <p className="text-sm">Loading chats...</p>
-          </div>
+          <ChatSidebarLoader />
         ) : (
           <>
             {/* Existing Conversations */}

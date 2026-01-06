@@ -9,6 +9,10 @@
   font-family: "Quicksand", sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -154,4 +158,3 @@
 .dark .custom-scrollbar {
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
-

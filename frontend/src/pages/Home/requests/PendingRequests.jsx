@@ -3,18 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { proposalApplicationApi } from '../../../lib/proposalApplicationApi';
 import toast from 'react-hot-toast';
 import RequestCard from '../../../components/posts/RequestCard';
+import RequestLoader from '../../../components/loader/RequestLoader';
 
 
 const PendingRequests = () => {
     const queryClient = useQueryClient();
-
 
     // Fetch Pending Requests
     const { data: pendingRequests, isLoading } = useQuery({
         queryKey: ['receivedRequests', 'pending'],
         queryFn: () => proposalApplicationApi.getReceivedRequests('pending'),
     });
-
 
     // Mutations
     const statusMutation = useMutation({
@@ -26,19 +25,12 @@ const PendingRequests = () => {
         onError: () => toast.error("Failed to update request"),
     });
 
-
     const handleAccept = (id) => statusMutation.mutate({ id, status: 'accepted' });
     const handleReject = (id) => statusMutation.mutate({ id, status: 'rejected' });
 
-
     if (isLoading) {
-        return (
-            <div className="flex justify-center py-20">
-                <span className="loading loading-spinner loading-lg text-primary"></span>
-            </div>
-        );
+        return <RequestLoader count={5} />;
     }
-
 
     return (
         <div className="p-4 space-y-4 mx-auto mt-2">

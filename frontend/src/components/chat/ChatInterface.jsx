@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 import ConversationInfoModal from "./ConversationInfoModal";
+import ConversationLoader from "../loader/ConversationLoader";
 
 const ChatInterface = () => {
     const { user } = useAuth();
@@ -125,14 +126,7 @@ const ChatInterface = () => {
     };
 
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <div className="flex flex-col items-center gap-2">
-                    <span className="loading loading-spinner loading-lg text-violet-500"></span>
-                    <p className="text-sm text-slate-500">Loading conversation...</p>
-                </div>
-            </div>
-        );
+        return <ConversationLoader />;
     }
 
     if (!selectedConversation) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { proposalApplicationApi } from '../../../lib/proposalApplicationApi';
 import SentRequestCard from '../../../components/posts/SentRequestCard';
+import RequestLoader from '../../../components/loader/RequestLoader';
 
 
 const SentRequests = () => {
@@ -12,11 +13,7 @@ const SentRequests = () => {
 
 
     if (isLoading) {
-        return (
-            <div className="flex justify-center py-20">
-                <span className="loading loading-spinner loading-lg text-primary"></span>
-            </div>
-        );
+        return <RequestLoader count={5} />;
     }
 
 

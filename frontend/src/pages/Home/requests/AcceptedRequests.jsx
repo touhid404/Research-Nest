@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { proposalApplicationApi } from '../../../lib/proposalApplicationApi';
 import FormGroupModal from '../../../components/posts/FormGroupModal';
 import ProposalGroupCard from '../../../components/posts/ProposalGroupCard';
+import RequestLoader from '../../../components/loader/RequestLoader';
 
 
 const AcceptedRequests = () => {
@@ -52,11 +53,7 @@ const AcceptedRequests = () => {
 
 
     if (isLoading) {
-        return (
-            <div className="flex justify-center py-20">
-                <span className="loading loading-spinner loading-lg text-primary"></span>
-            </div>
-        );
+        return <RequestLoader count={5} />;
     }
 
 

@@ -51,7 +51,7 @@ const Home = () => {
           <div
             className={`
               flex-1 p-1 
-              ${isMessagesPage ? 'overflow-hidden h-[calc(100vh-20px)] md:h-full' : 'overflow-y-auto'}
+              ${isMessagesPage ? 'overflow-hidden h-[calc(100vh-20px)] md:h-full' : 'overflow-y-auto custom-scrollbar'}
               pb-20 md:pb-1
             `}
           >
