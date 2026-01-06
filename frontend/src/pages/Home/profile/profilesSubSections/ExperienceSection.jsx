@@ -222,7 +222,7 @@ const ExperienceSection = ({ profileData, user, fetchUserProfile }) => {
                                                 type="date"
                                                 value={experienceForm.startDate ? new Date(experienceForm.startDate).toISOString().split('T')[0] : ''}
                                                 onChange={(e) => setExperienceForm({ ...experienceForm, startDate: e.target.value })}
-                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
+                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:bg-white focus:dark:bg-slate-800 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
@@ -231,7 +231,7 @@ const ExperienceSection = ({ profileData, user, fetchUserProfile }) => {
                                                 type="date"
                                                 value={experienceForm.endDate ? new Date(experienceForm.endDate).toISOString().split('T')[0] : ''}
                                                 onChange={(e) => setExperienceForm({ ...experienceForm, endDate: e.target.value })}
-                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
+                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:bg-white focus:dark:bg-slate-800 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                                             />
                                             <span className="text-xs text-gray-500 dark:text-gray-400">Leave blank if present</span>
                                         </div>

@@ -222,17 +222,18 @@ const EducationSection = ({ profileData, user, fetchUserProfile }) => {
                                                 type="date"
                                                 value={educationForm.startDate ? new Date(educationForm.startDate).toISOString().split('T')[0] : ''}
                                                 onChange={(e) => setEducationForm({ ...educationForm, startDate: e.target.value })}
-                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
+                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:bg-white focus:dark:bg-slate-800 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">End Date (Optional)</label>
+                                            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">End Date</label>
                                             <input
                                                 type="date"
                                                 value={educationForm.endDate ? new Date(educationForm.endDate).toISOString().split('T')[0] : ''}
                                                 onChange={(e) => setEducationForm({ ...educationForm, endDate: e.target.value })}
-                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white"
+                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:bg-white focus:dark:bg-slate-800 focus:ring-primary/20 focus:border-primary transition-all text-black dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                                             />
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">Leave blank if present</span>
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
