@@ -1,6 +1,7 @@
 import Conversation from "../../models/conversation.model.js";
 import Message from "../../models/message.model.js";
 import User from "../../models/user.model.js";
+import { encrypt, decrypt } from "../../utils/encryption.js";
 
 // Helper function to get user details by uid
 const getUsersByUids = async (uids) => {
@@ -79,7 +80,10 @@ export const getConversations = async (req, res) => {
                 sender: userMap.get(conv.sender) || (conv.sender ? { uid: conv.sender } : null),
                 receiver: userMap.get(conv.receiver) || (conv.receiver ? { uid: conv.receiver } : null),
                 otherUser: otherUserUid ? (userMap.get(otherUserUid) || { uid: otherUserUid }) : null,
-                lastMessage: conv.lastMessage,
+                lastMessage: conv.lastMessage ? {
+                    ...conv.lastMessage.toObject(),
+                    text: decrypt(conv.lastMessage.text)
+                } : null,
                 unreadCount: conv.unreadCount.get(uid.toString()) || 0,
                 updatedAt: conv.updatedAt,
             };
@@ -156,6 +160,10 @@ export const getOrCreateConversation = async (req, res) => {
             success: true,
             data: {
                 ...conversation.toObject(),
+                lastMessage: conversation.lastMessage ? {
+                    ...conversation.lastMessage.toObject(),
+                    text: decrypt(conversation.lastMessage.text)
+                } : null,
                 sender: userMap.get(conversation.sender) || { uid: conversation.sender },
                 receiver: userMap.get(conversation.receiver) || { uid: conversation.receiver },
                 otherUser: userMap.get(otherUserId) || { uid: otherUserId },
@@ -225,6 +233,7 @@ export const getMessages = async (req, res) => {
         // Add sender details to messages
         const messagesWithSenders = messages.map(msg => ({
             ...msg.toObject(),
+            text: decrypt(msg.text),
             senderDetails: senderMap.get(msg.sender) || { uid: msg.sender },
         }));
 
@@ -298,7 +307,7 @@ export const sendMessage = async (req, res) => {
             conversationId: conversationId,
             sender: uid,
             receiver: conversation.isGroup ? null : receivers[0], // For group, receiver is null or handled differently
-            text: text || "",
+            text: encrypt(text) || "",
             attachment: attachment || null,
         });
 
@@ -329,6 +338,7 @@ export const sendMessage = async (req, res) => {
             success: true,
             data: {
                 ...message.toObject(),
+                text: text, // Return original text to sender, no need to decrypt what we just encrypted
                 senderDetails: sender || { uid },
             },
         });
