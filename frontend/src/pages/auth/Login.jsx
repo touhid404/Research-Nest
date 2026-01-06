@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { FaGoogle, FaEnvelope, FaLock, FaArrowLeft } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaArrowLeft } from "react-icons/fa";
 import { motion } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
-import { axiosInstance } from "../../lib/axios";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 
 const Login = () => {
   const { signInUser, signInWithGoogle } = useAuth();
@@ -12,7 +12,6 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/home/posts";
-  const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,49 +20,18 @@ const Login = () => {
     const password = form.password.value;
 
     setLoading(true);
-    setError("");
 
     try {
       await signInUser(email, password);
       toast.success("Successfully Logged In!");
       navigate(from, { replace: true });
     } catch (err) {
-      setError("Invalid email or password. Please try again.");
-      toast.error("Login failed.");
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleRegister = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await signInWithGoogle();
-      // Save uid, email , name to backend
-      const userDataToSend = {
-        uid: res.user.uid,
-        email: res.user.email,
-        name: res.user.displayName,
-        photoURL: res.user.photoURL,
-      };
-      const response = await axiosInstance.post(
-        "/auth/google-login",
-        userDataToSend
-      );
-      if (response.status === 201 || response.status === 200) {
-        toast.success("Successfully Registered!");
-        navigate("/home/posts");
-      } else {
-        toast.error(response.data.message);
-      }
-    } catch (err) {
-      setError("Google sign-in failed. Please try again.");
-      toast.error("Google signup failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-500">
@@ -101,15 +69,6 @@ const Login = () => {
           </p>
         </div>
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mb-6 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-center text-sm text-red-600 dark:text-red-400"
-          >
-            {error}
-          </motion.div>
-        )}
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="relative group">
@@ -163,15 +122,7 @@ const Login = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleGoogleRegister}
-          type="button"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white font-semibold py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-        >
-          <FaGoogle className="text-red-500 text-xl" />
-          <span>Sign in with Google</span>
-        </button>
+        <GoogleSignInButton loading={loading} setLoading={setLoading} />
 
         <p className="mt-8 text-center text-slate-600 dark:text-slate-400">
           Don't have an account?{" "}

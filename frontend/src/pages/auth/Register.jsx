@@ -1,18 +1,17 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { FaGoogle, FaEnvelope, FaLock, FaUser, FaArrowLeft, FaArrowRight, FaMars, FaVenus, FaGenderless, FaCheck } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaUser, FaArrowLeft, FaArrowRight, FaMars, FaVenus, FaGenderless, FaCheck } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import toast from 'react-hot-toast';
 import { axiosInstance } from "../../lib/axios";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 
 const Register = () => {
     const { createUser, updateUserProfile, signInWithGoogle } = useAuth();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const [error, setError] = useState("");
 
-    // --- New State for Multi-Step ---
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: "",
@@ -38,11 +37,10 @@ const Register = () => {
     // --- Handlers ---
 
     const handleNext = () => {
-        setError("");
         // Step 1: Personal (Gender/Occupation)
         if (step === 1) {
             if (!formData.gender || !formData.occupation) {
-                setError("Please select your gender and occupation.");
+                toast.error("Please select your gender and occupation.");
                 return;
             }
         }
@@ -59,16 +57,15 @@ const Register = () => {
     const handleRegister = async () => {
         // Final Validation for Step 3
         if (!formData.name || !formData.email || !formData.password) {
-            setError("Please fill in all fields.");
+            toast.error("Please fill in all fields.");
             return;
         }
         if (formData.password.length < 6) {
-            setError("Password must be at least 6 characters");
+            toast.error("Password must be at least 6 characters");
             return;
         }
 
         setLoading(true);
-        setError("");
 
         try {
             const res = await createUser(formData.email, formData.password);
@@ -82,13 +79,12 @@ const Register = () => {
                 photoURL: randomAvatar
             });
 
-            // 3️⃣ Add Firebase info to formData for backend
             const userDataToSend = {
                 ...formData,
-                uid: res.user.uid,           // Firebase UID
-                email: res.user.email,       // Confirmed email
-                name: res.user.displayName || formData.name, // Display name from Firebase
-                photoURL: randomAvatar       // Send generated avatar to backend
+                uid: res.user.uid,
+                email: res.user.email,
+                name: res.user.displayName || formData.name,
+                photoURL: randomAvatar
             };
 
             const response = await axiosInstance.post("/auth/signup", userDataToSend);
@@ -101,45 +97,17 @@ const Register = () => {
             }
         } catch (err) {
             if (err.message === "Firebase: Error (auth/email-already-in-use).") {
-                setError("Email already in use");
+                toast.error("Email already in use");
             } else {
-                setError("Registration failed. Please try again.");
+                toast.error("Registration failed. Please try again.");
             }
-            toast.error("Registration failed.");
         } finally {
             setLoading(false);
         }
     };
 
 
-    const handleGoogleRegister = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const res = await signInWithGoogle();
-            // Save uid, email , name to backend
-            const userDataToSend = {
-                uid: res.user.uid,
-                email: res.user.email,
-                name: res.user.displayName,
-                photoURL: res.user.photoURL
-            };
-            const response = await axiosInstance.post("/auth/google-login", userDataToSend);
-            if (response.status === 201 || response.status === 200) {
-                toast.success("Successfully Registered!");
-                navigate("/home/posts");
-            } else {
-                toast.error(response.data.message);
-            }
-        } catch (err) {
-            setError("Google sign-in failed. Please try again.");
-            toast.error("Google signup failed.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    // --- Constants ---
     const genderOptions = [
         { id: 'male', label: 'Male', icon: <FaMars /> },
         { id: 'female', label: 'Female', icon: <FaVenus /> },
@@ -185,10 +153,10 @@ const Register = () => {
 
             <motion.div
                 layout
-                className="relative z-10 w-full max-w-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 rounded-3xl shadow-2xl p-8 overflow-hidden"
+                className="relative z-10 w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 rounded-3xl shadow-2xl p-8"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6">
                     {step > 1 ? (
                         <button onClick={handleBack} className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition"><FaArrowLeft /></button>
                     ) : (
@@ -216,11 +184,6 @@ const Register = () => {
                     </p>
                 </div>
 
-                {error && (
-                    <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-center text-sm text-red-600 dark:text-red-400">
-                        {error}
-                    </div>
-                )}
 
                 <AnimatePresence mode="wait" custom={1}>
                     {step === 1 && (
@@ -321,7 +284,7 @@ const Register = () => {
                 </AnimatePresence>
 
                 {/* Action Buttons */}
-                <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/50">
                     {step < 3 ? (
                         <button
                             onClick={handleNext}
@@ -341,12 +304,10 @@ const Register = () => {
                 </div>
 
                 {step === 1 && (
-                    <div className="mt-6 text-center">
-                        <p className="text-xs text-slate-400 mb-4">Or join with</p>
-                        <button onClick={handleGoogleRegister} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl py-3 flex items-center justify-center gap-2 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition text-slate-600 dark:text-slate-300">
-                            <FaGoogle className="text-red-500" /> Google
-                        </button>
-                        <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">
+                    <div className="mt-4 text-center">
+                        <p className="text-xs text-slate-400 mb-3">Or join with</p>
+                        <GoogleSignInButton label="Google" loading={loading} setLoading={setLoading} />
+                        <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
                             Already have an account? <Link to="/auth/login" className="font-bold text-violet-600">Sign In</Link>
                         </p>
                     </div>
