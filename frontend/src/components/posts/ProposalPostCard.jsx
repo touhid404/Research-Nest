@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { proposalApi } from "../../lib/proposalApi";
 import { AiOutlinePaperClip } from "react-icons/ai";
-import { BiDotsVerticalRounded, BiShareAlt, BiTrash, BiEditAlt, BiCheckCircle } from "react-icons/bi";
 import { FiSend } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
@@ -10,11 +9,11 @@ import toast from "react-hot-toast";
 import ConfirmModal from "../common/ConfirmModal";
 import RequestModal from "./RequestModal";
 import EditPostModal from "./EditPostModal";
+import PostMenu from "./PostMenu";
 
 const ProposalPostCard = ({ post }) => {
     const { user: currentUser } = useAuth();
     const { user, title, description, researchTopic, interests, attachments, createdAt, status, _id } = post;
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -50,7 +49,6 @@ const ProposalPostCard = ({ post }) => {
         mutationFn: ({ id, data }) => proposalApi.updateProposalPost(id, data),
         onSuccess: () => {
             invalidatePosts();
-            setIsMenuOpen(false);
         },
         onError: (error) => {
             toast.error(error.message || "Failed to update post");
@@ -68,18 +66,19 @@ const ProposalPostCard = ({ post }) => {
         const url = `${window.location.origin}/home/posts/explore`; // Simplified for now
         navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard!");
-        setIsMenuOpen(false);
     };
 
     const toggleStatus = () => {
-        const nextStatus = status === "group_formed" ? "published" : "group_formed";
+        const nextStatus = status === "hidden" ? "published" : "hidden";
         updateMutation.mutate({ id: _id, data: { status: nextStatus } });
     };
 
     return (
-        <div className="group bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 mb-3 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
-            {/* Decoration gradient */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
+        <div className="group bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 mb-3 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-300 relative">
+            {/* Background Decorations Container (handles clipping for absolute children) */}
+            <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10" />
+            </div>
 
             {/* Header: User Info */}
             <div className="flex justify-between items-start mb-3 relative z-20">
@@ -123,85 +122,44 @@ const ProposalPostCard = ({ post }) => {
                             <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border border-slate-100 dark:border-slate-700">
                                 {researchTopic}
                             </span>
-                            {status === "group_formed" && (
-                                <span className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-green-100 dark:border-green-800/30">
-                                    Group Formed
-                                </span>
-                            )}
+
+                            {/* Show only when uid matched */}
+                            {currentUser?.uid === user?.uid && (() => {
+                                const getStatusStyle = (status) => {
+                                    switch (status?.toLowerCase()) {
+                                        case 'published':
+                                            return 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/30';
+                                        case 'hidden':
+                                            return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+                                        case 'draft':
+                                            return 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30';
+                                        case 'rejected':
+                                            return 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30';
+                                        case 'group_formed':
+                                            return 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/30';
+                                        default:
+                                            return 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-700';
+                                    }
+                                };
+                                return (
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border transition-colors duration-200 ${getStatusStyle(status)}`}>
+                                        {status}
+                                    </span>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
 
                 {/* Actions Menu */}
-                <div className="relative">
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all active:scale-95"
-                    >
-                        <BiDotsVerticalRounded size={22} />
-                    </button>
-
-                    <AnimatePresence>
-                        {isMenuOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-30"
-                                    onClick={() => setIsMenuOpen(false)}
-                                />
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-2xl py-2 z-40 overflow-hidden"
-                                >
-                                    {currentUser?.uid === user?.uid ? (
-                                        <>
-                                            <button
-                                                onClick={() => {
-                                                    setIsEditModalOpen(true);
-                                                    setIsMenuOpen(false);
-                                                }}
-                                                className="w-full px-4 py-2.5 text-left text-sm font-semibold flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-gray-200 transition-colors"
-                                            >
-                                                <BiEditAlt size={18} className="text-blue-500" />
-                                                Edit Post
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    toggleStatus();
-                                                    setIsMenuOpen(false);
-                                                }}
-                                                className="w-full px-4 py-2.5 text-left text-sm font-semibold flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-gray-200 transition-colors"
-                                            >
-                                                <BiCheckCircle size={18} className="text-green-500" />
-                                                {status === "group_formed" ? "Mark as Open" : "Mark as Completed"}
-                                            </button>
-                                            <div className="h-px bg-gray-100 dark:bg-slate-700 my-1 mx-2" />
-                                            <button
-                                                onClick={() => {
-                                                    setIsDeleteModalOpen(true);
-                                                    setIsMenuOpen(false);
-                                                }}
-                                                className="w-full px-4 py-2.5 text-left text-sm font-semibold flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors"
-                                            >
-                                                <BiTrash size={18} />
-                                                Delete Post
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button
-                                            onClick={handleCopyLink}
-                                            className="w-full px-4 py-2.5 text-left text-sm font-semibold flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-gray-200 transition-colors"
-                                        >
-                                            <BiShareAlt size={18} className="text-indigo-500" />
-                                            Copy Post Link
-                                        </button>
-                                    )}
-                                </motion.div>
-                            </>
-                        )}
-                    </AnimatePresence>
-                </div>
+                <PostMenu
+                    isOwner={currentUser?.uid === user?.uid}
+                    onEdit={() => setIsEditModalOpen(true)}
+                    onDelete={() => setIsDeleteModalOpen(true)}
+                    onToggleStatus={toggleStatus}
+                    onCopyLink={handleCopyLink}
+                    status={status}
+                />
             </div>
 
             {/* Body */}

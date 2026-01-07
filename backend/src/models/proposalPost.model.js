@@ -36,7 +36,7 @@ const proposalPostSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["draft", "published", "rejected", "group_formed"],
+      enum: ["draft", "published", "rejected", "group_formed","hidden"],
       default: "published",
     },
   },

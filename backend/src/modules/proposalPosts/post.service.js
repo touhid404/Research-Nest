@@ -22,7 +22,8 @@ export const createProposalPostInDB = async (postData) => {
 
 
 export const getAllProposalPostsInDB = async (options = {}) => {
-    const query = { status: { $ne: "group_formed" } };
+    // only return published posts
+    const query = { status: "published" };
     if (options.excludeUid) {
         query["ownerUid"] = { $ne: options.excludeUid };
     }
