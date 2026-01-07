@@ -1,5 +1,6 @@
 import React from 'react';
 import RequestCard from './RequestCard';
+import { Link } from 'react-router';
 
 
 const ProposalGroupCard = ({ proposalTitle, proposalId, requests, onOpenFormGroup }) => {
@@ -19,13 +20,19 @@ const ProposalGroupCard = ({ proposalTitle, proposalId, requests, onOpenFormGrou
 
             <div className="flex flex-col sm:flex-row justify-between items-start mb-6 border-b border-gray-100 dark:border-slate-800 pb-4 relative z-10">
                 <div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500 block mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500 block mb-1.5 bg-gray-50 dark:bg-slate-800 w-fit px-2 py-0.5 rounded-md border border-gray-100 dark:border-slate-700">
                         Proposal
                     </span>
-                    <h2 className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight">
+                    <Link
+                        to={`/home/posts/post/${proposalId}`}
+                        className="font-bold text-lg text-gray-900 dark:text-gray-100 leading-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors block decoration-blue-500/30 hover:underline underline-offset-4"
+                    >
                         {proposalTitle}
-                    </h2>
-                    <p className="text-xs text-gray-500 mt-1 font-medium">{displayedRequests.length} Potential Members</p>
+                    </Link>
+                    <p className="text-xs text-gray-500 mt-2 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
+                        {displayedRequests.length} Potential Members
+                    </p>
                 </div>
 
 

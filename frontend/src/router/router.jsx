@@ -26,6 +26,7 @@ import CreatePaper from "../components/papers/CreatePaper";
 import PaperDetails from "../pages/Home/paperhub/PaperDetails";
 import PaperHub from "../pages/Home/paperhub/PaperHubBase";
 import Overview from "../pages/Home/profile/Overview";
+import PostDetails from "../pages/Home/proposalFeed/PostDetails";
 
 export const router = createBrowserRouter([
     {
@@ -85,6 +86,10 @@ export const router = createBrowserRouter([
                     {
                         path: "create-post",
                         element: <CreateProposalPost />,
+                    },
+                    {
+                        path: "post/:id",
+                        element: <PostDetails />,
                     },
                 ],
             },

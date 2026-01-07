@@ -3,13 +3,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { proposalApi } from "../../lib/proposalApi";
 import { AiOutlinePaperClip } from "react-icons/ai";
 import { FiSend } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 import ConfirmModal from "../common/ConfirmModal";
 import RequestModal from "./RequestModal";
 import EditPostModal from "./EditPostModal";
+import { formatFullTime, formatTime } from "../../utils/formatTime";
 import PostMenu from "./PostMenu";
+
+
+
 
 const ProposalPostCard = ({ post }) => {
     const { user: currentUser } = useAuth();
@@ -17,20 +20,6 @@ const ProposalPostCard = ({ post }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-
-    const timeAgo = (dateString) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const seconds = Math.floor((now - date) / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (days > 0) return `${days}d ago`;
-        if (hours > 0) return `${hours}h ago`;
-        if (minutes > 0) return `${minutes}m ago`;
-        return "Just now";
-    };
 
     const queryClient = useQueryClient();
 
@@ -101,20 +90,13 @@ const ProposalPostCard = ({ post }) => {
                         <div className="flex items-center gap-2 mt-1">
                             <div className="relative group/time">
                                 <span className="cursor-pointer group-hover/time:underline text-[11px] font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-default">
-                                    {timeAgo(createdAt)}
+                                    {formatTime(createdAt)}
                                 </span>
 
                                 {/* Custom Tooltip */}
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 opacity-0 group-hover/time:opacity-100 pointer-events-none transition-all duration-200 translate-y-2 group-hover/time:translate-y-0 z-[10]">
                                     <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap border border-white/10 dark:border-slate-200 flex items-center gap-2">
-                                        {(() => {
-                                            const d = new Date(createdAt);
-                                            const day = d.getDate();
-                                            const month = d.toLocaleString('en-US', { month: 'long' });
-                                            const year = d.getFullYear();
-                                            const time = d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                                            return `${day} ${month}, ${year} at ${time}`;
-                                        })()}
+                                        {formatFullTime(createdAt)}
                                     </div>
                                 </div>
                             </div>
