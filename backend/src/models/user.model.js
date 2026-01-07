@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema(
         },
         occupation: {
             type: String,
-            default: "",
+            enum: ["Student", "Researcher", "Professor", "Industry", "Other"],
+            default: "Student",
         },
         role: {
             type: String,

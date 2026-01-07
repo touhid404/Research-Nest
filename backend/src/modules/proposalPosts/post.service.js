@@ -37,7 +37,7 @@ export const getAllProposalPostsInDB = async (options = {}) => {
 
     // Fetch users
     const users = await User.find({ uid: { $in: ownerUids } })
-        .select("uid name email photoURL isVerified");
+        .select("uid name email photoURL isVerified username occupation researchInterests bio");
 
     // Create a map of uid -> user
     const userMap = users.reduce((acc, user) => {
@@ -69,7 +69,7 @@ export const getAllProposalPostsByUserInDB = async (uid, viewerUid = null) => {
         .sort({ createdAt: -1 })
         .lean();
 
-    const user = await User.findOne({ uid }).select("uid name email photoURL isVerified");
+    const user = await User.findOne({ uid }).select("uid name email photoURL isVerified username occupation researchInterests bio");
 
     // Get application status if viewerUid is provided
     let viewerApplications = new Set();
@@ -93,7 +93,7 @@ export const getProposalPostByIdInDB = async (id, viewerUid = null) => {
     const post = await ProposalPost.findById(id).lean();
     if (!post) return null;
 
-    const user = await User.findOne({ uid: post.ownerUid }).select("uid name email photoURL isVerified");
+    const user = await User.findOne({ uid: post.ownerUid }).select("uid name email photoURL isVerified username occupation researchInterests bio");
 
     let hasApplied = false;
     if (viewerUid) {

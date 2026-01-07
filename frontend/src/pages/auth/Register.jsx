@@ -114,7 +114,7 @@ const Register = () => {
         { id: 'other', label: 'Other', icon: <FaGenderless /> }
     ];
 
-    const roleOptions = ["Student", "Researcher", "Professor", "Company", "Enthusiast"];
+    const occupationOptions = ["Student", "Researcher", "Professor", "Industry", "Other"];  
 
     const interestTags = [
         "Artificial Intelligence", "Biotechnology", "Quantum Computing",
@@ -209,13 +209,13 @@ const Register = () => {
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 ml-1">I am a...</label>
                                 <div className="flex flex-wrap gap-2">
-                                    {roleOptions.map(role => (
+                                    {occupationOptions.map(occupation => (
                                         <button
-                                            key={role}
-                                            onClick={() => updateFormData("occupation", role)}
-                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${formData.occupation === role ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-400'}`}
+                                            key={occupation}
+                                            onClick={() => updateFormData("occupation", occupation)}
+                                            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${formData.occupation === occupation ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-400'}`}
                                         >
-                                            {role}
+                                            {occupation}
                                         </button>
                                     ))}
                                 </div>
