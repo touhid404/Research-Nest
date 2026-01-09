@@ -12,7 +12,7 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
         >
             {/* Gradient for pending cards */}
             {isPending && (
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
             )}
 
 

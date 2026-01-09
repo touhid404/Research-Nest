@@ -47,7 +47,7 @@ const SidebarConversationItem = ({
             {/* Avatar */}
             <div className="relative shrink-0">
                 <div className={`avatar placeholder transition-transform ${isSelected ? 'scale-105' : 'group-hover:scale-105'}`}>
-                    <div className="w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-900 bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-900 bg-linear-to-br from-violet-100 to-fuchsia-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
                         {conversation.isGroup ? (
                             <FaUsers className="text-violet-500 text-lg" />
                         ) : otherUser?.photoURL ? (

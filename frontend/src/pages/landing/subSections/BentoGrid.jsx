@@ -46,7 +46,7 @@ const BentoGrid = () => {
                     {/* Large Card: Collab Space */}
                     <BentoCard
                         colSpan="md:col-span-2"
-                        bg="bg-gradient-to-br from-violet-100 to-indigo-50 dark:from-violet-900/40 dark:to-indigo-900/20"
+                        bg="bg-linear-to-br from-violet-100 to-indigo-50 dark:from-violet-900/40 dark:to-indigo-900/20"
                         title="Collab Space"
                         desc="A dedicated workspace for your team. Create and edit documents in real-time, manage tasks with Kanban boards, and host video meetings without leaving the platform."
                         icon={<FaVideo className="text-2xl text-violet-600 dark:text-violet-300" />}

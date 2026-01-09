@@ -15,7 +15,7 @@ const ProposalGroupCard = ({ proposalTitle, proposalId, requests, onOpenFormGrou
     return (
         <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-6 mb-6 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
             {/* Decoration gradient */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-bl-full -mr-12 -mt-12 pointer-events-none" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-linear-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-bl-full -mr-12 -mt-12 pointer-events-none" />
 
 
             <div className="flex flex-col sm:flex-row justify-between items-start mb-6 border-b border-gray-100 dark:border-slate-800 pb-4 relative z-10">

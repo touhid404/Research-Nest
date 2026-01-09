@@ -10,7 +10,7 @@ const PostLoader = ({ count = 5 }) => {
                     className="animate-pulse group bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden"
                 >
                     {/* Decoration gradient */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10 pointer-events-none" />
 
                     {/* Header */}
                     <div className="flex justify-between items-start mb-3">

@@ -165,7 +165,7 @@ const ChatInterface = () => {
                             ) : otherUser?.photoURL ? (
                                 <img src={otherUser.photoURL} alt={otherUser.name} className="object-cover w-full h-full rounded-full" />
                             ) : (
-                                <span className="text-lg font-bold bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white flex items-center justify-center w-full h-full rounded-full">
+                                <span className="text-lg font-bold bg-linear-to-br from-violet-600 to-fuchsia-600 text-white flex items-center justify-center w-full h-full rounded-full">
                                     {otherUser?.name?.charAt(0).toUpperCase()}
                                 </span>
                             )}

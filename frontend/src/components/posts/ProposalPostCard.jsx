@@ -88,7 +88,7 @@ const ProposalPostCard = ({ post }) => {
             className={`group/card relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-5 mb-5 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:-translate-y-1 ${status === 'hidden' ? 'opacity-75' : ''}`}
         >
             <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10" />
             </div>
 
             <div className="flex justify-between items-start mb-3 relative z-20">
@@ -118,11 +118,11 @@ const ProposalPostCard = ({ post }) => {
                                 {showUserTooltip && <UserInfoTooltip user={user} />}
                             </AnimatePresence>
                             <div className="relative group/time">
-                                <span className="cursor-pointer group-hover/time:underline text-[11px] font-medium text-gray-400 dark:text-gray-500 transition-colors cursor-default">
+                                <span className="group-hover/time:underline text-[11px] font-medium text-gray-400 dark:text-gray-500 transition-colors cursor-default">
                                     {formatTime(createdAt)}
                                 </span>
 
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 opacity-0 group-hover/time:opacity-100 pointer-events-none transition-all duration-200 translate-y-2 group-hover/time:translate-y-0 z-[10]">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 opacity-0 group-hover/time:opacity-100 pointer-events-none transition-all duration-200 translate-y-2 group-hover/time:translate-y-0 z-10">
                                     <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap border border-white/10 dark:border-slate-200 flex items-center gap-2">
                                         {formatFullTime(createdAt)}
                                     </div>

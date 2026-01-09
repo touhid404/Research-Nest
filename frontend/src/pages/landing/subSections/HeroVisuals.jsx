@@ -14,7 +14,7 @@ const HeroVisuals = () => {
                     y: [0, -20, 0]
                 }}
                 transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                className="relative w-[400px] h-[500px] bg-gradient-to-br from-slate-900 to-slate-800 rounded-[40px] border border-slate-700 shadow-2xl p-6 flex flex-col justify-between z-20 group"
+                className="relative w-[400px] h-[500px] bg-linear-to-br from-slate-900 to-slate-800 rounded-[40px] border border-slate-700 shadow-2xl p-6 flex flex-col justify-between z-20 group"
             >
                 {/* Mock UI Header */}
                 <div className="flex items-center justify-between border-b border-slate-700 pb-4">

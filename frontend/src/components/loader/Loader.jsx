@@ -7,7 +7,7 @@ const Loader = () => {
       <div className="flex w-full max-w-[1300px] gap-8">
         
         {/* ================= LEFT SIDEBAR SKELETON ================= */}
-        <div className="hidden md:flex flex-col w-64 flex-shrink-0 h-[calc(100vh-2rem)] sticky top-4">
+        <div className="hidden md:flex flex-col w-64 shrink-0 h-[calc(100vh-2rem)] sticky top-4">
           {/* Logo Placeholder */}
           <div className="h-8 w-32 bg-gray-200 dark:bg-slate-800 rounded mb-8 animate-pulse" />
 
@@ -68,7 +68,7 @@ const Loader = () => {
         </div>
 
         {/* ================= RIGHT SIDEBAR SKELETON ================= */}
-        <div className="hidden lg:flex flex-col w-80 flex-shrink-0 space-y-6 pt-2">
+        <div className="hidden lg:flex flex-col w-80 shrink-0 space-y-6 pt-2">
           
           {/* Search Input */}
           <div className="h-12 w-full bg-gray-100 dark:bg-slate-800 rounded-full animate-pulse" />

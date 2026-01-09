@@ -19,7 +19,12 @@ import ForgetPassword from "../pages/auth/ForgetPassword";
 import PrivateRoute from "../privateRoutes/privateRoutes";
 import PublicPosts from "../pages/Home/proposalFeed/PublicPosts";
 import CreateProposalPost from "../components/posts/CreateProposalPost";
-import Workspace from "../pages/Home/workspace/Workspace";
+import WorkspaceBase from "../pages/Home/workspace/WorkspaceBase";
+import WorkspaceOverviewPage from "../pages/Home/workspace/WorkspaceOverviewPage";
+import WorkspaceCalendarPage from "../pages/Home/workspace/WorkspaceCalendarPage";
+import WorkspaceMeetingsPage from "../pages/Home/workspace/WorkspaceMeetingsPage";
+import WorkspaceDocumentsPage from "../pages/Home/workspace/WorkspaceDocumentsPage";
+import MeetingRoomPage from "../pages/Home/workspace/MeetingRoomPage";
 import PublicPapers from "../pages/Home/paperhub/PublicPapers";
 import MyPapers from "../pages/Home/paperhub/MyPapers";
 import CreatePaper from "../components/papers/CreatePaper";
@@ -118,7 +123,33 @@ export const router = createBrowserRouter([
             },
             {
                 path: "workspace",
-                element: <Workspace />,
+                element: <WorkspaceBase />,
+                children: [
+                    {
+                        index: true,
+                        element: <div className="flex items-center justify-center h-full text-slate-500">Select a workspace to get started</div>,
+                    },
+                    {
+                        path: ":workspaceId/overview",
+                        element: <WorkspaceOverviewPage />,
+                    },
+                    {
+                        path: ":workspaceId/calendar",
+                        element: <WorkspaceCalendarPage />,
+                    },
+                    {
+                        path: ":workspaceId/meetings",
+                        element: <WorkspaceMeetingsPage />,
+                    },
+                    {
+                        path: ":workspaceId/meetings/:meetingId",
+                        element: <MeetingRoomPage />,
+                    },
+                    {
+                        path: ":workspaceId/documents",
+                        element: <WorkspaceDocumentsPage />,
+                    },
+                ],
             },
             { path: "messages", element: <MessagesBase /> },
             { path: "messages/:uid", element: <MessagesBase /> },
@@ -142,10 +173,6 @@ export const router = createBrowserRouter([
                     {
                         path: "posts",
                         element: <MyPosts />,
-                    },
-                    {
-                        path: "workspace",
-                        element: <Workspace />,
                     },
                 ],
             },

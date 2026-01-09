@@ -11,7 +11,7 @@ const RequestLoader = ({ count = 5 }) => {
                     className="flex flex-col sm:flex-row items-start gap-4 p-5 mb-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden animate-pulse"
                 >
                     {/* Decoration gradient */}
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
 
                     {/* Avatar Section */}
                     <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-slate-700 shrink-0" />
