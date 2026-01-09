@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import Conversation from "../models/conversation.model.js";
+import Document from "../models/document.model.js";
 import { config } from "../config/config.js";
 
 export const initializeServer = (server) => {
@@ -12,6 +13,8 @@ export const initializeServer = (server) => {
 
     // Store connected users
     const connectedUsers = new Map();
+    // Store document collaborators: { documentId: Map<socketId, { uid, name, color }> }
+    const documentCollaborators = new Map();
 
     io.on("connection", (socket) => {
         const userId = socket.handshake.query.userId;
@@ -104,6 +107,173 @@ export const initializeServer = (server) => {
             }
         });
 
+        // ============== WORKSPACE SOCKET EVENTS ==============
+
+        // Join workspace room
+        socket.on("workspace:join", (workspaceId) => {
+            socket.join(`workspace:${workspaceId}`);
+            console.log(`User ${userId} joined workspace ${workspaceId}`);
+        });
+
+        // Leave workspace room
+        socket.on("workspace:leave", (workspaceId) => {
+            socket.leave(`workspace:${workspaceId}`);
+            console.log(`User ${userId} left workspace ${workspaceId}`);
+        });
+
+        // ============== DOCUMENT COLLABORATION EVENTS ==============
+
+        // Join document for collaborative editing
+        socket.on("document:join", async ({ documentId, userName }) => {
+            socket.join(`document:${documentId}`);
+
+            // Initialize document collaborators map if needed
+            if (!documentCollaborators.has(documentId)) {
+                documentCollaborators.set(documentId, new Map());
+            }
+
+            // Generate random color for cursor
+            const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            // Add collaborator
+            documentCollaborators.get(documentId).set(socket.id, {
+                uid: userId,
+                name: userName || "Anonymous",
+                color,
+                cursor: 0,
+            });
+
+            // Broadcast updated collaborators list
+            const collaborators = Array.from(documentCollaborators.get(documentId).values());
+            io.to(`document:${documentId}`).emit("document:collaborators", {
+                documentId,
+                collaborators,
+            });
+
+            console.log(`User ${userId} joined document ${documentId}`);
+        });
+
+        // Leave document
+        socket.on("document:leave", (documentId) => {
+            socket.leave(`document:${documentId}`);
+
+            // Remove collaborator
+            if (documentCollaborators.has(documentId)) {
+                documentCollaborators.get(documentId).delete(socket.id);
+
+                // Broadcast updated collaborators list
+                const collaborators = Array.from(documentCollaborators.get(documentId).values());
+                io.to(`document:${documentId}`).emit("document:collaborators", {
+                    documentId,
+                    collaborators,
+                });
+
+                // Clean up empty document map
+                if (documentCollaborators.get(documentId).size === 0) {
+                    documentCollaborators.delete(documentId);
+                }
+            }
+
+            console.log(`User ${userId} left document ${documentId}`);
+        });
+
+        // Broadcast document changes (Yjs updates)
+        socket.on("document:update", ({ documentId, update }) => {
+            socket.to(`document:${documentId}`).emit("document:update", {
+                documentId,
+                update,
+                senderId: userId,
+            });
+        });
+
+        // Broadcast cursor position
+        socket.on("document:cursor", ({ documentId, cursor, selection }) => {
+            if (documentCollaborators.has(documentId)) {
+                const collaborator = documentCollaborators.get(documentId).get(socket.id);
+                if (collaborator) {
+                    collaborator.cursor = cursor;
+                }
+            }
+
+            socket.to(`document:${documentId}`).emit("document:cursor", {
+                documentId,
+                userId,
+                cursor,
+                selection,
+            });
+        });
+
+        // ============== VIDEO MEETING EVENTS ==============
+
+        // Join meeting room
+        socket.on("meeting:join", ({ meetingId, userName }) => {
+            socket.join(`meeting:${meetingId}`);
+
+            // Notify others that user joined
+            socket.to(`meeting:${meetingId}`).emit("meeting:user-joined", {
+                meetingId,
+                userId,
+                userName,
+                socketId: socket.id,
+            });
+
+            console.log(`User ${userId} joined meeting ${meetingId}`);
+        });
+
+        // Leave meeting room
+        socket.on("meeting:leave", (meetingId) => {
+            socket.leave(`meeting:${meetingId}`);
+
+            // Notify others that user left
+            socket.to(`meeting:${meetingId}`).emit("meeting:user-left", {
+                meetingId,
+                userId,
+                socketId: socket.id,
+            });
+
+            console.log(`User ${userId} left meeting ${meetingId}`);
+        });
+
+        // WebRTC signaling - offer
+        socket.on("meeting:offer", ({ meetingId, targetSocketId, offer }) => {
+            io.to(targetSocketId).emit("meeting:offer", {
+                meetingId,
+                fromSocketId: socket.id,
+                fromUserId: userId,
+                offer,
+            });
+        });
+
+        // WebRTC signaling - answer
+        socket.on("meeting:answer", ({ meetingId, targetSocketId, answer }) => {
+            io.to(targetSocketId).emit("meeting:answer", {
+                meetingId,
+                fromSocketId: socket.id,
+                fromUserId: userId,
+                answer,
+            });
+        });
+
+        // WebRTC signaling - ICE candidate
+        socket.on("meeting:ice-candidate", ({ meetingId, targetSocketId, candidate }) => {
+            io.to(targetSocketId).emit("meeting:ice-candidate", {
+                meetingId,
+                fromSocketId: socket.id,
+                candidate,
+            });
+        });
+
+        // Toggle audio/video
+        socket.on("meeting:toggle-media", ({ meetingId, audioEnabled, videoEnabled }) => {
+            socket.to(`meeting:${meetingId}`).emit("meeting:user-media-toggle", {
+                userId,
+                socketId: socket.id,
+                audioEnabled,
+                videoEnabled,
+            });
+        });
+
         // Handle disconnect
         socket.on("disconnect", () => {
 
@@ -112,6 +282,24 @@ export const initializeServer = (server) => {
 
                 // Notify user is offline
                 io.emit("user:offline", { userId });
+
+                // Clean up document collaborators
+                for (const [documentId, collaborators] of documentCollaborators.entries()) {
+                    if (collaborators.has(socket.id)) {
+                        collaborators.delete(socket.id);
+
+                        // Broadcast updated collaborators list
+                        const remaining = Array.from(collaborators.values());
+                        io.to(`document:${documentId}`).emit("document:collaborators", {
+                            documentId,
+                            collaborators: remaining,
+                        });
+
+                        if (collaborators.size === 0) {
+                            documentCollaborators.delete(documentId);
+                        }
+                    }
+                }
             }
         });
     });
