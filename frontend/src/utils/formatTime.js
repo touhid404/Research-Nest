@@ -58,3 +58,53 @@ export const formatFullTime = (date) => {
 
     return `${day} ${month} ${year}, ${time}`;
 };
+
+/**
+ * Formats a date into clock time: "10:30 AM"
+ */
+export const formatClockTime = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    });
+};
+
+/**
+ * Formats a date into full date-time: "10 Jan, 10:30 AM"
+ */
+export const formatDateTime = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const day = d.getDate();
+    const month = d.toLocaleString("en-US", { month: "short" });
+    const time = d.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    });
+    return `${day} ${month}, ${time}`;
+};
+
+/**
+ * Formats duration in minutes to readable string: "30m", "1h", "1h 30m"
+ */
+export const formatDuration = (minutes) => {
+    if (!minutes) return "";
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins ? `${hours}h ${mins}m` : `${hours}h`;
+};
+
+/**
+ * Formats time as short format: "10:30"
+ */
+export const formatShortTime = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleTimeString([], { 
+        hour: "2-digit", 
+        minute: "2-digit" 
+    });
+};

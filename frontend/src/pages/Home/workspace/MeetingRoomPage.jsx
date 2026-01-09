@@ -8,8 +8,10 @@ const MeetingRoomPage = () => {
     const navigate = useNavigate();
     const { workspace } = useOutletContext();
     const { meetings, fetchMeetings } = useWorkspaceStore();
-    const [meeting, setMeeting] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Get meeting directly from store to keep it reactive to updates
+    const meeting = meetings.find((m) => m._id === meetingId);
 
     useEffect(() => {
         const loadMeeting = async () => {
@@ -23,18 +25,11 @@ const MeetingRoomPage = () => {
                 await fetchMeetings(workspaceId, { forceRefresh: true });
             }
 
-            // Get meeting from updated store
-            const state = useWorkspaceStore.getState();
-            foundMeeting = state.meetings.find((m) => m._id === meetingId);
-
-            if (foundMeeting) {
-                setMeeting(foundMeeting);
-            }
             setLoading(false);
         };
 
         loadMeeting();
-    }, [workspaceId, meetingId, meetings.length]);
+    }, [workspaceId, meetingId, meetings.length, fetchMeetings]);
 
     const handleLeave = () => {
         navigate(`/home/workspace/${workspaceId}/meetings`);

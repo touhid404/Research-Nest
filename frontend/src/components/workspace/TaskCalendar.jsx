@@ -11,6 +11,7 @@ import useWorkspaceStore from "../../store/useWorkspaceStore";
 import useAuth from "../../hooks/useAuth";
 import CreateTaskModal from "./CreateTaskModal";
 import TaskDetailModal from "./TaskDetailModal";
+import { formatClockTime } from "../../utils/formatTime";
 
 const TaskCalendar = ({ workspace }) => {
     const { user } = useAuth();
@@ -178,14 +179,6 @@ const TaskCalendar = ({ workspace }) => {
         e.stopPropagation();
         const newStatus = task.status === "completed" ? "todo" : "completed";
         await updateTask(task._id, { status: newStatus });
-    };
-
-    const formatTime = (date) => {
-        return new Date(date).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        });
     };
 
     const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

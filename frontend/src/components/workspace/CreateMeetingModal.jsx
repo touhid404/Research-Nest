@@ -35,6 +35,8 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
     });
     const [selectedParticipants, setSelectedParticipants] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showCustomDuration, setShowCustomDuration] = useState(false);
+    const [customMinutes, setCustomMinutes] = useState("");
 
     useEffect(() => {
         if (isOpen) {
@@ -50,6 +52,8 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                 externalLink: "",
             });
             setSelectedParticipants([]);
+            setShowCustomDuration(false);
+            setCustomMinutes("");
         }
     }, [isOpen]);
 
@@ -98,6 +102,12 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
             if (!isInstant) {
                 const startDateTime = new Date(`${formData.date}T${formData.startTime}`);
                 meetingData.startTime = startDateTime.toISOString();
+                console.log("=== Meeting Creation Debug ===");
+                console.log("Form date:", formData.date);
+                console.log("Form time:", formData.startTime);
+                console.log("Combined local:", `${formData.date}T${formData.startTime}`);
+                console.log("Parsed Date object:", startDateTime.toString());
+                console.log("ISO string sent:", meetingData.startTime);
             }
 
             await createMeeting(meetingData);
@@ -130,7 +140,7 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
     const modalContent = (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-9999 flex items-center justify-center p-3">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -146,7 +156,7 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: "spring", duration: 0.4 }}
-                        className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-white/20 dark:border-slate-800 overflow-hidden"
+                        className="relative w-full max-w-[470px] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-white/20 dark:border-slate-800 overflow-hidden"
                     >
                         {/* Header */}
                         <div className="relative px-6 pt-6 pb-4">
@@ -259,14 +269,18 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                                     Duration
                                 </label>
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2">
                                     {durations.map((d) => (
                                         <button
                                             key={d.value}
                                             type="button"
-                                            onClick={() => setFormData({ ...formData, duration: d.value })}
-                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                                                formData.duration === d.value
+                                            onClick={() => {
+                                                setFormData({ ...formData, duration: d.value });
+                                                setShowCustomDuration(false);
+                                                setCustomMinutes("");
+                                            }}
+                                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                                                formData.duration === d.value && !showCustomDuration
                                                     ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
                                                     : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                                             }`}
@@ -274,7 +288,38 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                             {d.label}
                                         </button>
                                     ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCustomDuration(!showCustomDuration)}
+                                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                                            showCustomDuration
+                                                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                        }`}
+                                    >
+                                        Custom
+                                    </button>
                                 </div>
+                                {showCustomDuration && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            min="2"
+                                            max="480"
+                                            value={customMinutes}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                setCustomMinutes(value);
+                                                if (value && parseInt(value) >= 2) {
+                                                    setFormData({ ...formData, duration: parseInt(value) });
+                                                }
+                                            }}
+                                            placeholder="Enter minutes"
+                                            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none text-sm"
+                                        />
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">minutes</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* External Link */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
     IoVideocamOutline,
@@ -18,6 +18,7 @@ import useWorkspaceStore from "../../store/useWorkspaceStore";
 import useAuth from "../../hooks/useAuth";
 import CreateMeetingModal from "./CreateMeetingModal";
 import ConfirmModal from "../common/ConfirmModal";
+import { formatDateTime, formatDuration } from "../../utils/formatTime";
 
 const MeetingScheduler = ({ workspace }) => {
     const navigate = useNavigate();
@@ -28,6 +29,16 @@ const MeetingScheduler = ({ workspace }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filter, setFilter] = useState("upcoming");
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, meetingId: null, isLoading: false });
+
+    // Helper to get meeting end time (used for display purposes)
+    const getMeetingEndTime = useCallback((meeting) => {
+        if (!meeting) return null;
+        if (meeting.endTime) return new Date(meeting.endTime);
+        if (meeting.duration && meeting.startTime) {
+            return new Date(new Date(meeting.startTime).getTime() + meeting.duration * 60 * 1000);
+        }
+        return null;
+    }, []);
 
     // Check for meeting ID in URL on mount
     useEffect(() => {
@@ -44,29 +55,29 @@ const MeetingScheduler = ({ workspace }) => {
     }, [workspace?._id]);
 
     const filteredMeetings = meetings.filter((meeting) => {
-        const now = new Date();
-        const meetingDate = new Date(meeting.startTime);
-
         switch (filter) {
             case "upcoming":
-                // Upcoming: future meetings that are not live, cancelled, or completed
-                return meetingDate >= now && meeting.status !== "cancelled" && meeting.status !== "live" && meeting.status !== "completed";
+                // Upcoming: only "scheduled" status
+                return meeting.status === "scheduled";
             case "live":
+                // Live: only "live" status
                 return meeting.status === "live";
             case "past":
-                // Past: only completed meetings OR past date meetings that are not live
-                return meeting.status === "completed" || (meetingDate < now && meeting.status !== "live");
+                // Past: only "completed" status
+                return meeting.status === "completed";
             default:
-                // All: exclude cancelled
+                // All: show everything except cancelled
                 return meeting.status !== "cancelled";
         }
     }).sort((a, b) => {
+        // Live meetings first
         if (a.status === "live" && b.status !== "live") return -1;
         if (b.status === "live" && a.status !== "live") return 1;
         return new Date(a.startTime) - new Date(b.startTime);
     });
 
     const groupedMeetings = filteredMeetings.reduce((groups, meeting) => {
+        // Group by "Live Now" for live meetings, otherwise by date
         const dateKey = meeting.status === "live" ? "Live Now" : new Date(meeting.startTime).toLocaleDateString("en-US", {
             weekday: "long",
             month: "short",
@@ -76,23 +87,6 @@ const MeetingScheduler = ({ workspace }) => {
         groups[dateKey].push(meeting);
         return groups;
     }, {});
-
-    const formatTime = (date) => {
-        if (!date) return "";
-        return new Date(date).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        });
-    };
-
-    const formatDuration = (minutes) => {
-        if (!minutes) return "";
-        if (minutes < 60) return `${minutes}m`;
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return mins ? `${hours}h ${mins}m` : `${hours}h`;
-    };
 
     const handleDeleteMeeting = (meetingId, e) => {
         e.stopPropagation();
@@ -129,16 +123,11 @@ const MeetingScheduler = ({ workspace }) => {
     };
 
     const canJoinMeeting = (meeting) => {
-        if (meeting.status === "live") return true;
-        const now = new Date();
-        const startTime = new Date(meeting.startTime);
-        const joinWindow = new Date(startTime.getTime() - 15 * 60 * 1000);
-        if (meeting.endTime) {
-            return now >= joinWindow && now <= new Date(meeting.endTime);
-        }
-        return now >= joinWindow;
+        // Can only join if meeting is live
+        return meeting.status === "live";
     };
 
+    // Count live meetings
     const liveMeetingsCount = meetings.filter(m => m.status === "live").length;
 
     const filters = [
@@ -249,8 +238,6 @@ const MeetingScheduler = ({ workspace }) => {
                                                 meeting={meeting}
                                                 user={user}
                                                 canJoin={canJoinMeeting(meeting)}
-                                                formatTime={formatTime}
-                                                formatDuration={formatDuration}
                                                 onJoin={() => handleJoinMeeting(meeting)}
                                                 onDelete={(e) => handleDeleteMeeting(meeting._id, e)}
                                             />
@@ -286,11 +273,19 @@ const MeetingScheduler = ({ workspace }) => {
 };
 
 // Meeting Card Component
-const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoin, onDelete }) => {
+const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
     const isScheduler = meeting.scheduledBy === user?.uid;
     const isLive = meeting.status === "live";
+    const isCompleted = meeting.status === "completed";
     const acceptedCount = meeting.participants?.filter((p) => p.status === "accepted").length || 0;
     const totalCount = meeting.participants?.length || 0;
+
+    // Get scheduler info - prioritize current user data if they're the scheduler, then try scheduledByUser, fallback to participantDetails
+    const schedulerInfo = isScheduler 
+        ? { name: user?.displayName || user?.name, photoURL: user?.photoURL }
+        : (meeting.scheduledByUser || 
+           meeting.participantDetails?.find(p => p.uid === meeting.scheduledBy)?.user ||
+           { name: "Unknown", photoURL: null });
 
     const getMeetingTypeInfo = (type) => {
         switch (type) {
@@ -312,7 +307,9 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
             className={`group/card relative bg-white dark:bg-slate-800 border rounded-2xl px-5 py-3 transition-all duration-500 hover:shadow-lg dark:hover:shadow-slate-900/50 hover:-translate-y-0.5 ${
                 isLive 
                     ? "border-green-300 dark:border-green-600 shadow-green-100 dark:shadow-green-900/20" 
-                    : "border-gray-200 dark:border-slate-700"
+                    : isCompleted
+                        ? "border-gray-300 dark:border-slate-600 opacity-75"
+                        : "border-gray-200 dark:border-slate-700"
             }`}
         >
             {/* Background decoration */}
@@ -320,7 +317,9 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
                 <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -mr-8 -mt-8 ${
                     isLive 
                         ? "bg-linear-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20"
-                        : "bg-linear-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20"
+                        : isCompleted
+                            ? "bg-linear-to-br from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20"
+                            : "bg-linear-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20"
                 }`} />
             </div>
 
@@ -330,15 +329,15 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
                     <div className="flex items-center gap-2.5">
                         {/* Organizer Avatar */}
                         <div className="relative shrink-0">
-                            {meeting.scheduledByUser?.photoURL ? (
+                            {schedulerInfo?.photoURL ? (
                                 <img
-                                    src={meeting.scheduledByUser.photoURL}
-                                    alt={meeting.scheduledByUser.name}
+                                    src={schedulerInfo.photoURL}
+                                    alt={schedulerInfo.name}
                                     className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm"
                                 />
                             ) : (
                                 <div className="w-9 h-9 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm border-2 border-white dark:border-slate-700">
-                                    {meeting.scheduledByUser?.name?.charAt(0) || "M"}
+                                    {schedulerInfo?.name?.charAt(0) || "?"}
                                 </div>
                             )}
                             {isLive && (
@@ -356,8 +355,11 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
                                 )}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
-                                    by {meeting.scheduledByUser?.name || "Unknown"}
+                                <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400">
+                                    {isScheduler ? "You" : schedulerInfo?.name || "Unknown"}
+                                </span>
+                                <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                                    {isScheduler ? "(Organizer)" : "• Organizer"}
                                 </span>
                                 <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border ${
@@ -394,16 +396,38 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
 
                 {/* Time & Details */}
                 <div className="flex flex-wrap items-center gap-2 mb-2 text-xs text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/50 px-2 py-1 rounded-md">
-                        <IoCalendarOutline className="w-3 h-3" />
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{formatTime(meeting.startTime)}</span>
-                        {meeting.duration && (
-                            <span className="text-gray-400 dark:text-gray-500"> {formatDuration(meeting.duration)}</span>
+                    {/* Start & End Time */}
+                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/50 px-2.5 py-1.5 rounded-lg">
+                        <IoTimeOutline className="w-3.5 h-3.5 text-violet-500" />
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                            {formatDateTime(meeting.startTime)}
+                        </span>
+                        {(meeting.endTime || meeting.duration) && (
+                            <>
+                                <span className="text-gray-400 dark:text-gray-500">→</span>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                    {meeting.endTime 
+                                        ? formatDateTime(meeting.endTime)
+                                        : formatDateTime(new Date(new Date(meeting.startTime).getTime() + meeting.duration * 60000))
+                                    }
+                                </span>
+                            </>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/50 px-2 py-1 rounded-md">
-                        <IoPeopleOutline className="w-3 h-3" />
+                    {/* Duration */}
+                    {meeting.duration && (
+                        <div className="flex items-center gap-1.5 bg-violet-50 dark:bg-violet-900/30 px-2.5 py-1.5 rounded-lg">
+                            <IoCalendarOutline className="w-3.5 h-3.5 text-violet-500" />
+                            <span className="font-medium text-violet-600 dark:text-violet-400">
+                                {formatDuration(meeting.duration)}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Participants count */}
+                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/50 px-2.5 py-1.5 rounded-lg">
+                        <IoPeopleOutline className="w-3.5 h-3.5 text-emerald-500" />
                         <span className="text-gray-700 dark:text-gray-300">{acceptedCount}/{totalCount} joined</span>
                     </div>
 
@@ -412,10 +436,10 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
                             href={meeting.externalLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2 py-1 rounded-md hover:underline"
+                            className="flex items-center gap-1.5 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2.5 py-1.5 rounded-lg hover:underline"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <IoLinkOutline className="w-3 h-3" />
+                            <IoLinkOutline className="w-3.5 h-3.5" />
                             <span>Link</span>
                         </a>
                     )}
@@ -451,8 +475,8 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
                         </div>
                     </div>
 
-                    {/* Join Button - only show if not completed */}
-                    {(canJoin || isLive) && meeting.status !== "completed" && (
+                    {/* Join Button - only show if not completed/expired */}
+                    {(canJoin || isLive) && !isCompleted && (
                         <button
                             onClick={onJoin}
                             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white rounded-full transition-all active:scale-95 ${
@@ -464,6 +488,13 @@ const MeetingCard = ({ meeting, user, canJoin, formatTime, formatDuration, onJoi
                             <IoPlayOutline className="w-3.5 h-3.5" />
                             Join
                         </button>
+                    )}
+
+                    {/* Completed badge for past meetings */}
+                    {isCompleted && (
+                        <span className="px-2.5 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 rounded-full">
+                            Ended
+                        </span>
                     )}
                 </div>
             </div>

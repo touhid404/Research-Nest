@@ -12,6 +12,8 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase/firebase.init";
 import { io } from "socket.io-client";
+import useWorkspaceStore from "../store/useWorkspaceStore";
+import useChatStore from "../store/useChatStore";
 
 const googleProvider = new GoogleAuthProvider();
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL;
@@ -57,6 +59,9 @@ const AuthProvider = ({ children }) => {
       socket.disconnect();
       setSocket(null);
     }
+    // Reset all stores to clear previous user's data
+    useWorkspaceStore.getState().resetStore();
+    useChatStore.getState().resetStore();
     return signOut(auth);
   };
 

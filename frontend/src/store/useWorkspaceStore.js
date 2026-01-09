@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { workspaceApi } from '../lib/workspaceApi';
 
-const useWorkspaceStore = create((set, get) => ({
+const initialState = {
     // State
     workspaces: [],
     selectedWorkspace: null,
@@ -27,6 +27,23 @@ const useWorkspaceStore = create((set, get) => ({
     // Active document editing state
     activeDocument: null,
     documentCollaborators: [],
+};
+
+const useWorkspaceStore = create((set, get) => ({
+    ...initialState,
+
+    // Reset store to initial state (call on logout)
+    resetStore: () => {
+        const currentSocket = get().socket;
+        // Leave all workspace rooms if socket exists
+        if (currentSocket) {
+            const workspaces = get().workspaces;
+            workspaces.forEach(w => {
+                currentSocket.emit("workspace:leave", w._id);
+            });
+        }
+        set(initialState);
+    },
 
     // Actions
     setSocket: (socket) => set({ socket }),
@@ -388,12 +405,14 @@ const useWorkspaceStore = create((set, get) => ({
         socket.on("meeting:updated", (meeting) => {
             set((state) => ({
                 meetings: state.meetings.map((m) => (m._id === meeting._id ? meeting : m)),
+                myMeetings: state.myMeetings.map((m) => (m._id === meeting._id ? meeting : m)),
             }));
         });
 
         socket.on("meeting:deleted", ({ meetingId }) => {
             set((state) => ({
                 meetings: state.meetings.filter((m) => m._id !== meetingId),
+                myMeetings: state.myMeetings.filter((m) => m._id !== meetingId),
             }));
         });
 

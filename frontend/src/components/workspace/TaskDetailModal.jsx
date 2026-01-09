@@ -14,6 +14,7 @@ import {
 } from "react-icons/io5";
 import toast from "react-hot-toast";
 import useWorkspaceStore from "../../store/useWorkspaceStore";
+import ConfirmModal from "../common/ConfirmModal";
 
 const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
     const { updateTask, deleteTask } = useWorkspaceStore();
@@ -27,13 +28,19 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
         dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleUpdate = async () => {
+    const handleUpdateClick = () => {
         if (!formData.title.trim()) {
             toast.error("Task title is required");
             return;
         }
+        setShowUpdateConfirm(true);
+    };
 
+    const handleConfirmUpdate = async () => {
         setIsSubmitting(true);
         try {
             await updateTask(task._id, {
@@ -45,6 +52,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
             });
             toast.success("Task updated successfully!");
             setIsEditing(false);
+            setShowUpdateConfirm(false);
         } catch (error) {
             toast.error("Failed to update task");
         } finally {
@@ -52,15 +60,21 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
         }
     };
 
-    const handleDelete = async () => {
-        if (!confirm("Are you sure you want to delete this task?")) return;
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
 
+    const handleConfirmDelete = async () => {
+        setIsDeleting(true);
         try {
             await deleteTask(task._id);
             toast.success("Task deleted");
+            setShowDeleteConfirm(false);
             onClose();
         } catch (error) {
             toast.error("Failed to delete task");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -164,7 +178,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                         <IoCreateOutline className="w-5 h-5" />
                                     </button>
                                     <button
-                                        onClick={handleDelete}
+                                        onClick={handleDeleteClick}
                                         className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors text-red-500"
                                     >
                                         <IoTrashOutline className="w-5 h-5" />
@@ -261,7 +275,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                             Cancel
                                         </button>
                                         <button
-                                            onClick={handleUpdate}
+                                            onClick={handleUpdateClick}
                                             disabled={isSubmitting}
                                             className="px-5 py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-lg shadow-violet-500/25 transition-all disabled:opacity-50 flex items-center gap-2"
                                         >
@@ -386,7 +400,37 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
 
     if (typeof document === "undefined") return null;
 
-    return createPortal(modalContent, document.body);
+    return (
+        <>
+            {createPortal(modalContent, document.body)}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Task"
+                message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                isDanger={true}
+                isLoading={isDeleting}
+            />
+
+            {/* Update Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showUpdateConfirm}
+                onClose={() => setShowUpdateConfirm(false)}
+                onConfirm={handleConfirmUpdate}
+                title="Update Task"
+                message="Are you sure you want to save these changes to the task?"
+                confirmText="Save Changes"
+                cancelText="Cancel"
+                isDanger={false}
+                isLoading={isSubmitting}
+            />
+        </>
+    );
 };
 
 export default TaskDetailModal;

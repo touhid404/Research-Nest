@@ -14,6 +14,7 @@ import { HiOutlineClipboardDocumentCheck, HiOutlineUsers, HiOutlineDocumentText,
 import useWorkspaceStore from "../../store/useWorkspaceStore";
 import useAuth from "../../hooks/useAuth";
 import CreateTaskModal from "./CreateTaskModal";
+import { formatClockTime } from "../../utils/formatTime";
 
 const WorkspaceOverview = ({ workspace }) => {
     const { user } = useAuth();
@@ -72,14 +73,6 @@ const WorkspaceOverview = ({ workspace }) => {
         if (diffDays === 1) return "Tomorrow";
         if (diffDays < 7) return d.toLocaleDateString("en-US", { weekday: "short" });
         return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    };
-
-    const formatTime = (date) => {
-        return new Date(date).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-        });
     };
 
     const getPriorityColor = (priority) => {
@@ -260,7 +253,7 @@ const WorkspaceOverview = ({ workspace }) => {
                                                         {meeting.title}
                                                     </p>
                                                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                                        {formatTime(meeting.startTime)} - {formatTime(meeting.endTime)}
+                                                        {formatClockTime(meeting.startTime)} - {formatClockTime(meeting.endTime)}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center -space-x-2">

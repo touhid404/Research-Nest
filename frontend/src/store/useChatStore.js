@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { chatApi } from '../lib/chatApi';
 
-const useChatStore = create((set, get) => ({
+const initialChatState = {
     // State
     conversations: [],
     selectedConversation: null,
@@ -9,6 +9,13 @@ const useChatStore = create((set, get) => ({
     users: [],
     isLoading: false,
     error: null,
+};
+
+const useChatStore = create((set, get) => ({
+    ...initialChatState,
+
+    // Reset store to initial state (call on logout)
+    resetStore: () => set(initialChatState),
 
     // Actions
     setConversations: (conversations) => set({ conversations }),

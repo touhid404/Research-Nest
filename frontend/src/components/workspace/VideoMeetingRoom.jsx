@@ -10,11 +10,13 @@ import {
     IoSendOutline,
     IoCloseOutline,
     IoStopCircleOutline,
+    IoTimeOutline,
 } from "react-icons/io5";
 import useAuth from "../../hooks/useAuth";
 import useWorkspaceStore from "../../store/useWorkspaceStore";
 import ConfirmModal from "../common/ConfirmModal";
 import toast from "react-hot-toast";
+import { formatShortTime } from "../../utils/formatTime";
 
 const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
     const { user, socket } = useAuth();
@@ -29,12 +31,102 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
     const [leaveConfirm, setLeaveConfirm] = useState(false);
     const [endMeetingConfirm, setEndMeetingConfirm] = useState(false);
     const [isEnding, setIsEnding] = useState(false);
+    const [timeRemaining, setTimeRemaining] = useState(null);
 
     const localVideoRef = useRef(null);
     const localStreamRef = useRef(null);
     const chatEndRef = useRef(null);
+    const meetingEndTimerRef = useRef(null);
 
     const isOwner = meeting?.scheduledBy === user?.uid;
+
+    // Calculate meeting end time
+    const getMeetingEndTime = () => {
+        if (!meeting) return null;
+        
+        // If endTime is set, use it
+        if (meeting.endTime) {
+            return new Date(meeting.endTime);
+        }
+        
+        // If duration is set, calculate end time from start time
+        if (meeting.duration) {
+            const startTime = new Date(meeting.startTime);
+            return new Date(startTime.getTime() + meeting.duration * 60 * 1000);
+        }
+        
+        return null; // No end time (unlimited meeting)
+    };
+
+    // Auto-end meeting when time expires
+    useEffect(() => {
+        // Don't run timer for already completed meetings
+        if (meeting?.status === "completed") return;
+        
+        const endTime = getMeetingEndTime();
+        if (!endTime) return;
+
+        const checkAndEndMeeting = async () => {
+            const now = new Date();
+            const remaining = endTime.getTime() - now.getTime();
+            
+            if (remaining <= 0) {
+                // Time's up - auto end the meeting
+                toast.error("Meeting time has ended");
+                
+                if (isOwner) {
+                    // Owner ends the meeting via socket (backend handles DB update)
+                    socket?.emit("meeting:end", { meetingId: meeting._id });
+                }
+                
+                // Leave the meeting
+                if (localStreamRef.current) {
+                    localStreamRef.current.getTracks().forEach((track) => track.stop());
+                }
+                onLeave();
+                return;
+            }
+            
+            // Update time remaining
+            setTimeRemaining(remaining);
+            
+            // Warn when 5 minutes left
+            if (remaining <= 5 * 60 * 1000 && remaining > 5 * 60 * 1000 - 1000) {
+                toast("5 minutes remaining", { icon: "⏰" });
+            }
+            
+            // Warn when 1 minute left
+            if (remaining <= 60 * 1000 && remaining > 60 * 1000 - 1000) {
+                toast("1 minute remaining", { icon: "⏰" });
+            }
+        };
+
+        // Check immediately
+        checkAndEndMeeting();
+
+        // Check every second
+        meetingEndTimerRef.current = setInterval(checkAndEndMeeting, 1000);
+
+        return () => {
+            if (meetingEndTimerRef.current) {
+                clearInterval(meetingEndTimerRef.current);
+            }
+        };
+    }, [meeting, isOwner, socket, updateMeeting, onLeave]);
+
+    // Format time remaining
+    const formatTimeRemaining = (ms) => {
+        if (!ms || ms <= 0) return null;
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
 
     // Scroll to bottom of chat when new message
     useEffect(() => {
@@ -170,17 +262,10 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
 
     const handleEndMeeting = async () => {
         setIsEnding(true);
-        try {
-            // Update meeting status to completed
-            await updateMeeting(meeting._id, { status: "completed" });
-            // Notify all participants
-            socket?.emit("meeting:end", { meetingId: meeting._id });
-            toast.success("Meeting ended for all participants");
-            handleLeave();
-        } catch (error) {
-            toast.error("Failed to end meeting");
-            setIsEnding(false);
-        }
+        // End meeting via socket (backend handles DB update and notifies participants)
+        socket?.emit("meeting:end", { meetingId: meeting._id });
+        toast.success("Meeting ended for all participants");
+        handleLeave();
     };
 
     const sendChatMessage = (e) => {
@@ -219,6 +304,27 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    {/* Time Remaining Indicator */}
+                    {timeRemaining && (
+                        <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                            timeRemaining <= 5 * 60 * 1000
+                                ? "bg-orange-100 dark:bg-orange-500/20"
+                                : "bg-slate-100 dark:bg-slate-800"
+                        }`}>
+                            <IoTimeOutline className={`w-4 h-4 ${
+                                timeRemaining <= 5 * 60 * 1000
+                                    ? "text-orange-600 dark:text-orange-400"
+                                    : "text-slate-600 dark:text-slate-400"
+                            }`} />
+                            <span className={`text-sm font-medium ${
+                                timeRemaining <= 5 * 60 * 1000
+                                    ? "text-orange-600 dark:text-orange-400"
+                                    : "text-slate-600 dark:text-slate-400"
+                            }`}>
+                                {formatTimeRemaining(timeRemaining)}
+                            </span>
+                        </span>
+                    )}
                     <span className="flex items-center gap-2 px-3 py-1.5 bg-red-100 dark:bg-red-500/20 rounded-full">
                         <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-sm font-medium text-red-600 dark:text-red-400">LIVE</span>
@@ -250,10 +356,14 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
                             />
                             {!isVideoEnabled && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-violet-600 to-purple-700">
-                                    <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-                                        <span className="text-3xl font-bold text-white">
-                                            {(user?.displayName || user?.name || user?.email)?.charAt(0)?.toUpperCase() || "?"}
-                                        </span>
+                                    <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                                        {user?.photoURL ? (
+                                            <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="text-3xl font-bold text-white">
+                                                {(user?.displayName || user?.name || user?.email)?.charAt(0)?.toUpperCase() || "?"}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -289,10 +399,14 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
                                     </div>
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-emerald-600 to-teal-700">
-                                        <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-                                            <span className="text-3xl font-bold text-white">
-                                                {participant.userName?.charAt(0)?.toUpperCase() || "?"}
-                                            </span>
+                                        <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                                            {participant.photoURL ? (
+                                                <img src={participant.photoURL} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-3xl font-bold text-white">
+                                                    {participant.userName?.charAt(0)?.toUpperCase() || "?"}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -429,7 +543,7 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
                                                             <p className="text-sm">{msg.text}</p>
                                                         </div>
                                                         <p className="text-[10px] text-gray-400 dark:text-gray-600 mt-1">
-                                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                            {formatShortTime(msg.timestamp)}
                                                         </p>
                                                     </div>
                                                 </div>
