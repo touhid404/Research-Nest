@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import Conversation from "../models/conversation.model.js";
 import Document from "../models/document.model.js";
+import Meeting from "../models/meeting.model.js";
 import { config } from "../config/config.js";
 
 export const initializeServer = (server) => {
@@ -227,6 +228,8 @@ export const initializeServer = (server) => {
                 videoEnabled: true,
             });
 
+            console.log
+
             // Send existing participants to the new user
             const existingParticipants = Array.from(meetingParticipants.get(meetingId).values())
                 .filter(p => p.socketId !== socket.id);
@@ -251,7 +254,7 @@ export const initializeServer = (server) => {
             // Remove participant
             if (meetingParticipants.has(meetingId)) {
                 meetingParticipants.get(meetingId).delete(socket.id);
-                
+
                 // Clean up empty meeting map
                 if (meetingParticipants.get(meetingId).size === 0) {
                     meetingParticipants.delete(meetingId);
@@ -323,16 +326,32 @@ export const initializeServer = (server) => {
         });
 
         // End meeting (host only)
-        socket.on("meeting:end", ({ meetingId }) => {
-            // Notify all participants that the meeting has ended
-            socket.to(`meeting:${meetingId}`).emit("meeting:ended");
-            
-            // Clean up meeting participants
-            if (meetingParticipants.has(meetingId)) {
-                meetingParticipants.delete(meetingId);
-            }
+        socket.on("meeting:end", async ({ meetingId }) => {
+            try {
+                // Update meeting status in database
+                const meeting = await Meeting.findByIdAndUpdate(
+                    meetingId,
+                    { status: "completed" },
+                    { new: true }
+                );
 
-            console.log(`Meeting ${meetingId} ended by host ${userId}`);
+                if (meeting) {
+                    // Notify all participants in the meeting room that meeting has ended
+                    socket.to(`meeting:${meetingId}`).emit("meeting:ended");
+
+                    // Emit to workspace so meeting lists update
+                    io.to(`workspace:${meeting.workspaceId}`).emit("meeting:updated", meeting);
+
+                    console.log(`Meeting ${meetingId} ended and updated to completed status`);
+                }
+
+                // Clean up meeting participants
+                if (meetingParticipants.has(meetingId)) {
+                    meetingParticipants.delete(meetingId);
+                }
+            } catch (error) {
+                console.error(`Failed to end meeting ${meetingId}:`, error);
+            }
         });
 
         // Handle disconnect
@@ -382,6 +401,80 @@ export const initializeServer = (server) => {
             }
         });
     });
+
+    // ============== AUTO-UPDATE MEETING STATUS ==============
+    // Single function to handle all meeting status transitions
+    const updateMeetingStatuses = async () => {
+        try {
+            const now = new Date();
+            const nowTimestamp = now.getTime();
+
+            // Find all active meetings (scheduled or live)
+            const meetings = await Meeting.find({
+                status: { $in: ["scheduled", "live"] }
+            });
+
+            for (const meeting of meetings) {
+                const startTimestamp = new Date(meeting.startTime).getTime();
+                
+                // Calculate end time
+                let endTimestamp = null;
+                if (meeting.endTime) {
+                    endTimestamp = new Date(meeting.endTime).getTime();
+                } else if (meeting.duration) {
+                    endTimestamp = startTimestamp + (meeting.duration * 60 * 1000);
+                }
+
+                // // Debug logging
+                // console.log(`\n--- Checking Meeting: "${meeting.title}" (current: ${meeting.status}) ---`);
+                // console.log(`  Now:   ${now.toISOString()} (${nowTimestamp})`);
+                // console.log(`  Start: ${new Date(meeting.startTime).toISOString()} (${startTimestamp})`);
+                // console.log(`  End:   ${endTimestamp ? new Date(endTimestamp).toISOString() : 'none'} (${endTimestamp})`);
+                // console.log(`  Duration: ${meeting.duration} minutes`);
+                // console.log(`  Conditions: now < start? ${nowTimestamp < startTimestamp}, now >= end? ${endTimestamp ? nowTimestamp >= endTimestamp : 'N/A'}`);
+
+                let newStatus = meeting.status;
+
+                // Determine the correct status based on current time
+                if (nowTimestamp < startTimestamp) {
+                    // Before start time - should be scheduled
+                    newStatus = "scheduled";
+                } else if (endTimestamp && nowTimestamp >= endTimestamp) {
+                    // After end time - should be completed
+                    newStatus = "completed";
+                } else if (nowTimestamp >= startTimestamp) {
+                    // After start, before end (or no end) - should be live
+                    newStatus = "live";
+                }
+
+
+                // Update if status changed
+                if (newStatus !== meeting.status) {
+                    const oldStatus = meeting.status;
+                    meeting.status = newStatus;
+                    await meeting.save();
+
+                    // Notify workspace
+                    io.to(`workspace:${meeting.workspaceId}`).emit("meeting:updated", meeting);
+
+                    // If meeting ended, notify participants
+                    if (newStatus === "completed") {
+                        io.to(`meeting:${meeting._id}`).emit("meeting:ended");
+                        if (meetingParticipants.has(meeting._id.toString())) {
+                            meetingParticipants.delete(meeting._id.toString());
+                        }
+                    }
+
+                    console.log(`  => STATUS CHANGED: ${oldStatus} → ${newStatus}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error updating meeting statuses:", error);
+        }
+    };
+
+    updateMeetingStatuses();
+    setInterval(updateMeetingStatuses, 30 * 1000);
 
     console.log("Socket.IO server initialized");
     return io;

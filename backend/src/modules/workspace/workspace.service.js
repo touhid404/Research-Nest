@@ -368,7 +368,25 @@ export const createMeetingService = async ({
 
     await meeting.save();
 
-    return { data: meeting, workspaceId };
+    // Populate scheduler user details for the response
+    const schedulerUsers = await getUsersByUids([uid]);
+    const scheduledByUser = schedulerUsers[0] || { uid };
+
+    // Get participant details
+    const participantUids = meetingParticipants.map(p => p.uid);
+    const participantUsers = await getUsersByUids(participantUids);
+    const userMap = new Map(participantUsers.map((u) => [u.uid, u]));
+
+    const populatedMeeting = {
+        ...meeting.toObject(),
+        scheduledByUser,
+        participantDetails: meetingParticipants.map((p) => ({
+            ...p,
+            user: userMap.get(p.uid) || { uid: p.uid },
+        })),
+    };
+
+    return { data: populatedMeeting, workspaceId };
 };
 
 export const getMeetingsService = async (uid, workspaceId, filters) => {
@@ -379,6 +397,29 @@ export const getMeetingsService = async (uid, workspaceId, filters) => {
     if (!workspace || !workspace.members.some((m) => m.uid === uid)) {
         return { error: "Workspace access denied", status: 403 };
     }
+
+    // Auto-complete expired live meetings
+    const now = new Date();
+    await Meeting.updateMany(
+        {
+            workspaceId,
+            status: "live",
+            $or: [
+                { endTime: { $lte: now } },
+                {
+                    endTime: null,
+                    duration: { $ne: null },
+                    $expr: {
+                        $lte: [
+                            { $add: ["$startTime", { $multiply: ["$duration", 60000] }] },
+                            now
+                        ]
+                    }
+                }
+            ]
+        },
+        { $set: { status: "completed" } }
+    );
 
     const query = { workspaceId };
 
@@ -403,13 +444,17 @@ export const getMeetingsService = async (uid, workspaceId, filters) => {
 
     const meetings = await meetingQuery;
 
-    // Get participant details
-    const participantUids = [...new Set(meetings.flatMap((m) => m.participants.map((p) => p.uid)))];
-    const users = await getUsersByUids(participantUids);
+    // Get participant details AND scheduler details
+    const allUids = [...new Set([
+        ...meetings.flatMap((m) => m.participants.map((p) => p.uid)),
+        ...meetings.map((m) => m.scheduledBy)
+    ])];
+    const users = await getUsersByUids(allUids);
     const userMap = new Map(users.map((u) => [u.uid, u]));
 
     const populatedMeetings = meetings.map((meeting) => ({
         ...meeting.toObject(),
+        scheduledByUser: userMap.get(meeting.scheduledBy) || { uid: meeting.scheduledBy },
         participantDetails: meeting.participants.map((p) => ({
             ...p.toObject(),
             user: userMap.get(p.uid) || { uid: p.uid },
@@ -437,7 +482,17 @@ export const getMyMeetingsService = async (uid, filters) => {
         .sort({ startTime: 1 })
         .populate("workspaceId", "name");
 
-    return { data: meetings };
+    // Populate scheduler user details
+    const schedulerUids = [...new Set(meetings.map((m) => m.scheduledBy))];
+    const users = await getUsersByUids(schedulerUids);
+    const userMap = new Map(users.map((u) => [u.uid, u]));
+
+    const populatedMeetings = meetings.map((meeting) => ({
+        ...meeting.toObject(),
+        scheduledByUser: userMap.get(meeting.scheduledBy) || { uid: meeting.scheduledBy },
+    }));
+
+    return { data: populatedMeetings };
 };
 
 export const updateMeetingService = async (id, uid, updates) => {
