@@ -24,9 +24,9 @@ const TaskCalendar = ({ workspace }) => {
 
     useEffect(() => {
         if (workspace?._id) {
-            // Fetch tasks for the current month range
-            const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            // Fetch tasks for the current month range (with some buffer for multi-day tasks)
+            const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+            const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0);
 
             fetchTasks(workspace._id, {
                 startDate: startOfMonth.toISOString(),
@@ -34,7 +34,7 @@ const TaskCalendar = ({ workspace }) => {
                 forceRefresh: true
             });
         }
-    }, [workspace?._id, currentDate.getMonth(), currentDate.getFullYear()]); // Remove fetchTasks - stable from Zustand
+    }, [workspace?._id, currentDate.getMonth(), currentDate.getFullYear()]);
 
     // Generate calendar days
     const calendarDays = useMemo(() => {
@@ -78,7 +78,60 @@ const TaskCalendar = ({ workspace }) => {
         return days;
     }, [currentDate]);
 
-    // Get tasks for a specific date
+    // Get task bars that span multiple days (Jira-style)
+    const getTaskBarsForWeek = useMemo(() => {
+        const taskBars = [];
+        
+        tasks.forEach((task) => {
+            if (!task.startDate && !task.dueDate) return;
+            
+            const startDate = task.startDate ? new Date(task.startDate) : new Date(task.dueDate);
+            const endDate = task.dueDate ? new Date(task.dueDate) : new Date(task.startDate);
+            
+            // Normalize dates to start of day
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            
+            taskBars.push({
+                ...task,
+                startDate,
+                endDate,
+            });
+        });
+        
+        return taskBars;
+    }, [tasks]);
+
+    // Check if a task spans a specific date
+    const getTasksSpanningDate = (date) => {
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        return getTaskBarsForWeek.filter((task) => {
+            return task.startDate <= dayEnd && task.endDate >= dayStart;
+        });
+    };
+
+    // Get task bar info for rendering
+    const getTaskBarInfo = (task, date, dayIndex) => {
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        
+        const isStart = task.startDate.toDateString() === dayStart.toDateString();
+        const isEnd = task.endDate.toDateString() === dayStart.toDateString();
+        const isWeekStart = dayIndex % 7 === 0;
+        const isWeekEnd = dayIndex % 7 === 6;
+        
+        // Calculate if this continues from previous week or to next week
+        const continuesFromPrev = !isStart && isWeekStart;
+        const continuesToNext = !isEnd && isWeekEnd;
+        
+        return { isStart, isEnd, continuesFromPrev, continuesToNext };
+    };
+
+    // Get tasks for a specific date (for the single-day display)
     const getTasksForDate = (date) => {
         return tasks.filter((task) => {
             if (!task.dueDate) return false;
@@ -194,9 +247,9 @@ const TaskCalendar = ({ workspace }) => {
 
                 {/* Days Grid - Scrollable */}
                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-                    <div className="grid grid-cols-7 h-full" style={{ gridTemplateRows: 'repeat(6, minmax(80px, 1fr))' }}>
+                    <div className="grid grid-cols-7 h-full" style={{ gridTemplateRows: 'repeat(6, minmax(90px, 1fr))' }}>
                         {calendarDays.map((day, index) => {
-                            const dayTasks = getTasksForDate(day.date);
+                            const spanningTasks = getTasksSpanningDate(day.date);
                             const isSelected =
                                 selectedDate &&
                                 day.date.toDateString() === selectedDate.toDateString();
@@ -206,7 +259,7 @@ const TaskCalendar = ({ workspace }) => {
                                     key={index}
                                     onClick={() => setSelectedDate(day.date)}
                                     className={`
-                                        p-1.5 border-b border-r border-slate-100 dark:border-slate-700/50 cursor-pointer transition-colors
+                                        p-1 border-b border-r border-slate-100 dark:border-slate-700/50 cursor-pointer transition-colors relative
                                         ${!day.isCurrentMonth ? "bg-slate-50/50 dark:bg-slate-900/30" : ""}
                                         ${isSelected ? "bg-violet-50 dark:bg-violet-900/20 ring-1 ring-inset ring-violet-500" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}
                                     `}
@@ -215,7 +268,7 @@ const TaskCalendar = ({ workspace }) => {
                                     <div className="flex items-center justify-between mb-1">
                                         <span
                                             className={`
-                                                w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium
+                                                w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-semibold
                                                 ${isToday(day.date)
                                                     ? "bg-violet-600 text-white"
                                                     : day.isCurrentMonth
@@ -226,46 +279,71 @@ const TaskCalendar = ({ workspace }) => {
                                         >
                                             {day.date.getDate()}
                                         </span>
-                                        {dayTasks.length > 0 && (
-                                            <span className="text-[10px] text-slate-400 font-medium">
-                                                {dayTasks.length}
+                                        {spanningTasks.length > 0 && (
+                                            <span className="text-[9px] text-slate-400 font-medium bg-slate-100 dark:bg-slate-700 px-1 rounded">
+                                                {spanningTasks.length}
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* Tasks */}
+                                    {/* Task Bars - Jira Style */}
                                     <div className="space-y-0.5 overflow-hidden">
-                                        {dayTasks.slice(0, 2).map((task) => (
-                                            <div
-                                                key={task._id}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedTask(task);
-                                                }}
-                                                className={`
-                                                    flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] cursor-pointer transition-all truncate
-                                                    ${task.status === "completed"
-                                                        ? "bg-slate-100 dark:bg-slate-700 text-slate-400 line-through"
-                                                        : "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900/50"
-                                                    }
-                                                `}
-                                        >
-                                                <button
-                                                    onClick={(e) => handleToggleTaskStatus(task, e)}
-                                                    className="shrink-0"
+                                        {spanningTasks.slice(0, 3).map((task) => {
+                                            const barInfo = getTaskBarInfo(task, day.date, index);
+                                            const priorityColors = {
+                                                urgent: "bg-red-500 dark:bg-red-600",
+                                                high: "bg-orange-500 dark:bg-orange-600",
+                                                medium: "bg-yellow-500 dark:bg-yellow-600",
+                                                low: "bg-green-500 dark:bg-green-600",
+                                            };
+                                            const priorityBgColors = {
+                                                urgent: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/60",
+                                                high: "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/60",
+                                                medium: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/60",
+                                                low: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60",
+                                            };
+                                            
+                                            return (
+                                                <div
+                                                    key={task._id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTask(task);
+                                                    }}
+                                                    className={`
+                                                        relative flex items-center h-5 text-[9px] font-medium cursor-pointer transition-all
+                                                        ${task.status === "completed"
+                                                            ? "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500"
+                                                            : priorityBgColors[task.priority] || priorityBgColors.medium
+                                                        }
+                                                        ${barInfo.isStart ? "ml-0.5 rounded-l-md pl-1.5" : "pl-1"}
+                                                        ${barInfo.isEnd ? "mr-0.5 rounded-r-md pr-1" : "pr-0"}
+                                                        ${!barInfo.isStart && !barInfo.isEnd ? "" : ""}
+                                                        ${barInfo.continuesFromPrev ? "rounded-l-none" : ""}
+                                                        ${barInfo.continuesToNext ? "rounded-r-none" : ""}
+                                                    `}
+                                                    style={{
+                                                        marginLeft: barInfo.isStart ? '2px' : '-1px',
+                                                        marginRight: barInfo.isEnd ? '2px' : '-1px',
+                                                    }}
                                                 >
-                                                    {task.status === "completed" ? (
-                                                        <IoCheckmarkCircle className="w-3 h-3 text-green-500" />
-                                                    ) : (
-                                                        <IoEllipseOutline className="w-3 h-3" />
+                                                    {/* Priority indicator */}
+                                                    {barInfo.isStart && (
+                                                        <span className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-md ${priorityColors[task.priority] || priorityColors.medium}`} />
                                                     )}
-                                                </button>
-                                                <span className="truncate">{task.title}</span>
-                                            </div>
-                                        ))}
-                                        {dayTasks.length > 2 && (
-                                            <p className="text-[10px] text-slate-400 pl-1">
-                                                +{dayTasks.length - 2} more
+                                                    
+                                                    {/* Task content - only show on start day or week start */}
+                                                    {(barInfo.isStart || barInfo.continuesFromPrev) && (
+                                                        <span className={`truncate ml-1 ${task.status === "completed" ? "line-through" : ""}`}>
+                                                            {task.title}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                        {spanningTasks.length > 3 && (
+                                            <p className="text-[9px] text-slate-400 dark:text-slate-500 pl-1 font-medium">
+                                                +{spanningTasks.length - 3} more
                                             </p>
                                         )}
                                     </div>
@@ -295,57 +373,74 @@ const TaskCalendar = ({ workspace }) => {
                         </button>
                     </div>
 
-                    <div className="max-h-40 overflow-y-auto custom-scrollbar">
-                        {getTasksForDate(selectedDate).length === 0 ? (
+                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                        {getTasksSpanningDate(selectedDate).length === 0 ? (
                             <p className="p-4 text-sm text-slate-500 dark:text-slate-400 text-center">
                                 No tasks scheduled
                             </p>
                         ) : (
                             <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                {getTasksForDate(selectedDate).map((task) => (
-                                    <div
-                                        key={task._id}
-                                        onClick={() => setSelectedTask(task)}
-                                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
-                                    >
-                                        <button
-                                            onClick={(e) => handleToggleTaskStatus(task, e)}
-                                            className="shrink-0"
+                                {getTasksSpanningDate(selectedDate).map((task) => {
+                                    const priorityColors = {
+                                        urgent: "bg-red-500",
+                                        high: "bg-orange-500",
+                                        medium: "bg-yellow-500",
+                                        low: "bg-green-500",
+                                    };
+                                    
+                                    return (
+                                        <div
+                                            key={task._id}
+                                            onClick={() => setSelectedTask(task)}
+                                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                                         >
-                                            {task.status === "completed" ? (
-                                                <IoCheckmarkCircle className="w-5 h-5 text-green-500" />
-                                            ) : (
-                                                <IoEllipseOutline className="w-5 h-5 text-slate-400" />
-                                            )}
-                                        </button>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-medium text-slate-800 dark:text-slate-100 truncate ${task.status === "completed" ? "line-through text-slate-400" : ""}`}>
-                                                {task.title}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className={`w-1.5 h-1.5 rounded-full ${getPriorityColor(task.priority)}`} />
-                                                <span className="text-xs text-slate-400 capitalize">{task.priority}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center -space-x-1.5">
-                                            {task.assignedToUsers?.slice(0, 2).map((assignee) => (
-                                                <div
-                                                    key={assignee.uid}
-                                                    className="w-6 h-6 rounded-full overflow-hidden bg-violet-500 border-2 border-white dark:border-slate-800"
-                                                    title={assignee.name}
-                                                >
-                                                    {assignee.photoURL ? (
-                                                        <img src={assignee.photoURL} alt={assignee.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="flex items-center justify-center w-full h-full text-white text-[10px]">
-                                                            {assignee.name?.charAt(0)}
-                                                        </span>
+                                            <button
+                                                onClick={(e) => handleToggleTaskStatus(task, e)}
+                                                className="shrink-0"
+                                            >
+                                                {task.status === "completed" ? (
+                                                    <IoCheckmarkCircle className="w-5 h-5 text-green-500" />
+                                                ) : (
+                                                    <IoEllipseOutline className="w-5 h-5 text-slate-400" />
+                                                )}
+                                            </button>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`text-sm font-medium text-slate-800 dark:text-slate-100 truncate ${task.status === "completed" ? "line-through text-slate-400" : ""}`}>
+                                                    {task.title}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${priorityColors[task.priority] || priorityColors.medium}`} />
+                                                    <span className="text-xs text-slate-400 capitalize">{task.priority}</span>
+                                                    {task.startDate && task.dueDate && (
+                                                        <>
+                                                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                                                            <span className="text-xs text-slate-400">
+                                                                {new Date(task.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                            </span>
+                                                        </>
                                                     )}
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <div className="flex items-center -space-x-1.5">
+                                                {task.assignedToUsers?.slice(0, 2).map((assignee) => (
+                                                    <div
+                                                        key={assignee.uid}
+                                                        className="w-6 h-6 rounded-full overflow-hidden bg-violet-500 border-2 border-white dark:border-slate-800"
+                                                        title={assignee.name}
+                                                    >
+                                                        {assignee.photoURL ? (
+                                                            <img src={assignee.photoURL} alt={assignee.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="flex items-center justify-center w-full h-full text-white text-[10px]">
+                                                                {assignee.name?.charAt(0)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

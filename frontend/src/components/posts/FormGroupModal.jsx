@@ -39,7 +39,7 @@ const FormGroupModal = ({ isOpen, onClose, proposalPostId, defaultName }) => {
 
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800 animate-in fade-in zoom-in duration-200 border border-gray-100 dark:border-slate-700">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                     Form Research Team

@@ -69,7 +69,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div
                 ref={modalRef}
                 className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-xl flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200"
@@ -97,7 +97,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                             placeholder="Enter group name (e.g. Project Team)"
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
-                            className="w-full text-black dark:text-white px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-transparent focus:bg-white dark:focus:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all"
+                            className="w-full text-black dark:text-white px-4 py-2 bg-slate-100 dark:bg-slate-800  focus:bg-white dark:focus:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all"
                             autoFocus
                         />
                     </div>

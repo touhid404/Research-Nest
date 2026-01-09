@@ -61,7 +61,7 @@ const ConversationInfoModal = ({ isOpen, onClose, conversation }) => {
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div
                 ref={modalRef}
                 className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-xl flex flex-col max-h-[80vh] animate-in fade-in zoom-in duration-200"
