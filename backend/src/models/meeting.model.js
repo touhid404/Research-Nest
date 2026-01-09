@@ -37,7 +37,17 @@ const meetingSchema = new mongoose.Schema(
         },
         endTime: {
             type: Date,
-            required: true,
+            default: null,
+        },
+        // Duration in minutes (optional, used when endTime is not set)
+        duration: {
+            type: Number,
+            default: null,
+        },
+        // Instant meeting flag
+        isInstant: {
+            type: Boolean,
+            default: false,
         },
         // Meeting room ID for video calls
         roomId: {

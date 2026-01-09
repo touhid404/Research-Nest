@@ -11,6 +11,7 @@ import proposalApplicationRoutes from "./modules/proposalApplications/proposalAp
 import { messageRoutes } from "./modules/messages/message.routes.js";
 import { initializeServer } from "./lib/initialize.server.js";
 import { paperRoutes } from "./modules/papers/paper.routes.js";
+import { workspaceRoutes } from "./modules/workspace/workspace.routes.js";
 
 
 const app = express();
@@ -68,7 +69,8 @@ app.use('/api/requests', proposalApplicationRoutes);
 // Paper routes
 app.use('/api/papers', paperRoutes);
 
-
+// Workspace routes
+app.use('/api/workspaces', workspaceRoutes);
 
 
 // Message routes

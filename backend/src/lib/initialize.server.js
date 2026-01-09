@@ -15,6 +15,8 @@ export const initializeServer = (server) => {
     const connectedUsers = new Map();
     // Store document collaborators: { documentId: Map<socketId, { uid, name, color }> }
     const documentCollaborators = new Map();
+    // Store meeting participants: { meetingId: Map<socketId, { odatId, userName, photoURL, audioEnabled, videoEnabled }> }
+    const meetingParticipants = new Map();
 
     io.on("connection", (socket) => {
         const userId = socket.handshake.query.userId;
@@ -207,14 +209,35 @@ export const initializeServer = (server) => {
         // ============== VIDEO MEETING EVENTS ==============
 
         // Join meeting room
-        socket.on("meeting:join", ({ meetingId, userName }) => {
+        socket.on("meeting:join", ({ meetingId, userName, photoURL }) => {
             socket.join(`meeting:${meetingId}`);
+
+            // Initialize meeting participants map if needed
+            if (!meetingParticipants.has(meetingId)) {
+                meetingParticipants.set(meetingId, new Map());
+            }
+
+            // Add participant
+            meetingParticipants.get(meetingId).set(socket.id, {
+                odatId: userId,
+                userName,
+                photoURL,
+                socketId: socket.id,
+                audioEnabled: true,
+                videoEnabled: true,
+            });
+
+            // Send existing participants to the new user
+            const existingParticipants = Array.from(meetingParticipants.get(meetingId).values())
+                .filter(p => p.socketId !== socket.id);
+            socket.emit("meeting:participants", existingParticipants);
 
             // Notify others that user joined
             socket.to(`meeting:${meetingId}`).emit("meeting:user-joined", {
                 meetingId,
-                userId,
+                odatId: userId,
                 userName,
+                photoURL,
                 socketId: socket.id,
             });
 
@@ -222,13 +245,23 @@ export const initializeServer = (server) => {
         });
 
         // Leave meeting room
-        socket.on("meeting:leave", (meetingId) => {
+        socket.on("meeting:leave", ({ meetingId }) => {
             socket.leave(`meeting:${meetingId}`);
+
+            // Remove participant
+            if (meetingParticipants.has(meetingId)) {
+                meetingParticipants.get(meetingId).delete(socket.id);
+                
+                // Clean up empty meeting map
+                if (meetingParticipants.get(meetingId).size === 0) {
+                    meetingParticipants.delete(meetingId);
+                }
+            }
 
             // Notify others that user left
             socket.to(`meeting:${meetingId}`).emit("meeting:user-left", {
                 meetingId,
-                userId,
+                odatId: userId,
                 socketId: socket.id,
             });
 
@@ -266,12 +299,40 @@ export const initializeServer = (server) => {
 
         // Toggle audio/video
         socket.on("meeting:toggle-media", ({ meetingId, audioEnabled, videoEnabled }) => {
+            // Update participant in map
+            if (meetingParticipants.has(meetingId)) {
+                const participant = meetingParticipants.get(meetingId).get(socket.id);
+                if (participant) {
+                    participant.audioEnabled = audioEnabled;
+                    participant.videoEnabled = videoEnabled;
+                }
+            }
+
             socket.to(`meeting:${meetingId}`).emit("meeting:user-media-toggle", {
-                userId,
+                odatId: userId,
                 socketId: socket.id,
                 audioEnabled,
                 videoEnabled,
             });
+        });
+
+        // Chat message in meeting
+        socket.on("meeting:chat-message", ({ meetingId, message }) => {
+            // Broadcast to other participants
+            socket.to(`meeting:${meetingId}`).emit("meeting:chat-message", message);
+        });
+
+        // End meeting (host only)
+        socket.on("meeting:end", ({ meetingId }) => {
+            // Notify all participants that the meeting has ended
+            socket.to(`meeting:${meetingId}`).emit("meeting:ended");
+            
+            // Clean up meeting participants
+            if (meetingParticipants.has(meetingId)) {
+                meetingParticipants.delete(meetingId);
+            }
+
+            console.log(`Meeting ${meetingId} ended by host ${userId}`);
         });
 
         // Handle disconnect
@@ -297,6 +358,24 @@ export const initializeServer = (server) => {
 
                         if (collaborators.size === 0) {
                             documentCollaborators.delete(documentId);
+                        }
+                    }
+                }
+
+                // Clean up meeting participants
+                for (const [meetingId, participants] of meetingParticipants.entries()) {
+                    if (participants.has(socket.id)) {
+                        participants.delete(socket.id);
+
+                        // Notify others that user left
+                        io.to(`meeting:${meetingId}`).emit("meeting:user-left", {
+                            meetingId,
+                            odatId: userId,
+                            socketId: socket.id,
+                        });
+
+                        if (participants.size === 0) {
+                            meetingParticipants.delete(meetingId);
                         }
                     }
                 }
