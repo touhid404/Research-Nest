@@ -55,37 +55,11 @@ const meetingSchema = new mongoose.Schema(
             unique: true,
             sparse: true,
         },
-        // Meeting type
-        type: {
-            type: String,
-            enum: ["video", "audio", "in_person"],
-            default: "video",
-        },
         // Meeting status
         status: {
             type: String,
             enum: ["scheduled", "live", "completed", "cancelled"],
             default: "scheduled",
-        },
-        // Recurrence
-        isRecurring: {
-            type: Boolean,
-            default: false,
-        },
-        recurrencePattern: {
-            type: String,
-            enum: ["daily", "weekly", "biweekly", "monthly", null],
-            default: null,
-        },
-        // Meeting link (for external links like Google Meet)
-        externalLink: {
-            type: String,
-            default: null,
-        },
-        // Meeting notes
-        notes: {
-            type: String,
-            default: "",
         },
     },
     { timestamps: true }
@@ -94,11 +68,10 @@ const meetingSchema = new mongoose.Schema(
 meetingSchema.index({ workspaceId: 1 });
 meetingSchema.index({ startTime: 1 });
 meetingSchema.index({ "participants.uid": 1 });
-// Note: roomId index is already created by unique: true in the schema definition
 
 // Generate unique room ID before saving
 meetingSchema.pre("save", function (next) {
-    if (!this.roomId && this.type === "video") {
+    if (!this.roomId) {
         this.roomId = `meet-${this._id.toString().slice(-8)}-${Date.now().toString(36)}`;
     }
     next();

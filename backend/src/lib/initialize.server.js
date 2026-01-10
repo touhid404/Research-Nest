@@ -1,8 +1,32 @@
 import { Server } from "socket.io";
 import Conversation from "../models/conversation.model.js";
-import Document from "../models/document.model.js";
 import Meeting from "../models/meeting.model.js";
 import { config } from "../config/config.js";
+import { getUsersByUids } from "../modules/workspace/services/workspace.service.js";
+
+// Helper to populate meeting details before socket emission
+const populateMeetingDetails = async (meeting) => {
+    try {
+        const allUids = [...new Set([
+            ...meeting.participants.map((p) => p.uid),
+            meeting.scheduledBy
+        ])];
+        const users = await getUsersByUids(allUids);
+        const userMap = new Map(users.map((u) => [u.uid, u]));
+
+        return {
+            ...meeting.toObject(),
+            scheduledByUser: userMap.get(meeting.scheduledBy) || { uid: meeting.scheduledBy },
+            participantDetails: meeting.participants.map((p) => ({
+                ...p.toObject(),
+                user: userMap.get(p.uid) || { uid: p.uid },
+            })),
+        };
+    } catch (error) {
+        console.error("Error populating meeting details:", error);
+        return meeting.toObject();
+    }
+};
 
 export const initializeServer = (server) => {
     const io = new Server(server, {
@@ -16,8 +40,6 @@ export const initializeServer = (server) => {
     const connectedUsers = new Map();
     // Store document collaborators: { documentId: Map<socketId, { uid, name, color }> }
     const documentCollaborators = new Map();
-    // Store meeting participants: { meetingId: Map<socketId, { odatId, userName, photoURL, audioEnabled, videoEnabled }> }
-    const meetingParticipants = new Map();
 
     io.on("connection", (socket) => {
         const userId = socket.handshake.query.userId;
@@ -208,121 +230,19 @@ export const initializeServer = (server) => {
         });
 
         // ============== VIDEO MEETING EVENTS ==============
+        // Note: WebRTC signaling is now handled by Stream Video SDK
+        // These events are kept for meeting status management only
 
-        // Join meeting room
-        socket.on("meeting:join", ({ meetingId, userName, photoURL }) => {
+        // Join meeting room (for status updates only)
+        socket.on("meeting:join", ({ meetingId }) => {
             socket.join(`meeting:${meetingId}`);
-
-            // Initialize meeting participants map if needed
-            if (!meetingParticipants.has(meetingId)) {
-                meetingParticipants.set(meetingId, new Map());
-            }
-
-            // Add participant
-            meetingParticipants.get(meetingId).set(socket.id, {
-                odatId: userId,
-                userName,
-                photoURL,
-                socketId: socket.id,
-                audioEnabled: true,
-                videoEnabled: true,
-            });
-
-            console.log
-
-            // Send existing participants to the new user
-            const existingParticipants = Array.from(meetingParticipants.get(meetingId).values())
-                .filter(p => p.socketId !== socket.id);
-            socket.emit("meeting:participants", existingParticipants);
-
-            // Notify others that user joined
-            socket.to(`meeting:${meetingId}`).emit("meeting:user-joined", {
-                meetingId,
-                odatId: userId,
-                userName,
-                photoURL,
-                socketId: socket.id,
-            });
-
-            console.log(`User ${userId} joined meeting ${meetingId}`);
+            console.log(`User ${userId} joined meeting room ${meetingId}`);
         });
 
         // Leave meeting room
         socket.on("meeting:leave", ({ meetingId }) => {
             socket.leave(`meeting:${meetingId}`);
-
-            // Remove participant
-            if (meetingParticipants.has(meetingId)) {
-                meetingParticipants.get(meetingId).delete(socket.id);
-
-                // Clean up empty meeting map
-                if (meetingParticipants.get(meetingId).size === 0) {
-                    meetingParticipants.delete(meetingId);
-                }
-            }
-
-            // Notify others that user left
-            socket.to(`meeting:${meetingId}`).emit("meeting:user-left", {
-                meetingId,
-                odatId: userId,
-                socketId: socket.id,
-            });
-
-            console.log(`User ${userId} left meeting ${meetingId}`);
-        });
-
-        // WebRTC signaling - offer
-        socket.on("meeting:offer", ({ meetingId, targetSocketId, offer }) => {
-            io.to(targetSocketId).emit("meeting:offer", {
-                meetingId,
-                fromSocketId: socket.id,
-                fromUserId: userId,
-                offer,
-            });
-        });
-
-        // WebRTC signaling - answer
-        socket.on("meeting:answer", ({ meetingId, targetSocketId, answer }) => {
-            io.to(targetSocketId).emit("meeting:answer", {
-                meetingId,
-                fromSocketId: socket.id,
-                fromUserId: userId,
-                answer,
-            });
-        });
-
-        // WebRTC signaling - ICE candidate
-        socket.on("meeting:ice-candidate", ({ meetingId, targetSocketId, candidate }) => {
-            io.to(targetSocketId).emit("meeting:ice-candidate", {
-                meetingId,
-                fromSocketId: socket.id,
-                candidate,
-            });
-        });
-
-        // Toggle audio/video
-        socket.on("meeting:toggle-media", ({ meetingId, audioEnabled, videoEnabled }) => {
-            // Update participant in map
-            if (meetingParticipants.has(meetingId)) {
-                const participant = meetingParticipants.get(meetingId).get(socket.id);
-                if (participant) {
-                    participant.audioEnabled = audioEnabled;
-                    participant.videoEnabled = videoEnabled;
-                }
-            }
-
-            socket.to(`meeting:${meetingId}`).emit("meeting:user-media-toggle", {
-                odatId: userId,
-                socketId: socket.id,
-                audioEnabled,
-                videoEnabled,
-            });
-        });
-
-        // Chat message in meeting
-        socket.on("meeting:chat-message", ({ meetingId, message }) => {
-            // Broadcast to other participants
-            socket.to(`meeting:${meetingId}`).emit("meeting:chat-message", message);
+            console.log(`User ${userId} left meeting room ${meetingId}`);
         });
 
         // End meeting (host only)
@@ -336,18 +256,16 @@ export const initializeServer = (server) => {
                 );
 
                 if (meeting) {
+                    // Populate details for the socket emission
+                    const populatedMeeting = await populateMeetingDetails(meeting);
+
                     // Notify all participants in the meeting room that meeting has ended
                     socket.to(`meeting:${meetingId}`).emit("meeting:ended");
 
                     // Emit to workspace so meeting lists update
-                    io.to(`workspace:${meeting.workspaceId}`).emit("meeting:updated", meeting);
+                    io.to(`workspace:${meeting.workspaceId}`).emit("meeting:updated", populatedMeeting);
 
                     console.log(`Meeting ${meetingId} ended and updated to completed status`);
-                }
-
-                // Clean up meeting participants
-                if (meetingParticipants.has(meetingId)) {
-                    meetingParticipants.delete(meetingId);
                 }
             } catch (error) {
                 console.error(`Failed to end meeting ${meetingId}:`, error);
@@ -380,24 +298,6 @@ export const initializeServer = (server) => {
                         }
                     }
                 }
-
-                // Clean up meeting participants
-                for (const [meetingId, participants] of meetingParticipants.entries()) {
-                    if (participants.has(socket.id)) {
-                        participants.delete(socket.id);
-
-                        // Notify others that user left
-                        io.to(`meeting:${meetingId}`).emit("meeting:user-left", {
-                            meetingId,
-                            odatId: userId,
-                            socketId: socket.id,
-                        });
-
-                        if (participants.size === 0) {
-                            meetingParticipants.delete(meetingId);
-                        }
-                    }
-                }
             }
         });
     });
@@ -416,7 +316,7 @@ export const initializeServer = (server) => {
 
             for (const meeting of meetings) {
                 const startTimestamp = new Date(meeting.startTime).getTime();
-                
+
                 // Calculate end time
                 let endTimestamp = null;
                 if (meeting.endTime) {
@@ -454,15 +354,15 @@ export const initializeServer = (server) => {
                     meeting.status = newStatus;
                     await meeting.save();
 
+                    // Populate details before emission
+                    const populatedMeeting = await populateMeetingDetails(meeting);
+
                     // Notify workspace
-                    io.to(`workspace:${meeting.workspaceId}`).emit("meeting:updated", meeting);
+                    io.to(`workspace:${meeting.workspaceId}`).emit("meeting:updated", populatedMeeting);
 
                     // If meeting ended, notify participants
                     if (newStatus === "completed") {
                         io.to(`meeting:${meeting._id}`).emit("meeting:ended");
-                        if (meetingParticipants.has(meeting._id.toString())) {
-                            meetingParticipants.delete(meeting._id.toString());
-                        }
                     }
 
                     console.log(`  => STATUS CHANGED: ${oldStatus} → ${newStatus}`);
