@@ -12,6 +12,7 @@ const Home = () => {
     const { subscribeToSocket, unsubscribeFromSocket } = useChatStore();
     const location = useLocation();
     const isMessagesPage = location.pathname.includes("/messages");
+    const isMeetingPage = location.pathname.includes("/meetings/");
 
     useEffect(() => {
         if (socket) {
@@ -23,12 +24,12 @@ const Home = () => {
     }, [socket, subscribeToSocket, unsubscribeFromSocket]);
 
     return (
-        <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500">
+        <div className="h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500 flex flex-col overflow-hidden">
 
             <Navbar />
 
-            <div className="flex justify-center md:h-[calc(100vh-80px)] overflow-hidden">
-                <div className="flex w-full lg:mx-3">
+            <div className="flex-1 flex justify-center overflow-hidden">
+                <div className="flex w-full lg:mx-3 h-full pb-3">
 
                     {/* Left Sidebar - Hidden on mobile, visible on medium+ screens */}
                     <div
@@ -36,6 +37,7 @@ const Home = () => {
               hidden md:block
               shrink-0 transition-all duration-300 ease-in-out
               ${isCollapsed ? "w-[70px]" : "w-[250px]"}
+              h-full
             `}
                     >
                         <LeftSidebar
@@ -50,12 +52,14 @@ const Home = () => {
                     {/* Main Content Area */}
                     <div
                         className={`
-              flex-1 p-1 
-              ${isMessagesPage ? 'overflow-hidden h-[calc(100vh-20px)] md:h-full' : 'overflow-y-auto custom-scrollbar'}
-              pb-20 md:pb-1
+              flex-1 flex flex-col min-w-0
+              ${(isMessagesPage || isMeetingPage) ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}
+              pb-20 md:pb-0
             `}
                     >
-                        <Outlet />
+                        <div className="flex-1 min-h-0">
+                            <Outlet />
+                        </div>
                     </div>
 
                 </div>

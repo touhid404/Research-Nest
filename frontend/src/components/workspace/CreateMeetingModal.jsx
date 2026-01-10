@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     IoCloseOutline,
     IoVideocamOutline,
-    IoCallOutline,
-    IoLocationOutline,
     IoRocketOutline,
     IoPeopleOutline,
 } from "react-icons/io5";
@@ -27,11 +25,9 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
     const [formData, setFormData] = useState({
         title: "",
         description: "",
-        type: "video",
         date: "",
         startTime: "",
         duration: 30,
-        externalLink: "",
     });
     const [selectedParticipants, setSelectedParticipants] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,11 +41,9 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
             setFormData({
                 title: "",
                 description: "",
-                type: "video",
                 date: new Date().toISOString().split("T")[0],
                 startTime: "",
                 duration: 30,
-                externalLink: "",
             });
             setSelectedParticipants([]);
             setShowCustomDuration(false);
@@ -87,14 +81,12 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
         try {
             // Auto-include owner and selected participants
             const participantIds = [user.uid, ...selectedParticipants.map((p) => p.uid)];
-            
+
             const meetingData = {
                 workspaceId: workspace._id,
                 title: formData.title.trim() || (isInstant ? "Quick Meeting" : "Scheduled Meeting"),
                 description: formData.description.trim(),
-                type: formData.type,
                 participants: participantIds,
-                externalLink: formData.externalLink.trim() || null,
                 isInstant,
                 duration: formData.duration,
             };
@@ -121,12 +113,6 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
     };
 
     if (!isOpen) return null;
-
-    const meetingTypes = [
-        { value: "video", label: "Video", icon: IoVideocamOutline },
-        { value: "audio", label: "Audio", icon: IoCallOutline },
-        { value: "in_person", label: "In Person", icon: IoLocationOutline },
-    ];
 
     const durations = [
         { value: 15, label: "15m" },
@@ -191,22 +177,20 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                 <button
                                     type="button"
                                     onClick={() => setMeetingMode("instant")}
-                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                                        meetingMode === "instant"
-                                            ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
-                                            : "text-slate-500 dark:text-slate-400"
-                                    }`}
+                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${meetingMode === "instant"
+                                        ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
+                                        : "text-slate-500 dark:text-slate-400"
+                                        }`}
                                 >
                                     Start Now
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setMeetingMode("scheduled")}
-                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                                        meetingMode === "scheduled"
-                                            ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
-                                            : "text-slate-500 dark:text-slate-400"
-                                    }`}
+                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${meetingMode === "scheduled"
+                                        ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
+                                        : "text-slate-500 dark:text-slate-400"
+                                        }`}
                                 >
                                     Schedule
                                 </button>
@@ -227,23 +211,7 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                             </div>
 
                             {/* Meeting Type */}
-                            <div className="flex gap-2">
-                                {meetingTypes.map((type) => (
-                                    <button
-                                        key={type.value}
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, type: type.value })}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
-                                            formData.type === type.value
-                                                ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400"
-                                                : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300"
-                                        }`}
-                                    >
-                                        <type.icon className="w-4 h-4" />
-                                        {type.label}
-                                    </button>
-                                ))}
-                            </div>
+
 
                             {/* Scheduled: Date & Time */}
                             {meetingMode === "scheduled" && (
@@ -279,11 +247,10 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                                 setShowCustomDuration(false);
                                                 setCustomMinutes("");
                                             }}
-                                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
-                                                formData.duration === d.value && !showCustomDuration
-                                                    ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
-                                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                            }`}
+                                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${formData.duration === d.value && !showCustomDuration
+                                                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                }`}
                                         >
                                             {d.label}
                                         </button>
@@ -291,11 +258,10 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                     <button
                                         type="button"
                                         onClick={() => setShowCustomDuration(!showCustomDuration)}
-                                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
-                                            showCustomDuration
-                                                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
-                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                        }`}
+                                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${showCustomDuration
+                                            ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+                                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                            }`}
                                     >
                                         Custom
                                     </button>
@@ -323,15 +289,7 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                             </div>
 
                             {/* External Link */}
-                            <div>
-                                <input
-                                    type="url"
-                                    value={formData.externalLink}
-                                    onChange={(e) => setFormData({ ...formData, externalLink: e.target.value })}
-                                    placeholder="External link (optional)"
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none text-sm"
-                                />
-                            </div>
+
 
                             {/* Participants */}
                             <div>
@@ -366,18 +324,17 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                         </div>
                                         You (Host)
                                     </div>
-                                    
+
                                     {/* Selectable members */}
                                     {selectableMembers.map((member) => (
                                         <button
                                             key={member.uid}
                                             type="button"
                                             onClick={() => handleToggleParticipant(member)}
-                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                                                selectedParticipants.some((p) => p.uid === member.uid)
-                                                    ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500"
-                                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                            }`}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${selectedParticipants.some((p) => p.uid === member.uid)
+                                                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500"
+                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                }`}
                                         >
                                             <div className="w-5 h-5 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 shrink-0">
                                                 {member.user?.photoURL ? (
@@ -391,7 +348,7 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                             {member.user?.name?.split(" ")[0]}
                                         </button>
                                     ))}
-                                    
+
                                     {selectableMembers.length === 0 && (
                                         <p className="text-xs text-slate-400 dark:text-slate-500 py-2">
                                             No other members in this workspace

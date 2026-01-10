@@ -239,7 +239,15 @@ const useWorkspaceStore = create((set, get) => ({
     createMeeting: async (data) => {
         try {
             const response = await workspaceApi.createMeeting(data);
-            // Don't add to state here - socket event will handle it for all users including creator
+            // Add meeting to local state immediately for the creator
+            // Socket event will handle it for other users
+            set((state) => {
+                const exists = state.meetings.some(m => m._id === response.data._id);
+                if (exists) return state;
+                return {
+                    meetings: [...state.meetings, response.data],
+                };
+            });
             return response.data;
         } catch (error) {
             set({ error: error.message });

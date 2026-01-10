@@ -2,10 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
     IoVideocamOutline,
-    IoCallOutline,
-    IoLocationOutline,
     IoTimeOutline,
-    IoLinkOutline,
     IoPlayOutline,
     IoTrashOutline,
     IoAddOutline,
@@ -29,6 +26,20 @@ const MeetingScheduler = ({ workspace }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filter, setFilter] = useState("upcoming");
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, meetingId: null, isLoading: false });
+
+    // Count live meetings
+    const liveMeetingsCount = meetings.filter(m => m.status === "live").length;
+
+    // Auto-switch to "live" filter when there are live meetings and user just created one
+    useEffect(() => {
+        if (liveMeetingsCount > 0 && filter === "upcoming") {
+            // Check if the latest meeting is live (likely just created)
+            const latestMeeting = meetings[meetings.length - 1];
+            if (latestMeeting?.status === "live") {
+                setFilter("live");
+            }
+        }
+    }, [liveMeetingsCount, meetings.length]);
 
     // Helper to get meeting end time (used for display purposes)
     const getMeetingEndTime = useCallback((meeting) => {
@@ -115,20 +126,13 @@ const MeetingScheduler = ({ workspace }) => {
             }
         }
 
-        if (meeting.externalLink) {
-            window.open(meeting.externalLink, "_blank");
-        } else if (meeting.type === "video") {
-            navigate(`/home/workspace/${workspace._id}/meetings/${meeting._id}`);
-        }
+        navigate(`/home/workspace/${workspace._id}/meetings/${meeting._id}`);
     };
 
     const canJoinMeeting = (meeting) => {
         // Can only join if meeting is live
         return meeting.status === "live";
     };
-
-    // Count live meetings
-    const liveMeetingsCount = meetings.filter(m => m.status === "live").length;
 
     const filters = [
         { key: "upcoming", label: "Upcoming" },
@@ -148,11 +152,10 @@ const MeetingScheduler = ({ workspace }) => {
                             <button
                                 key={f.key}
                                 onClick={() => setFilter(f.key)}
-                                className={`pb-3 pt-4 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
-                                    filter === f.key
-                                        ? "border-violet-600 dark:border-violet-400 text-violet-600 dark:text-violet-400"
-                                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                }`}
+                                className={`pb-3 pt-4 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${filter === f.key
+                                    ? "border-violet-600 dark:border-violet-400 text-violet-600 dark:text-violet-400"
+                                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                                    }`}
                             >
                                 {f.label}
                                 {f.count > 0 && (
@@ -222,30 +225,29 @@ const MeetingScheduler = ({ workspace }) => {
                         {/* Meetings content */}
                         <div className="flex-1 space-y-6">
                             {Object.entries(groupedMeetings).map(([date, dateMeetings]) => (
-                            <div key={date}>
-                                <div className={`text-xs font-semibold uppercase tracking-wider mb-4 flex items-center gap-2 ${
-                                    date === "Live Now" ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"
-                                }`}>
-                                    {date === "Live Now" && <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
-                                    {date}
-                                </div>
+                                <div key={date}>
+                                    <div className={`text-xs font-semibold uppercase tracking-wider mb-4 flex items-center gap-2 ${date === "Live Now" ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"
+                                        }`}>
+                                        {date === "Live Now" && <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
+                                        {date}
+                                    </div>
 
-                                <div className="space-y-4">
-                                    <AnimatePresence>
-                                        {dateMeetings.map((meeting) => (
-                                            <MeetingCard
-                                                key={meeting._id}
-                                                meeting={meeting}
-                                                user={user}
-                                                canJoin={canJoinMeeting(meeting)}
-                                                onJoin={() => handleJoinMeeting(meeting)}
-                                                onDelete={(e) => handleDeleteMeeting(meeting._id, e)}
-                                            />
-                                        ))}
-                                    </AnimatePresence>
+                                    <div className="space-y-4">
+                                        <AnimatePresence>
+                                            {dateMeetings.map((meeting) => (
+                                                <MeetingCard
+                                                    key={meeting._id}
+                                                    meeting={meeting}
+                                                    user={user}
+                                                    canJoin={canJoinMeeting(meeting)}
+                                                    onJoin={() => handleJoinMeeting(meeting)}
+                                                    onDelete={(e) => handleDeleteMeeting(meeting._id, e)}
+                                                />
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                         </div>
                     </div>
                 )}
@@ -281,22 +283,13 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
     const totalCount = meeting.participants?.length || 0;
 
     // Get scheduler info - prioritize current user data if they're the scheduler, then try scheduledByUser, fallback to participantDetails
-    const schedulerInfo = isScheduler 
+    const schedulerInfo = isScheduler
         ? { name: user?.displayName || user?.name, photoURL: user?.photoURL }
-        : (meeting.scheduledByUser || 
-           meeting.participantDetails?.find(p => p.uid === meeting.scheduledBy)?.user ||
-           { name: "Unknown", photoURL: null });
+        : (meeting.scheduledByUser ||
+            meeting.participantDetails?.find(p => p.uid === meeting.scheduledBy)?.user ||
+            { name: "Unknown", photoURL: null });
 
-    const getMeetingTypeInfo = (type) => {
-        switch (type) {
-            case "video": return { icon: IoVideocamOutline, label: "Video Call", color: "violet" };
-            case "audio": return { icon: IoCallOutline, label: "Audio Call", color: "blue" };
-            default: return { icon: IoLocationOutline, label: "In Person", color: "emerald" };
-        }
-    };
 
-    const typeInfo = getMeetingTypeInfo(meeting.type);
-    const TypeIcon = typeInfo.icon;
 
     return (
         <motion.div
@@ -304,23 +297,21 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`group/card relative bg-white dark:bg-slate-800 border rounded-2xl px-5 py-3 transition-all duration-500 hover:shadow-lg dark:hover:shadow-slate-900/50 hover:-translate-y-0.5 ${
-                isLive 
-                    ? "border-green-300 dark:border-green-600 shadow-green-100 dark:shadow-green-900/20" 
-                    : isCompleted
-                        ? "border-gray-300 dark:border-slate-600 opacity-75"
-                        : "border-gray-200 dark:border-slate-700"
-            }`}
+            className={`group/card relative bg-white dark:bg-slate-800 border rounded-2xl px-5 py-3 transition-all duration-500 hover:shadow-lg dark:hover:shadow-slate-900/50 hover:-translate-y-0.5 ${isLive
+                ? "border-green-300 dark:border-green-600 shadow-green-100 dark:shadow-green-900/20"
+                : isCompleted
+                    ? "border-gray-300 dark:border-slate-600 opacity-75"
+                    : "border-gray-200 dark:border-slate-700"
+                }`}
         >
             {/* Background decoration */}
             <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0">
-                <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -mr-8 -mt-8 ${
-                    isLive 
-                        ? "bg-linear-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20"
-                        : isCompleted
-                            ? "bg-linear-to-br from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20"
-                            : "bg-linear-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20"
-                }`} />
+                <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -mr-8 -mt-8 ${isLive
+                    ? "bg-linear-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20"
+                    : isCompleted
+                        ? "bg-linear-to-br from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20"
+                        : "bg-linear-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20"
+                    }`} />
             </div>
 
             <div className="relative z-10">
@@ -361,17 +352,7 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                                 <span className="text-[10px] text-gray-400 dark:text-gray-500">
                                     {isScheduler ? "(Organizer)" : "• Organizer"}
                                 </span>
-                                <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border ${
-                                    typeInfo.color === "violet" 
-                                        ? "bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-700/50"
-                                        : typeInfo.color === "blue"
-                                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-700/50"
-                                        : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50"
-                                }`}>
-                                    <TypeIcon className="w-3 h-3 inline mr-1" />
-                                    {typeInfo.label}
-                                </span>
+
                             </div>
                         </div>
                     </div>
@@ -406,7 +387,7 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                             <>
                                 <span className="text-gray-400 dark:text-gray-500">→</span>
                                 <span className="font-semibold text-gray-700 dark:text-gray-300">
-                                    {meeting.endTime 
+                                    {meeting.endTime
                                         ? formatDateTime(meeting.endTime)
                                         : formatDateTime(new Date(new Date(meeting.startTime).getTime() + meeting.duration * 60000))
                                     }
@@ -431,18 +412,7 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                         <span className="text-gray-700 dark:text-gray-300">{acceptedCount}/{totalCount} joined</span>
                     </div>
 
-                    {meeting.externalLink && (
-                        <a
-                            href={meeting.externalLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-2.5 py-1.5 rounded-lg hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <IoLinkOutline className="w-3.5 h-3.5" />
-                            <span>Link</span>
-                        </a>
-                    )}
+
                 </div>
 
                 {/* Footer - Participants & Join */}
@@ -450,12 +420,11 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                     {/* Participants */}
                     <div className="flex items-center gap-2">
                         <div className="flex -space-x-1.5">
-                            {meeting.participantDetails?.slice(0, 5).map((p) => (
+                            {meeting.participantDetails?.filter(p => p.uid !== meeting.scheduledBy).slice(0, 5).map((p) => (
                                 <div
                                     key={p.uid}
-                                    className={`w-6 h-6 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 ${
-                                        p.status === "accepted" ? "ring-1 ring-green-400/50" : ""
-                                    }`}
+                                    className={`w-6 h-6 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 ${p.status === "accepted" ? "ring-1 ring-green-400/50" : ""
+                                        }`}
                                     title={`${p.user?.name} (${p.status})`}
                                 >
                                     {p.user?.photoURL ? (
@@ -479,11 +448,10 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                     {(canJoin || isLive) && !isCompleted && (
                         <button
                             onClick={onJoin}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white rounded-full transition-all active:scale-95 ${
-                                isLive
-                                    ? "bg-green-500 hover:bg-green-600 shadow-md shadow-green-500/25"
-                                    : "bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-500/25"
-                            }`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white rounded-full transition-all active:scale-95 ${isLive
+                                ? "bg-green-500 hover:bg-green-600 shadow-md shadow-green-500/25"
+                                : "bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-500/25"
+                                }`}
                         >
                             <IoPlayOutline className="w-3.5 h-3.5" />
                             Join
