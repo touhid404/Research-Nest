@@ -12,6 +12,7 @@ import { messageRoutes } from "./modules/messages/message.routes.js";
 import { initializeServer } from "./lib/initialize.server.js";
 import { paperRoutes } from "./modules/papers/paper.routes.js";
 import { workspaceRoutes } from "./modules/workspace/workspace.routes.js";
+import "./cron/pingSelf.js";
 
 
 const app = express();
