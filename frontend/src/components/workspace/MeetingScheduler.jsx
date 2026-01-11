@@ -30,6 +30,9 @@ const MeetingScheduler = ({ workspace }) => {
     // Count live meetings
     const liveMeetingsCount = meetings.filter(m => m.status === "live").length;
 
+    // Count upcoming meetings (scheduled status)
+    const upcomingMeetingsCount = meetings.filter(m => m.status === "scheduled").length;
+
     // Auto-switch to "live" filter when there are live meetings and user just created one
     useEffect(() => {
         if (liveMeetingsCount > 0 && filter === "upcoming") {
@@ -135,7 +138,7 @@ const MeetingScheduler = ({ workspace }) => {
     };
 
     const filters = [
-        { key: "upcoming", label: "Upcoming" },
+        { key: "upcoming", label: "Upcoming", count: upcomingMeetingsCount },
         { key: "live", label: "Live", count: liveMeetingsCount },
         { key: "past", label: "Past" },
         { key: "all", label: "All" },
@@ -159,7 +162,10 @@ const MeetingScheduler = ({ workspace }) => {
                             >
                                 {f.label}
                                 {f.count > 0 && (
-                                    <span className="w-5 h-5 text-[10px] font-bold text-white bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                                    <span className={`w-5 h-5 text-[10px] font-bold text-white rounded-full flex items-center justify-center ${f.key === "live"
+                                            ? "bg-green-500 animate-pulse"
+                                            : "bg-violet-500"
+                                        }`}>
                                         {f.count}
                                     </span>
                                 )}

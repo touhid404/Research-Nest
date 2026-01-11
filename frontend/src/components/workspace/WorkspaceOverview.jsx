@@ -253,7 +253,9 @@ const WorkspaceOverview = ({ workspace }) => {
                                                         {meeting.title}
                                                     </p>
                                                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                                        {formatClockTime(meeting.startTime)} - {formatClockTime(meeting.endTime)}
+                                                        {formatClockTime(meeting.startTime)} - {meeting.endTime || meeting.duration
+                                                            ? (meeting.endTime ? formatClockTime(meeting.endTime) : formatClockTime(new Date(new Date(meeting.startTime).getTime() + meeting.duration * 60000)))
+                                                            : "No end time"}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center -space-x-2">

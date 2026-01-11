@@ -28,12 +28,14 @@ export const createMeetingService = async ({
     const meetingStartTime = isInstant ? new Date() : new Date(startTime);
 
     // Calculate endTime if duration is provided but endTime is not
+    // If duration is null/undefined, endTime stays null (no end time)
     let meetingEndTime = null;
     if (endTime) {
         meetingEndTime = new Date(endTime);
-    } else if (duration) {
+    } else if (duration && duration > 0) {
         meetingEndTime = new Date(meetingStartTime.getTime() + duration * 60000);
     }
+    // If duration is null/0/undefined and no endTime, meetingEndTime stays null (infinite meeting)
 
     const meeting = new Meeting({
         workspaceId,
