@@ -124,7 +124,7 @@ const WorkspaceBase = () => {
                             onClick={() => setIsSelectorOpen(!isSelectorOpen)}
                             className="flex items-center gap-2 py-3 hover:opacity-80 transition-opacity"
                         >
-                            <span className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate max-w-[180px]">
+                            <span className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate w-[100px] md:max-w-[180px]">
                                 {selectedWorkspace?.name || "Select Workspace"}
                             </span>
                             <IoChevronDownOutline className={`w-4 h-4 text-slate-500 transition-transform ${isSelectorOpen ? 'rotate-180' : ''}`} />
@@ -213,7 +213,7 @@ const WorkspaceBase = () => {
 
                     {/* Right: Team Members */}
                     {selectedWorkspace && (
-                        <div className="flex items-center shrink-0 pb-1">
+                        <div className="hidden  md:flex items-center shrink-0 pb-1">
                             <div className="flex items-center -space-x-1.5">
                                 {selectedWorkspace.members?.slice(0, 3).map((member) => (
                                     <div

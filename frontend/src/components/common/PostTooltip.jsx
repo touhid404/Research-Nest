@@ -9,7 +9,7 @@ export const UserInfoTooltip = ({ user }) => {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-[10px] left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+            className="absolute top-2.5 left-1/2 -translate-x-1/2 z-60 pointer-events-none"
         >
             <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-4 px-4 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] border border-gray-100 dark:border-slate-800 flex flex-col gap-3.5 min-w-[200px]">
                 {/* Header: User Avatar & Name */}

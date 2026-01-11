@@ -177,7 +177,7 @@ const MeetingScheduler = ({ workspace }) => {
                         onClick={() => setIsCreateModalOpen(true)}
                         className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-1.5 rounded-full transition-all shadow-lg active:scale-95 cursor-pointer mb-2"
                     >
-                        + New Meeting
+                        + <span className="hidden md:inline-block">New Meeting</span>
                     </button>
                 </div>
             </div>

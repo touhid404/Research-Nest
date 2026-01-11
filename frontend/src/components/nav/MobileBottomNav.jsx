@@ -1,47 +1,91 @@
-import React from "react";
-import { NavLink } from "react-router";
+
+import React, { useState } from "react";
+import { NavLink, useNavigate } from "react-router";
 import {
-    FaHome,
-    FaListAlt,
-    FaBookmark,
-    FaEnvelope,
-    FaNewspaper,
-    FaUser,
-    FaBell,
-} from "react-icons/fa";
+    IoGridOutline,
+    IoGrid,
+    IoListOutline,
+    IoList,
+    IoBookmarkOutline,
+    IoBookmark,
+    IoChatbubbleEllipsesOutline,
+    IoChatbubbleEllipses,
+    IoNewspaperOutline,
+    IoNewspaper,
+    IoPersonOutline,
+    IoPerson,
+    IoNotificationsOutline,
+    IoNotifications,
+    IoLogOutOutline,
+} from "react-icons/io5";
+import useAuth from "../../hooks/useAuth";
+import ConfirmModal from "../common/ConfirmModal";
+
 
 const MobileBottomNav = () => {
+    const { user, signOutUser } = useAuth();
+    const navigate = useNavigate();
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
     const navItems = [
-        { icon: <FaHome size={20} />, text: "Posts", path: "/home/posts" },
-        { icon: <FaListAlt size={20} />, text: "Requests", path: "/home/requests" },
-        { icon: <FaBookmark size={20} />, text: "Workspace", path: "/home/workspace" },
-        { icon: <FaEnvelope size={20} />, text: "Messages", path: "/home/messages" },
-        { icon: <FaNewspaper size={20} />, text: "Paper Hub", path: "/home/paper-hub" },
-        { icon: <FaUser size={20} />, text: "My Profile", path: "/home/my-profile" },
-        { icon: <FaBell size={20} />, text: "Notifications", path: "/home/notifications" },
+        { icon: <IoGridOutline size={22} />, activeIcon: <IoGrid size={22} />, path: "/home/posts", label: "Posts" },
+        { icon: <IoListOutline size={22} />, activeIcon: <IoList size={22} />, path: "/home/requests", label: "Requests" },
+        { icon: <IoBookmarkOutline size={22} />, activeIcon: <IoBookmark size={22} />, path: "/home/workspace", label: "Workspace" },
+        { icon: <IoChatbubbleEllipsesOutline size={22} />, activeIcon: <IoChatbubbleEllipses size={22} />, path: "/home/messages", label: "Messages" },
+        { icon: <IoNewspaperOutline size={22} />, activeIcon: <IoNewspaper size={22} />, path: "/home/paper-hub", label: "Paper Hub" },
+        { icon: <IoPersonOutline size={22} />, activeIcon: <IoPerson size={22} />, path: "/home/my-profile", label: "Profile" },
+        { icon: <IoNotificationsOutline size={22} />, activeIcon: <IoNotifications size={22} />, path: "/home/notifications", label: "Notifications" },
     ];
 
+    const handleLogout = async () => {
+        try {
+            await signOutUser();
+            setIsLogoutModalOpen(false);
+            navigate("/");
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    };
+
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 pb-safe pt-2 px-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-800 pb-2 pt-2 px-2  md:hidden">
             <div className="flex justify-between items-center max-w-md mx-auto">
-                {navItems.map((item, index) => (
+                {navItems.map((item, idx) => (
                     <NavLink
-                        key={index}
+                        key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
-                            `flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300
-              ${isActive
-                                ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 translate-y-[-4px]"
-                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                            `flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 ${
+                                isActive
+                                      ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20"
+                                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                             }`
                         }
                     >
-                        {item.icon}
-                        {/* Optional: Show label on active or remove completely for cleaner look on small screens */}
-                        {/* <span className="text-[10px] mt-1 font-medium">{item.text}</span> */}
+                        {({ isActive }) => (isActive ? item.activeIcon : item.icon)}
+                        {/* <span className="text-[10px] mt-1 font-medium">{item.label}</span> */}
                     </NavLink>
                 ))}
+                {/* Logout button */}
+                <button
+                    onClick={() => setIsLogoutModalOpen(true)}
+                    className="flex flex-col items-center justify-center p-2 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300"
+                    aria-label="Logout"
+                >
+                    <IoLogOutOutline size={22} />
+                    {/* <span className="text-[10px] mt-1 font-medium">Logout</span> */}
+                </button>
             </div>
+            {/* Logout Confirmation Modal (shared) */}
+            <ConfirmModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+                title="Confirm Logout"
+                message="Are you sure you want to log out?"
+                confirmText="Log Out"
+                isDanger={true}
+            />
         </div>
     );
 };
