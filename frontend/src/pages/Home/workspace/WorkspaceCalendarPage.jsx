@@ -1,9 +1,9 @@
 import { useOutletContext } from "react-router";
-import TaskCalendar from "../../../components/workspace/TaskCalendar";
+import TaskCalendar from "../../../components/workspace/task/TaskCalendar";
 
 const WorkspaceCalendarPage = () => {
     const { workspace } = useOutletContext();
-    
+
     if (!workspace) {
         return (
             <div className="flex items-center justify-center h-full">

@@ -13,8 +13,9 @@ import {
 import { HiOutlineClipboardDocumentCheck, HiOutlineUsers, HiOutlineDocumentText, HiOutlineVideoCamera } from "react-icons/hi2";
 import useWorkspaceStore from "../../store/useWorkspaceStore";
 import useAuth from "../../hooks/useAuth";
-import CreateTaskModal from "./CreateTaskModal";
+import CreateTaskModal from "./task/CreateTaskModal";
 import { formatClockTime } from "../../utils/formatTime";
+import WorkspaceLoader from "../loader/WorkspaceLoader";
 
 const WorkspaceOverview = ({ workspace }) => {
     const { user } = useAuth();
@@ -25,6 +26,9 @@ const WorkspaceOverview = ({ workspace }) => {
         fetchTasks,
         fetchMeetings,
         fetchDocuments,
+        loadingTasks,
+        loadingMeetings,
+        loadingDocuments
     } = useWorkspaceStore();
 
     const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
@@ -33,8 +37,17 @@ const WorkspaceOverview = ({ workspace }) => {
         if (workspace?._id) {
             fetchTasks(workspace._id, { limit: 10 });
             fetchMeetings(workspace._id, { limit: 5, upcoming: 'true' });
+            fetchDocuments(workspace._id);
         }
     }, [workspace?._id]);
+
+    const isInitialLoading = (loadingTasks && tasks.length === 0) ||
+        (loadingMeetings && meetings.length === 0) ||
+        (loadingDocuments && documents.length === 0);
+
+    if (isInitialLoading) {
+        return <WorkspaceLoader />;
+    }
 
     // Calculate stats
     const completedTasks = tasks.filter((t) => t.status === "completed").length;

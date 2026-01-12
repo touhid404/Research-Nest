@@ -11,11 +11,11 @@ import {
 } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import useWorkspaceStore from "../../store/useWorkspaceStore";
-import useAuth from "../../hooks/useAuth";
+import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import useAuth from "../../../hooks/useAuth";
 import CreateMeetingModal from "./CreateMeetingModal";
-import ConfirmModal from "../common/ConfirmModal";
-import { formatDateTime, formatDuration } from "../../utils/formatTime";
+import ConfirmModal from "../../common/ConfirmModal";
+import { formatDateTime, formatDuration } from "../../../utils/formatTime";
 
 const MeetingScheduler = ({ workspace }) => {
     const navigate = useNavigate();
@@ -163,8 +163,8 @@ const MeetingScheduler = ({ workspace }) => {
                                 {f.label}
                                 {f.count > 0 && (
                                     <span className={`w-5 h-5 text-[10px] font-bold text-white rounded-full flex items-center justify-center ${f.key === "live"
-                                            ? "bg-green-500 animate-pulse"
-                                            : "bg-violet-500"
+                                        ? "bg-green-500 animate-pulse"
+                                        : "bg-violet-500"
                                         }`}>
                                         {f.count}
                                     </span>

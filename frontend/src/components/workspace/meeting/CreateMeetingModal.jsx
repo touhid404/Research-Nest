@@ -8,8 +8,8 @@ import {
     IoPeopleOutline,
 } from "react-icons/io5";
 import toast from "react-hot-toast";
-import useWorkspaceStore from "../../store/useWorkspaceStore";
-import useAuth from "../../hooks/useAuth";
+import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import useAuth from "../../../hooks/useAuth";
 
 const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
     const { createMeeting } = useWorkspaceStore();
@@ -247,8 +247,8 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                                                 setCustomMinutes("");
                                             }}
                                             className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${(d.value === null ? formData.duration === null : formData.duration === d.value) && !showCustomDuration
-                                                    ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
-                                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
+                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                                                 }`}
                                         >
                                             {d.label}

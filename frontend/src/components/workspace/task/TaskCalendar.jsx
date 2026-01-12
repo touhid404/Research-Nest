@@ -7,11 +7,11 @@ import {
     IoCheckmarkCircle,
     IoEllipseOutline,
 } from "react-icons/io5";
-import useWorkspaceStore from "../../store/useWorkspaceStore";
-import useAuth from "../../hooks/useAuth";
+import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import useAuth from "../../../hooks/useAuth";
 import CreateTaskModal from "./CreateTaskModal";
 import TaskDetailModal from "./TaskDetailModal";
-import { formatClockTime } from "../../utils/formatTime";
+import { formatClockTime } from "../../../utils/formatTime";
 
 const TaskCalendar = ({ workspace }) => {
     const { user } = useAuth();
@@ -82,24 +82,24 @@ const TaskCalendar = ({ workspace }) => {
     // Get task bars that span multiple days (Jira-style)
     const getTaskBarsForWeek = useMemo(() => {
         const taskBars = [];
-        
+
         tasks.forEach((task) => {
             if (!task.startDate && !task.dueDate) return;
-            
+
             const startDate = task.startDate ? new Date(task.startDate) : new Date(task.dueDate);
             const endDate = task.dueDate ? new Date(task.dueDate) : new Date(task.startDate);
-            
+
             // Normalize dates to start of day
             startDate.setHours(0, 0, 0, 0);
             endDate.setHours(23, 59, 59, 999);
-            
+
             taskBars.push({
                 ...task,
                 startDate,
                 endDate,
             });
         });
-        
+
         return taskBars;
     }, [tasks]);
 
@@ -109,7 +109,7 @@ const TaskCalendar = ({ workspace }) => {
         dayStart.setHours(0, 0, 0, 0);
         const dayEnd = new Date(date);
         dayEnd.setHours(23, 59, 59, 999);
-        
+
         return getTaskBarsForWeek.filter((task) => {
             return task.startDate <= dayEnd && task.endDate >= dayStart;
         });
@@ -119,16 +119,16 @@ const TaskCalendar = ({ workspace }) => {
     const getTaskBarInfo = (task, date, dayIndex) => {
         const dayStart = new Date(date);
         dayStart.setHours(0, 0, 0, 0);
-        
+
         const isStart = task.startDate.toDateString() === dayStart.toDateString();
         const isEnd = task.endDate.toDateString() === dayStart.toDateString();
         const isWeekStart = dayIndex % 7 === 0;
         const isWeekEnd = dayIndex % 7 === 6;
-        
+
         // Calculate if this continues from previous week or to next week
         const continuesFromPrev = !isStart && isWeekStart;
         const continuesToNext = !isEnd && isWeekEnd;
-        
+
         return { isStart, isEnd, continuesFromPrev, continuesToNext };
     };
 
@@ -295,7 +295,7 @@ const TaskCalendar = ({ workspace }) => {
                                                 medium: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/60",
                                                 low: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60",
                                             };
-                                            
+
                                             return (
                                                 <div
                                                     key={task._id}
@@ -324,7 +324,7 @@ const TaskCalendar = ({ workspace }) => {
                                                     {barInfo.isStart && (
                                                         <span className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-md ${priorityColors[task.priority] || priorityColors.medium}`} />
                                                     )}
-                                                    
+
                                                     {/* Task content - only show on start day or week start */}
                                                     {(barInfo.isStart || barInfo.continuesFromPrev) && (
                                                         <span className={`truncate ml-1 ${task.status === "completed" ? "line-through" : ""}`}>
@@ -380,7 +380,7 @@ const TaskCalendar = ({ workspace }) => {
                                         medium: "bg-yellow-500",
                                         low: "bg-green-500",
                                     };
-                                    
+
                                     return (
                                         <div
                                             key={task._id}

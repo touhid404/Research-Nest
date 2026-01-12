@@ -10,10 +10,10 @@ import {
     IoCreateOutline,
     IoPeopleOutline,
 } from "react-icons/io5";
-import { useWorkspaceStore } from "../../store/useWorkspaceStore";
+import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 import DocumentEditor from "./DocumentEditor";
 import CreateDocumentModal from "./CreateDocumentModal";
-import ConfirmModal from "../common/ConfirmModal";
+import ConfirmModal from "../../common/ConfirmModal";
 
 const DocumentList = ({ workspace }) => {
     const { documents, fetchDocuments, deleteDocument, loadingDocuments } = useWorkspaceStore();
@@ -98,21 +98,19 @@ const DocumentList = ({ workspace }) => {
                 <div className="flex items-center gap-2 bg-base-200 rounded-lg p-1">
                     <button
                         onClick={() => setViewMode("grid")}
-                        className={`p-2 rounded-lg transition-colors ${
-                            viewMode === "grid"
+                        className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
                                 ? "bg-base-100 shadow-sm"
                                 : "hover:bg-base-300"
-                        }`}
+                            }`}
                     >
                         <IoGridOutline className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => setViewMode("list")}
-                        className={`p-2 rounded-lg transition-colors ${
-                            viewMode === "list"
+                        className={`p-2 rounded-lg transition-colors ${viewMode === "list"
                                 ? "bg-base-100 shadow-sm"
                                 : "hover:bg-base-300"
-                        }`}
+                            }`}
                     >
                         <IoListOutline className="w-5 h-5" />
                     </button>

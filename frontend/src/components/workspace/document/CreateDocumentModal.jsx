@@ -5,7 +5,7 @@ import {
     IoCloseOutline,
     IoDocumentTextOutline,
 } from "react-icons/io5";
-import { useWorkspaceStore } from "../../store/useWorkspaceStore";
+import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 
 const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
     const { createDocument } = useWorkspaceStore();
@@ -15,7 +15,7 @@ const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!title.trim()) {
             setError("Document title is required");
             return;
@@ -74,7 +74,7 @@ const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
                                         <p className="text-xs text-slate-500 dark:text-slate-400">Add a new document to workspace</p>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={onClose}
                                     disabled={isLoading}
                                     className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"

@@ -11,7 +11,8 @@ import {
     IoCheckmarkOutline,
 } from "react-icons/io5";
 import toast from "react-hot-toast";
-import useWorkspaceStore from "../../store/useWorkspaceStore";
+import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import useAuth from "../../../hooks/useAuth";
 
 const CreateTaskModal = ({ isOpen, onClose, workspace, initialDate }) => {
     const { createTask } = useWorkspaceStore();
@@ -183,13 +184,12 @@ const CreateTaskModal = ({ isOpen, onClose, workspace, initialDate }) => {
                                             key={p.value}
                                             type="button"
                                             onClick={() => setFormData({ ...formData, priority: p.value })}
-                                            className={`relative py-2 rounded-xl text-xs font-semibold transition-all ${
-                                                formData.priority === p.value
+                                            className={`relative py-2 rounded-xl text-xs font-semibold transition-all ${formData.priority === p.value
                                                     ? `${p.bgLight} ${p.text} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900`
                                                     : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                            }`}
-                                            style={{ 
-                                                ringColor: formData.priority === p.value ? p.color.replace('bg-', '') : undefined 
+                                                }`}
+                                            style={{
+                                                ringColor: formData.priority === p.value ? p.color.replace('bg-', '') : undefined
                                             }}
                                         >
                                             <span className={`absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ${p.color}`} />
@@ -259,11 +259,10 @@ const CreateTaskModal = ({ isOpen, onClose, workspace, initialDate }) => {
                                                     key={member.uid}
                                                     type="button"
                                                     onClick={() => handleToggleAssignee(member)}
-                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                                                        isSelected
+                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${isSelected
                                                             ? "bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500"
                                                             : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <div className="relative w-5 h-5 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 shrink-0">
                                                         {member.user?.photoURL ? (

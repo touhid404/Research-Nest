@@ -1,9 +1,9 @@
 import { useOutletContext } from "react-router";
-import DocumentList from "../../../components/workspace/DocumentList";
+import DocumentList from "../../../components/workspace/document/DocumentList";
 
 const WorkspaceDocumentsPage = () => {
     const { workspace } = useOutletContext();
-    
+
     if (!workspace) {
         return (
             <div className="flex items-center justify-center h-full">

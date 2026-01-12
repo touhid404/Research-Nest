@@ -13,8 +13,8 @@ import {
     IoFlagOutline,
 } from "react-icons/io5";
 import toast from "react-hot-toast";
-import useWorkspaceStore from "../../store/useWorkspaceStore";
-import ConfirmModal from "../common/ConfirmModal";
+import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import ConfirmModal from "../../common/ConfirmModal";
 
 const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
     const { updateTask, deleteTask } = useWorkspaceStore();
@@ -149,12 +149,11 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-violet-500/10 to-purple-500/10 rounded-bl-full" />
                             <div className="relative flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
-                                        task.status === "completed"
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${task.status === "completed"
                                             ? "bg-linear-to-br from-green-500 to-emerald-600 shadow-green-500/25"
                                             : "bg-linear-to-br from-violet-500 to-purple-600 shadow-violet-500/25"
-                                    }`}>
-                                        {task.status === "completed" 
+                                        }`}>
+                                        {task.status === "completed"
                                             ? <IoCheckmarkOutline className="w-5 h-5 text-white" />
                                             : <IoFlagOutline className="w-5 h-5 text-white" />
                                         }
@@ -169,11 +168,10 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => setIsEditing(!isEditing)}
-                                        className={`p-2 rounded-xl transition-colors ${
-                                            isEditing 
+                                        className={`p-2 rounded-xl transition-colors ${isEditing
                                                 ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600"
                                                 : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
-                                        }`}
+                                            }`}
                                     >
                                         <IoCreateOutline className="w-5 h-5" />
                                     </button>
@@ -183,7 +181,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                     >
                                         <IoTrashOutline className="w-5 h-5" />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={onClose}
                                         className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                                     >

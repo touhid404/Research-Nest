@@ -8,13 +8,13 @@ import {
     IoCloudDoneOutline,
     IoCloudUploadOutline,
 } from "react-icons/io5";
-import useAuth from "../../hooks/useAuth";
-import { useWorkspaceStore } from "../../store/useWorkspaceStore";
+import useAuth from "../../../hooks/useAuth";
+import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 
 const DocumentEditor = ({ document, workspace, onBack }) => {
     const { user, socket } = useAuth();
     const { updateDocument } = useWorkspaceStore();
-    
+
     const [content, setContent] = useState(document?.plainText || "");
     const [title, setTitle] = useState(document?.title || "Untitled Document");
     const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -22,7 +22,7 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
     const [cursors, setCursors] = useState({});
-    
+
     const textareaRef = useRef(null);
     const saveTimeoutRef = useRef(null);
 

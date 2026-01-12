@@ -1,9 +1,9 @@
 import { useOutletContext } from "react-router";
-import MeetingScheduler from "../../../components/workspace/MeetingScheduler";
+import MeetingScheduler from "../../../components/workspace/meeting/MeetingScheduler";
 
 const WorkspaceMeetingsPage = () => {
     const { workspace } = useOutletContext();
-    
+
     if (!workspace) {
         return (
             <div className="flex items-center justify-center h-full">
