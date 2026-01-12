@@ -42,6 +42,7 @@ const ConversationInfoModal = ({ isOpen, onClose, conversation }) => {
                 await removeMember(conversation._id, confirmAction.payload);
                 toast.success("Member removed from group");
                 setConfirmAction(null);
+                onClose();
             }
         } catch (error) {
             console.error("Action failed:", error);
@@ -77,18 +78,18 @@ const ConversationInfoModal = ({ isOpen, onClose, conversation }) => {
                         className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-white/20 dark:border-slate-800"
                     >
                         {/* Header */}
-                        <div className="p-4 pb-0 flex justify-between items-center shrink-0">
-                            <h2 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+                        <div className="p-5 pb-0 flex justify-between items-center shrink-0">
+                            <h2 className="text-base font-black text-slate-800 dark:text-white flex items-center gap-1.5">
                                 <div className="p-1.5 bg-violet-100 dark:bg-violet-900/40 rounded-xl">
-                                    {isGroup ? <FaUsers size={14} className="text-violet-600 dark:text-violet-400" /> : <FaUser size={12} className="text-violet-600 dark:text-violet-400" />}
+                                    {isGroup ? <FaUsers size={12} className="text-violet-600 dark:text-violet-400" /> : <FaUser size={10} className="text-violet-600 dark:text-violet-400" />}
                                 </div>
                                 {isGroup ? "Group Details" : "Contact Info"}
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-all active:scale-95"
+                                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-all active:scale-95"
                             >
-                                <FaTimes size={14} />
+                                <FaTimes size={12} />
                             </button>
                         </div>
 
@@ -137,8 +138,8 @@ const ConversationInfoModal = ({ isOpen, onClose, conversation }) => {
                                         <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">Participants</h4>
                                     </div>
 
-                                    {/* The ONLY scroll container */}
-                                    <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[1.2rem] p-1.5 space-y-0.5 flex-1 overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800 shadow-inner">
+                                    {/* The ONLY scroll container with fixed height */}
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[1.2rem] p-1.5 space-y-0.5 h-[160px] overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800 shadow-inner">
                                         {participants.map((member, index) => {
                                             const isMe = member.uid === user?.uid || member._id === user?.uid;
                                             const isMemberAdmin = conversation.groupAdmin === (member.uid || member._id);

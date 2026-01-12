@@ -1,32 +1,18 @@
 import { FaUsers, FaInfoCircle, FaSignOutAlt, FaTrash } from "react-icons/fa";
+import { formatTime } from "../../utils/formatTime";
 
 const SidebarConversationItem = ({
     conversation,
     selectedConversation,
     onlineUsers,
-    user,
     onClick,
-    onDeleteClick,
     onInfoClick
 }) => {
     const otherUser = conversation.otherUser;
     const isSelected = selectedConversation?._id === conversation._id;
     const isOnline = onlineUsers.includes(otherUser?.uid);
 
-    const formatTime = (date) => {
-        const d = new Date(date);
-        const now = new Date();
-        const diff = now - d;
-        const hours = Math.floor(diff / (1000 * 60 * 60));
 
-        if (hours < 24) {
-            return d.toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-            });
-        }
-        return d.toLocaleDateString();
-    };
 
     return (
         <div

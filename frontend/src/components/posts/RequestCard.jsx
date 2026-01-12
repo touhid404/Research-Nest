@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatTime } from '../../utils/formatTime';
+import { UserInfoTooltip } from '../common/PostTooltip';
+import useAuth from '../../hooks/useAuth';
 
 
 const RequestCard = ({ req, isPending, onAccept, onReject }) => {
+    const { user: currentUser } = useAuth();
+    const [showUserTooltip, setShowUserTooltip] = useState(false);
+    const user = req.sender;
+    const isOwner = currentUser?.uid === user?.uid;
+
+    const ProfileWrapper = ({ children, className }) => {
+        if (isOwner) return <div className={className}>{children}</div>;
+        return (
+            <Link
+                to={`/home/profile/${user?.uid}`}
+                onMouseEnter={() => setShowUserTooltip(true)}
+                onMouseLeave={() => setShowUserTooltip(false)}
+                className={`${className} group/profile`}
+            >
+                {children}
+            </Link>
+        );
+    };
+
     return (
         <div
             className={`flex flex-col sm:flex-row items-start gap-4 p-5 mb-4
@@ -17,12 +39,17 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
 
 
             {/* Avatar Section */}
-            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm">
-                <img
-                    src={req.sender.photoURL || "https://ui-avatars.com/api/?name=" + req.sender.name}
-                    alt={req.sender.name}
-                    className="w-full h-full object-cover"
-                />
+            <div className="relative shrink-0">
+                <AnimatePresence>
+                    {showUserTooltip && <UserInfoTooltip user={user} />}
+                </AnimatePresence>
+                <ProfileWrapper className="w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm block">
+                    <img
+                        src={user.photoURL || "https://ui-avatars.com/api/?name=" + user.name}
+                        alt={user.name}
+                        className="w-full h-full object-cover transition-transform group-hover/profile:scale-110"
+                    />
+                </ProfileWrapper>
             </div>
 
 
@@ -31,9 +58,11 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
                     <div className="flex items-center gap-2.5">
                         <div className="flex flex-col">
-                            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-[15px] leading-tight">
-                                {req.sender.name}
-                            </h3>
+                            <ProfileWrapper className="block">
+                                <h3 className={`font-bold text-gray-900 dark:text-gray-100 text-[15px] leading-tight transition-colors ${!isOwner ? "group-hover/profile:text-blue-600 dark:group-hover/profile:text-blue-400" : ""}`}>
+                                    {user.name}
+                                </h3>
+                            </ProfileWrapper>
                             <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
                                 {formatTime(req.createdAt)}
                             </span>

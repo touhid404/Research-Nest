@@ -1,11 +1,52 @@
-import React from 'react';
-import RequestCard from './RequestCard';
+import React, { useState } from 'react';
 import { Link } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserInfoTooltip } from '../common/PostTooltip';
+import useAuth from '../../hooks/useAuth';
 
+
+const CompactMemberItem = ({ req }) => {
+    const { user: currentUser } = useAuth();
+    const [showTooltip, setShowTooltip] = useState(false);
+    const user = req.sender;
+    const isMe = currentUser?.uid === user?.uid;
+
+    return (
+        <div className="relative group/member">
+            <AnimatePresence>
+                {showTooltip && <UserInfoTooltip user={user} />}
+            </AnimatePresence>
+
+            <Link
+                to={`/home/profile/${user?.uid}`}
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                className="flex items-center gap-2.5 p-2 rounded-xl bg-gray-50/50 dark:bg-slate-800/30 border border-gray-100/50 dark:border-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300"
+            >
+                <div className="relative shrink-0">
+                    <img
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${user.name}`}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm transition-transform group-hover/member:scale-110"
+                    />
+                    {isMe && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white dark:border-slate-900 rounded-full" title="You" />
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-bold text-gray-900 dark:text-gray-100 truncate leading-tight">
+                        {user.name}
+                    </p>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-500/70 dark:text-blue-400/70">
+                        {req.status === 'group_formed' ? 'Verified' : 'Accepted'}
+                    </span>
+                </div>
+            </Link>
+        </div>
+    );
+};
 
 const ProposalGroupCard = ({ proposalTitle, proposalId, requests, onOpenFormGroup }) => {
-    // Filter to find if any are accepted but not yet in a group (to verify if we can form a group)
-    // Or if they are already group_formed.
     const acceptedRequests = requests.filter(r => r.status === 'accepted');
     const groupFormedRequests = requests.filter(r => r.status === 'group_formed');
     const isGroupFormed = groupFormedRequests.length > 0;
@@ -60,13 +101,19 @@ const ProposalGroupCard = ({ proposalTitle, proposalId, requests, onOpenFormGrou
             </div>
 
 
-            <div className="space-y-4 relative z-10">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
-                    Team Members
-                </h3>
-                {displayedRequests.map(req => (
-                    <RequestCard key={req._id} req={req} isPending={false} />
-                ))}
+            <div className="relative z-10 pt-4 border-t border-gray-50 dark:border-slate-800/50">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+                        Team Roster
+                    </h3>
+                    <div className="h-px flex-1 bg-linear-to-r from-gray-100 to-transparent dark:from-slate-800 mx-4"></div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {displayedRequests.map(req => (
+                        <CompactMemberItem key={req._id} req={req} />
+                    ))}
+                </div>
             </div>
         </div>
     )

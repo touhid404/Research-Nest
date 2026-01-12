@@ -4,12 +4,34 @@ import { proposalApplicationApi } from '../../lib/proposalApplicationApi';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../common/ConfirmModal';
 import { Link } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatTime } from '../../utils/formatTime';
+import { UserInfoTooltip } from '../common/PostTooltip';
+import useAuth from '../../hooks/useAuth';
 
 
 const SentRequestCard = ({ req }) => {
+    const { user: currentUser } = useAuth();
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [showUserTooltip, setShowUserTooltip] = useState(false);
     const queryClient = useQueryClient();
+
+    const postOwner = req.user;
+    const isOwnerOfPost = currentUser?.uid === postOwner?.uid;
+
+    const ProfileWrapper = ({ children, className }) => {
+        if (isOwnerOfPost || !postOwner) return <div className={className}>{children}</div>;
+        return (
+            <Link
+                to={`/home/profile/${postOwner?.uid}`}
+                onMouseEnter={() => setShowUserTooltip(true)}
+                onMouseLeave={() => setShowUserTooltip(false)}
+                className={`${className} group/profile`}
+            >
+                {children}
+            </Link>
+        );
+    };
 
 
     const cancelMutation = useMutation({
@@ -76,17 +98,22 @@ const SentRequestCard = ({ req }) => {
 
 
             <div className="flex items-center justify-between border-t border-gray-50 dark:border-slate-800/50 pt-3 mt-auto relative z-10">
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700">
+                <div className="flex items-center gap-2 relative">
+                    <ProfileWrapper className="w-6 h-6 rounded-full overflow-hidden border border-gray-200 dark:border-slate-700 block shrink-0">
                         <img
-                            src={req.user?.photoURL || `https://ui-avatars.com/api/?name=${req.user?.name || 'User'}`}
+                            src={postOwner?.photoURL || `https://ui-avatars.com/api/?name=${postOwner?.name || 'User'}`}
                             alt="Owner"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform group-hover/profile:scale-110"
                         />
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        {req.user?.name || "Unknown"}
-                    </span>
+                    </ProfileWrapper>
+                    <ProfileWrapper className="block">
+                        <span className={`text-xs font-medium transition-colors ${!isOwnerOfPost ? "group-hover/profile:text-blue-600 dark:group-hover/profile:text-blue-400" : "text-gray-500 dark:text-gray-400"}`}>
+                            {postOwner?.name || "Unknown"}
+                        </span>
+                    </ProfileWrapper>
+                    <AnimatePresence>
+                        {showUserTooltip && <UserInfoTooltip user={postOwner} />}
+                    </AnimatePresence>
                 </div>
 
 
