@@ -5,13 +5,11 @@ import {
     IoCalendarOutline,
     IoVideocamOutline,
     IoDocumentTextOutline,
-    IoAddOutline,
     IoPeopleOutline,
     IoChevronDownOutline,
 } from "react-icons/io5";
 import useAuth from "../../../hooks/useAuth";
 import useWorkspaceStore from "../../../store/useWorkspaceStore";
-import CreateWorkspaceModal from "../../../components/workspace/CreateWorkspaceModal";
 import { useState, useRef, useEffect as useEffectRef } from "react";
 
 const WorkspaceBase = () => {
@@ -30,7 +28,6 @@ const WorkspaceBase = () => {
         isLoading,
     } = useWorkspaceStore();
 
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const selectorRef = useRef(null);
 
@@ -100,15 +97,8 @@ const WorkspaceBase = () => {
                     No Workspace Yet
                 </h3>
                 <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-sm">
-                    Create your first workspace to start collaborating with your team on projects.
+                    To create a workspace, go to Chat and create a new Group with "Create Workspace" option enabled.
                 </p>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl shadow-lg shadow-violet-500/25 transition-all"
-                >
-                    <IoAddOutline className="w-5 h-5" />
-                    Create Workspace
-                </button>
             </div>
         </div>
     );
@@ -141,27 +131,23 @@ const WorkspaceBase = () => {
                                         <button
                                             key={ws._id}
                                             onClick={() => handleWorkspaceSelect(ws)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${
-                                                selectedWorkspace?._id === ws._id ? 'bg-violet-50 dark:bg-violet-900/20' : ''
-                                            }`}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedWorkspace?._id === ws._id ? 'bg-violet-50 dark:bg-violet-900/20' : ''
+                                                }`}
                                         >
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                                selectedWorkspace?._id === ws._id 
-                                                    ? 'bg-linear-to-br from-violet-500 to-purple-600' 
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedWorkspace?._id === ws._id
+                                                    ? 'bg-linear-to-br from-violet-500 to-purple-600'
                                                     : 'bg-slate-200 dark:bg-slate-600'
-                                            }`}>
-                                                <span className={`text-sm font-bold ${
-                                                    selectedWorkspace?._id === ws._id ? 'text-white' : 'text-slate-600 dark:text-slate-300'
                                                 }`}>
+                                                <span className={`text-sm font-bold ${selectedWorkspace?._id === ws._id ? 'text-white' : 'text-slate-600 dark:text-slate-300'
+                                                    }`}>
                                                     {ws.name?.charAt(0)}
                                                 </span>
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
-                                                <p className={`text-sm font-medium truncate ${
-                                                    selectedWorkspace?._id === ws._id 
-                                                        ? 'text-violet-700 dark:text-violet-300' 
+                                                <p className={`text-sm font-medium truncate ${selectedWorkspace?._id === ws._id
+                                                        ? 'text-violet-700 dark:text-violet-300'
                                                         : 'text-slate-700 dark:text-slate-200'
-                                                }`}>
+                                                    }`}>
                                                     {ws.name}
                                                 </p>
                                                 <p className="text-xs text-slate-400 truncate">
@@ -170,20 +156,6 @@ const WorkspaceBase = () => {
                                             </div>
                                         </button>
                                     ))}
-                                </div>
-                                <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
-                                    <button
-                                        onClick={() => {
-                                            setIsSelectorOpen(false);
-                                            setIsCreateModalOpen(true);
-                                        }}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-                                    >
-                                        <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                                            <IoAddOutline className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-sm font-medium">Create Workspace</span>
-                                    </button>
                                 </div>
                             </div>
                         )}
@@ -197,10 +169,9 @@ const WorkspaceBase = () => {
                                     key={tab.id}
                                     to={`/home/workspace/${selectedWorkspace._id}/${tab.path}`}
                                     className={({ isActive }) =>
-                                        `pb-3 pt-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${
-                                            isActive
-                                                ? "border-black dark:border-white text-black dark:text-white"
-                                                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                        `pb-3 pt-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${isActive
+                                            ? "border-black dark:border-white text-black dark:text-white"
+                                            : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                         }`
                                     }
                                 >
@@ -257,12 +228,6 @@ const WorkspaceBase = () => {
                     <Outlet context={{ workspace: selectedWorkspace }} />
                 )}
             </div>
-
-            {/* Create Workspace Modal */}
-            <CreateWorkspaceModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-            />
         </div>
     );
 };

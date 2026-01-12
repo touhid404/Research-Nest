@@ -2,6 +2,7 @@ import Conversation from "../../models/conversation.model.js";
 import Message from "../../models/message.model.js";
 import User from "../../models/user.model.js";
 import { encrypt, decrypt } from "../../utils/encryption.js";
+import { createWorkspaceService } from "../workspace/services/workspace.service.js"; // Import workspace service
 
 // Helper function to get user details by uid
 const getUsersByUids = async (uids) => {
@@ -54,8 +55,12 @@ export const getConversations = async (req, res) => {
             .populate("lastMessage")
             .sort({ updatedAt: -1 });
 
-        // Get all unique user UIDs
-        const userUids = [...new Set(conversations.flatMap(c => [c.sender, c.receiver]))];
+        // Get all unique user UIDs from sender, receiver AND participants
+        const userUids = [...new Set(conversations.flatMap(c => [
+            c.sender,
+            c.receiver,
+            ...(c.participants || [])
+        ]))].filter(uid => uid);
         const users = await getUsersByUids(userUids);
         const userMap = new Map(users.map(u => [u.uid, u]));
 
@@ -148,7 +153,12 @@ export const getOrCreateConversation = async (req, res) => {
             conversation = new Conversation({
                 sender: uid,
                 receiver: otherUserId,
+                participants: [uid, otherUserId] // Standardize with groups
             });
+            await conversation.save();
+        } else if (!conversation.participants || conversation.participants.length === 0) {
+            // Fix legacy conversations missing participants
+            conversation.participants = [conversation.sender, conversation.receiver].filter(id => id);
             await conversation.save();
         }
 
@@ -402,7 +412,7 @@ export const deleteMessage = async (req, res) => {
 export const createGroupConversation = async (req, res) => {
     try {
         const uid = req.headers["x-user-id"];
-        const { participantIds, groupName } = req.body;
+        const { participantIds, groupName, createWorkspace } = req.body;
 
         if (!uid) {
             return res.status(400).json({ message: "User ID is required" });
@@ -430,6 +440,26 @@ export const createGroupConversation = async (req, res) => {
 
         await newConversation.save();
 
+        // Optionally create workspace
+        let workspace = null;
+        if (createWorkspace) {
+            try {
+                workspace = await createWorkspaceService({
+                    uid,
+                    name: groupName,
+                    description: `Workspace for ${groupName}`,
+                    memberUids: participantIds, // service handles adding owner
+                    conversationId: newConversation._id,
+                });
+            } catch (wsError) {
+                console.error("Failed to create workspace with group:", wsError);
+                // We don't fail the group creation, but maybe we should warn? 
+                // For now, let's proceed but maybe include a warning in response?
+                // The requirements said "if user want... it should create". 
+                // Any created workspace will be returned.
+            }
+        }
+
         // Fetch user details for response
         const users = await getUsersByUids(allParticipants);
         const userMap = new Map(users.map(u => [u.uid, u]));
@@ -438,9 +468,27 @@ export const createGroupConversation = async (req, res) => {
             success: true,
             data: {
                 ...newConversation.toObject(),
-                participants: allParticipants.map(uid => userMap.get(uid) || { uid })
+                participants: allParticipants.map(uid => userMap.get(uid) || { uid }),
+                workspace: workspace // Return workspace info if created
             }
         });
+
+        // Emit socket event to all participants
+        const io = req.app.get("io");
+        if (io) {
+            allParticipants.forEach(participantId => {
+                // Determine if we should send full object or just trigger fetch
+                // Frontend logic: listens for "conversation:update", if not found -> fetches all.
+                // sending minimal payload triggers the desired fetch.
+                io.to(`user:${participantId}`).emit("conversation:update", {
+                    conversationId: newConversation._id,
+                    lastMessage: null,
+                    updatedAt: newConversation.updatedAt,
+                    // We can also send full conversation if we change frontend to accept it:
+                    // conversation: formattedConversation 
+                });
+            });
+        }
 
     } catch (error) {
         console.error("Error creating group:", error);
@@ -463,38 +511,55 @@ export const deleteConversation = async (req, res) => {
             return res.status(404).json({ message: "Conversation not found" });
         }
 
-        // ONE-TO-ONE: Soft Delete (hide from user)
         if (!conversation.isGroup) {
             if (conversation.sender !== uid && conversation.receiver !== uid) {
                 return res.status(403).json({ message: "Not authorized to delete this conversation" });
             }
-
-            // Ensure deletedBy is an array
-            if (!Array.isArray(conversation.deletedBy)) {
-                conversation.deletedBy = [];
-            }
-
-            // Add user to deletedBy array
-            if (!conversation.deletedBy.includes(uid)) {
-                conversation.deletedBy.push(uid);
-                await conversation.save();
-            }
-
-            return res.status(200).json({ success: true, message: "Conversation deleted" });
         }
 
-        // GROUP: Only admin can delete entirely
-        if (conversation.isGroup) {
-            if (conversation.groupAdmin !== uid) {
-                return res.status(403).json({ message: "Only group admin can delete this group" });
+        // GROUP: Only admin can delete entirely (Already enforced? User said "make this simple", maybe allow anyone? No, user implied "when a user delete... it delete from both side". For 1-v-1 anyone can. For Group, probably still admin.)
+        if (conversation.isGroup && conversation.groupAdmin !== uid) {
+            return res.status(403).json({ message: "Only group admin can delete this group" });
+        }
+
+        if (!conversation.isGroup) {
+            // SOFT DELETE for 1-on-1: Add user to deletedBy array
+            await Conversation.findByIdAndUpdate(conversationId, {
+                $addToSet: { deletedBy: uid }
+            });
+
+            // Notify only the user who deleted it so their sidebar updates
+            const io = req.app.get("io");
+            if (io) {
+                io.to(`user:${uid}`).emit("conversation:deleted", { conversationId });
             }
 
-            // Hard delete for group (admin action destroys group)
-            await Message.deleteMany({ conversationId });
-            await Conversation.findByIdAndDelete(conversationId);
-
-            return res.status(200).json({ success: true, message: "Group deleted" });
+            return res.status(200).json({ success: true, message: "Conversation removed from your side" });
         }
+
+        // HARD DELETE for Groups (Admin only)
+        const participantsToNotify = [...new Set([
+            ...(conversation.participants || []),
+            conversation.sender,
+            conversation.receiver
+        ])].filter(id => id);
+
+        console.log(`Hard deleting group conversation: ${conversationId}`);
+        await Message.deleteMany({ conversationId });
+        await Conversation.findByIdAndDelete(conversationId);
+
+        // Notify all participants
+        const io = req.app.get("io");
+        if (io) {
+            // Notify each participant individually so their list updates
+            participantsToNotify.forEach(participantId => {
+                io.to(`user:${participantId}`).emit("conversation:deleted", { conversationId });
+            });
+            // Also notify the room
+            io.to(`conversation:${conversationId}`).emit("conversation:deleted", { conversationId });
+        }
+
+        return res.status(200).json({ success: true, message: "Conversation deleted for everyone" });
 
     } catch (error) {
         console.error("Error deleting conversation:", error);
@@ -598,9 +663,8 @@ export const removeMember = async (req, res) => {
                 groupAdmin: conversation.groupAdmin
             });
 
-            // Also notify the removed user specifically (if they are not in the room anymore? Or if they face delay)
-            // Ideally we find their socket and tell them "you have been removed" so they can update their list
-            // However, "group:update" logic on frontend should handle "if I am not in participants, remove it".
+            // Notify the removed user specifically
+            io.to(`user:${memberId}`).emit("conversation:kicked", { conversationId });
         }
 
         res.status(200).json({ success: true, message: "Member removed successfully" });

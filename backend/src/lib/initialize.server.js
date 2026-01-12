@@ -48,6 +48,7 @@ export const initializeServer = (server) => {
         // Store user connection
         if (userId) {
             connectedUsers.set(userId, socket.id);
+            socket.join(`user:${userId}`); // Enable targeting by user ID
 
             // Notify user is online
             io.emit("user:online", { userId });

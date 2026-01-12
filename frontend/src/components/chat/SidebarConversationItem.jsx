@@ -99,14 +99,6 @@ const SidebarConversationItem = ({
                         >
                             <FaInfoCircle size={14} />
                         </button>
-
-                        <button
-                            onClick={(e) => onDeleteClick(e, conversation)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0"
-                            title={conversation.isGroup && conversation.groupAdmin !== user?.uid ? "Leave Group" : "Delete"}
-                        >
-                            {conversation.isGroup && conversation.groupAdmin !== user?.uid ? <FaSignOutAlt size={14} /> : <FaTrash size={14} />}
-                        </button>
                     </div>
                 </div>
             </div>

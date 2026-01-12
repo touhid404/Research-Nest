@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { chatApi } from '../lib/chatApi';
+import toast from 'react-hot-toast';
 
 const initialChatState = {
     // State
@@ -91,10 +92,10 @@ const useChatStore = create((set, get) => ({
     },
 
     // Create group conversation
-    createGroupConversation: async (participantIds, groupName) => {
+    createGroupConversation: async (participantIds, groupName, createWorkspace = false) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await chatApi.createGroupConversation({ participantIds, groupName });
+            const response = await chatApi.createGroupConversation({ participantIds, groupName, createWorkspace });
             const newConversation = response.data;
 
             // Update conversations list (prepend)
@@ -247,11 +248,14 @@ const useChatStore = create((set, get) => ({
         const previousConversations = [...conversations];
         const previousSelected = selectedConversation;
 
+        // Immediately remove from list
         const updatedConversations = conversations.filter(c => c._id !== conversationId);
         set({ conversations: updatedConversations });
 
-        // If selected, clear it
-        if (selectedConversation && selectedConversation._id === conversationId) {
+        // Immediately clear selected conversation if it matches
+        // Check both _id and id to be robust
+        const selectedId = selectedConversation?._id || selectedConversation?.id;
+        if (selectedConversation && (String(selectedId) === String(conversationId))) {
             set({ selectedConversation: null, messages: [] });
         }
 
@@ -259,11 +263,12 @@ const useChatStore = create((set, get) => ({
             await chatApi.deleteConversation(conversationId);
         } catch (error) {
             console.error('Error deleting conversation:', error);
-            // Revert
+            // Revert state on error (restore list and selection)
             set({
                 conversations: previousConversations,
                 selectedConversation: previousSelected
             });
+            toast.error("Failed to delete conversation");
             throw error;
         }
     },
@@ -313,11 +318,6 @@ const useChatStore = create((set, get) => ({
                 if (!messageExists) {
                     set({ messages: [...messages, message] });
                 }
-
-                // Immediately mark as read if we are viewing this conversation
-                // You might need a way to ensure this is clean, but for now:
-                // We typically call markAsRead separately, but we could trigger it here.
-                // Note: Calling actions inside listeners is fine.
             }
 
             // Update conversations list (update last message, unread count, move to top)
@@ -334,12 +334,8 @@ const useChatStore = create((set, get) => ({
                 return conv;
             });
 
-            // If conversation not found, we should probably fetch conversations to get the new one
-            // Detailed implementation might be needed if new conversation logic is strict
-
             // Sort by updatedAt
             updatedConversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
             set({ conversations: updatedConversations });
         });
 
@@ -363,7 +359,6 @@ const useChatStore = create((set, get) => ({
 
             // Sort by updatedAt
             updatedConversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
             set({ conversations: updatedConversations });
 
             // If conversation doesn't exist (new conversation started by someone else), fetch all conversations
@@ -372,22 +367,36 @@ const useChatStore = create((set, get) => ({
             }
         });
 
+        // Listen for group/conversation deletion
+        socket.on("conversation:deleted", ({ conversationId }) => {
+            const { conversations, selectedConversation } = get();
+            const updatedConversations = conversations.filter(c => c._id !== conversationId);
+            set({ conversations: updatedConversations });
+
+            const selectedId = selectedConversation?._id || selectedConversation?.id;
+            if (selectedConversation && (String(selectedId) === String(conversationId))) {
+                set({ selectedConversation: null, messages: [] });
+                toast.error("Conversation deleted");
+            }
+        });
+
+        // Listen for being kicked from a group
+        socket.on("conversation:kicked", ({ conversationId }) => {
+            const { conversations, selectedConversation } = get();
+            const updatedConversations = conversations.filter(c => c._id !== conversationId);
+            set({ conversations: updatedConversations });
+
+            if (selectedConversation?._id === conversationId) {
+                set({ selectedConversation: null, messages: [] });
+                toast.error("You have been removed from the group");
+            } else {
+                toast.error("You have been removed from a group");
+            }
+        });
+
         // Listen for group updates (members left/removed)
         socket.on("group:update", ({ conversationId, participants, groupAdmin }) => {
-            const { conversations, selectedConversation, user } = get(); // Assuming user is not in store but we need it. 
-            // Wait, user is not in chatStore state usually? AuthStore has it. 
-            // We can't access auth store here easily unless we import useAuth or passed it.
-            // But we can check if WE are in the participants list.
-            // Actually, we don't have 'user' in chatStore state? 
-            // Typically we fetch conversations based on auth.
-            // If we are listening, we are authenticated.
-
-            // Note: participants is array of objects { uid, name... }.
-            // We can check if *our* uid is in it. But we don't have our uid here directly in store state lines 4-12.
-            // We can rely on `chatApi` or assume if we receive the event we are connected.
-            // BUT: if we were kicked, we might still receive the event if we were in the room.
-
-            // Let's just update the participants.
+            const { conversations, selectedConversation } = get();
             const updatedConversations = conversations.map(conv => {
                 if (conv._id === conversationId) {
                     return {
@@ -410,13 +419,6 @@ const useChatStore = create((set, get) => ({
                         groupAdmin
                     }
                 });
-
-                // Check if we are still a participant? 
-                // If we are not in `participants` list, we should probably close the chat / remove it.
-                // We need to know who "we" are. 
-                // If we don't have access to 'user', we can't easily check.
-                // Ideally useChatStore should store 'currentUser' or similar.
-                // Or we rely on the backend sending a specific "you were kicked" event?
             }
         });
 
@@ -450,16 +452,9 @@ const useChatStore = create((set, get) => ({
 
             // Update messages in current view
             const updatedMessages = messages.map(msg => {
-                // If specific messageIds provided, strictly match. If not, maybe mark all?
-                // Backend implementation suggests just re-emitting payload. 
-                // Usually we mark all messages in that conversation as read, or specific ones.
-                // Assuming messageIds is passed (or we interpret the event as "messages in this conv read")
                 if (messageIds && messageIds.includes(msg._id)) {
                     return { ...msg, isRead: true };
                 }
-                // Fallback: if user read the conversation, likely the last message is read
-                // But safer to rely on IDs if available. 
-                // If messageIds is undefined (e.g. read all), then:
                 if (!messageIds && msg.conversationId === conversationId) {
                     return { ...msg, isRead: true };
                 }
@@ -467,9 +462,6 @@ const useChatStore = create((set, get) => ({
             });
 
             set({ messages: updatedMessages });
-
-            // Should we update conversation lastMessage status? 
-            // Maybe complex to track deeply nested object, but typically 'lastMessage' is a summary.
         });
     },
 
@@ -485,6 +477,8 @@ const useChatStore = create((set, get) => ({
         socket.off("typing:start");
         socket.off("typing:stop");
         socket.off("message:read");
+        socket.off("conversation:deleted");
+        socket.off("conversation:kicked");
         set({ socket: null });
     },
 

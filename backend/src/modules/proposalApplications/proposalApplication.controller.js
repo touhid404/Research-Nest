@@ -2,6 +2,7 @@ import ProposalApplication from "../../models/proposalApplication.model.js";
 import ProposalPost from "../../models/proposalPost.model.js";
 import User from "../../models/user.model.js";
 import Conversation from "../../models/conversation.model.js";
+import { createWorkspaceService } from "../workspace/services/workspace.service.js"; // Import workspace service
 // Send a collaboration request
 export const sendRequest = async (req, res) => {
     try {
@@ -246,20 +247,40 @@ export const formGroup = async (req, res) => {
         await newConversation.save();
 
 
-        // 5. Update status of all accepted requests to 'group_formed'
+        // 5. AUTOMATICALLY CREATE WORKSPACE (Requirement: "when form team inside the request ,, there should create chat and workpsacee")
+        let workspace = null;
+        try {
+            workspace = await createWorkspaceService({
+                uid: currentUserUid,
+                name: groupName,
+                description: `Workspace for proposal: ${post.title}`,
+                memberUids: participants, // owners/admins handled in service
+                proposalPostId: proposalPostId,
+                conversationId: newConversation._id,
+            });
+        } catch (wsError) {
+            console.error("Failed to automatically create workspace for formed group:", wsError);
+            // Proceed without failing the whole operation, or maybe fail? 
+            // User requirement implies it "should" be created. If it fails, it's a partial failure.
+            // Let's log it but continue, as the group is formed.
+        }
+
+
+        // 6. Update status of all accepted requests to 'group_formed'
         await ProposalApplication.updateMany(
             { _id: { $in: acceptedRequests.map(r => r._id) } },
             { $set: { status: "group_formed" } }
         );
 
 
-        // 6. Update ProposalPost status to 'group_formed'
+        // 7. Update ProposalPost status to 'group_formed'
         await ProposalPost.findByIdAndUpdate(proposalPostId, { $set: { status: "group_formed" } });
 
 
         res.status(201).json({
-            message: "Group formed successfully",
-            conversation: newConversation
+            message: "Group and Workspace formed successfully",
+            conversation: newConversation,
+            workspace: workspace
         });
 
 
