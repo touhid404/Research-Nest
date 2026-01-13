@@ -7,20 +7,13 @@ import useAuth from '../../hooks/useAuth';
 
 const CompactMemberItem = ({ req }) => {
     const { user: currentUser } = useAuth();
-    const [showTooltip, setShowTooltip] = useState(false);
     const user = req.sender;
     const isMe = currentUser?.uid === user?.uid;
 
     return (
         <div className="relative group/member">
-            <AnimatePresence>
-                {showTooltip && <UserInfoTooltip user={user} />}
-            </AnimatePresence>
-
             <Link
                 to={`/home/profile/${user?.uid}`}
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
                 className="flex items-center gap-2.5 p-2 rounded-xl bg-gray-50/50 dark:bg-slate-800/30 border border-gray-100/50 dark:border-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:border-blue-100 dark:hover:border-blue-900/30 transition-all duration-300"
             >
                 <div className="relative shrink-0">

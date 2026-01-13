@@ -18,7 +18,7 @@ const ProposalPostsBase = () => {
 
 
         {/* Header with Tabs and Action */}
-        <div className="sticky top-0 bg-transparent backdrop-blur-md z-10 px-4">
+        <div className="sticky top-0 bg-transparent backdrop-blur-md z-1000 px-4">
           <div className="flex justify-between items-end">
             {/* Navigation Tabs */}
             <div className="flex gap-8">
@@ -52,7 +52,7 @@ const ProposalPostsBase = () => {
                 to="create-post"
                 className="bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-4 py-1.5 rounded-full hover:opacity-80 transition-all shadow-lg active:scale-95 cursor-pointer mb-2"
               >
-                + Create Post
+                + <span className="hidden md:inline-block">Create Post</span>
               </Link>
             )}
           </div>

@@ -75,7 +75,7 @@ const Navbar = () => {
                     </button>
 
                     {/* Notifications */}
-                    <div className="relative" ref={notificationRef}>
+                    <div className="relative hidden md:block" ref={notificationRef}>
                         <button
                             onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                             className={`cursor-pointer p-2.5 relative hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors ${isNotificationOpen ? "bg-gray-200 dark:bg-gray-700" : ""

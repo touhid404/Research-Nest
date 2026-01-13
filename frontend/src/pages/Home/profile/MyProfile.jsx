@@ -7,6 +7,7 @@ import useAuth from '../../../hooks/useAuth';
 import { userApi } from '../../../lib/userApi';
 import toast from 'react-hot-toast';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router';
+import ProfileLoader from '../../../components/loader/ProfileLoader';
 
 const MyProfile = () => {
     const { user } = useAuth();
@@ -133,14 +134,7 @@ const MyProfile = () => {
     ];
 
     if (isLoadingProfile) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="relative">
-                    <div className="w-16 h-16 border-4 border-indigo-100 dark:border-slate-800 rounded-full animate-spin"></div>
-                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            </div>
-        );
+        return <ProfileLoader />;
     }
 
     return (

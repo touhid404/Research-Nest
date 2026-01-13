@@ -85,19 +85,19 @@ const ProposalPostCard = ({ post }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`group/card relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-5 mb-5 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:-translate-y-1 ${status === 'hidden' ? 'opacity-75' : ''}`}
+            className={`group/card relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-4 sm:p-5 mb-5 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:-translate-y-1 ${status === 'hidden' ? 'opacity-75' : ''}`}
         >
             <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none z-0">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-bl-full -mr-10 -mt-10" />
             </div>
 
             <div className="flex justify-between items-start mb-3 relative z-20">
-                <div className="flex items-center gap-3 relative">
+                <div className="flex items-center gap-2 sm:gap-3 relative">
                     <ProfileWrapper className="relative z-10 block shrink-0">
                         <img
                             src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.name || 'User'}`}
                             alt={user?.name}
-                            className={`w-11 h-11 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm transition-transform ${!isOwner ? "group-hover:scale-110" : ""}`}
+                            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm transition-transform ${!isOwner ? "group-hover:scale-110" : ""}`}
                         />
                     </ProfileWrapper>
 
@@ -164,11 +164,11 @@ const ProposalPostCard = ({ post }) => {
                 />
             </div>
 
-            <div className="mb-3">
-                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2 leading-tight">
+            <div className="mb-2.5 sm:mb-3">
+                <h2 className="text-[17px] sm:text-lg font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2 leading-tight">
                     {title}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-300 text-[15px] leading-relaxed line-clamp-3">
+                <p className="text-gray-600 dark:text-gray-300 text-[14px] sm:text-[15px] leading-relaxed line-clamp-3">
                     {description}
                 </p>
             </div>
@@ -205,7 +205,7 @@ const ProposalPostCard = ({ post }) => {
                 </div>
             )}
 
-            <div className="mt-3 pt-3 border-t border-gray-50 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 relative z-20">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 relative z-20">
                 <div className="flex flex-wrap gap-2">
                     {interests?.slice(0, 3).map((interest, index) => (
                         <span
@@ -226,7 +226,7 @@ const ProposalPostCard = ({ post }) => {
                     <button
                         onClick={() => !post.hasApplied && setIsRequestModalOpen(true)}
                         disabled={status === "group_formed" || post.hasApplied}
-                        className={`text-sm font-semibold px-5 py-2 rounded-full active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5 flex items-center gap-2 shrink-0 ${status === "group_formed" || post.hasApplied
+                        className={`text-[13px] sm:text-sm font-semibold px-4 sm:px-5 py-2 rounded-full active:scale-95 transition-all shadow-lg shadow-black/10 dark:shadow-white/5 flex items-center gap-2 shrink-0 ${status === "group_formed" || post.hasApplied
                             ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                             : "bg-black dark:bg-white text-white dark:text-black hover:opacity-80 cursor-pointer"
                             }`}
@@ -235,7 +235,7 @@ const ProposalPostCard = ({ post }) => {
                             "Full"
                         ) : post.hasApplied ? (
                             <>
-                                <FiSend size={15} className="text-gray-400 dark:text-gray-500" />
+                                <FiSend size={14} className="text-gray-400 dark:text-gray-500" />
                                 <span>Sent Request</span>
                             </>
                         ) : (

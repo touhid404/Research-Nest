@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { FaUsers, FaArrowLeft, FaEnvelope, FaBriefcase, FaGraduationCap, FaLinkedin, FaGithub, FaGlobe } from 'react-icons/fa';
 import { SiGooglescholar } from 'react-icons/si';
 import { userApi } from '../../../lib/userApi';
+import ProfileLoader from '../../../components/loader/ProfileLoader';
 import toast from 'react-hot-toast';
 
 const UserProfile = () => {
     const { uid } = useParams();
+    const navigate = useNavigate();
     const [profileData, setProfileData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -31,14 +33,7 @@ const UserProfile = () => {
     }, [uid]);
 
     if (isLoading) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="relative">
-                    <div className="w-16 h-16 border-4 border-indigo-100 dark:border-slate-800 rounded-full animate-spin"></div>
-                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            </div>
-        );
+        return <ProfileLoader />;
     }
 
     if (!profileData) {
@@ -49,9 +44,12 @@ const UserProfile = () => {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">User Not Found</h2>
                 <p className="text-gray-500 mt-2">The user you're looking for doesn't exist or has been removed.</p>
-                <Link to="/home/posts" className="mt-6 text-primary font-bold hover:underline flex items-center gap-2">
-                    <FaArrowLeft size={14} /> Back to Feed
-                </Link>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="mt-6 text-primary font-bold hover:underline flex items-center gap-2 cursor-pointer"
+                >
+                    <FaArrowLeft size={14} /> Back
+                </button>
             </div>
         );
     }
@@ -129,14 +127,14 @@ const UserProfile = () => {
                         </div>
 
                         {/* Direct Navigation Button - Compact */}
-                        <div className="absolute top-4 right-4 flex gap-2">
-                            <Link
-                                to="/home/posts"
-                                className="p-2 bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-primary rounded-xl transition-all shadow-sm active:scale-95"
-                                title="Back to Feed"
+                        <div className="absolute bottom-4 left-4 flex gap-2">
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="p-2 bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-primary rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
+                                title="Go Back"
                             >
                                 <FaArrowLeft size={14} />
-                            </Link>
+                            </button>
                         </div>
                     </div>
                 </div>

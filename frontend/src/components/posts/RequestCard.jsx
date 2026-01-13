@@ -8,7 +8,6 @@ import useAuth from '../../hooks/useAuth';
 
 const RequestCard = ({ req, isPending, onAccept, onReject }) => {
     const { user: currentUser } = useAuth();
-    const [showUserTooltip, setShowUserTooltip] = useState(false);
     const user = req.sender;
     const isOwner = currentUser?.uid === user?.uid;
 
@@ -17,8 +16,6 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
         return (
             <Link
                 to={`/home/profile/${user?.uid}`}
-                onMouseEnter={() => setShowUserTooltip(true)}
-                onMouseLeave={() => setShowUserTooltip(false)}
                 className={`${className} group/profile`}
             >
                 {children}
@@ -28,7 +25,7 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
 
     return (
         <div
-            className={`flex flex-col sm:flex-row items-start gap-4 p-5 mb-4
+            className={`flex flex-row items-start gap-3 sm:gap-4 p-4 sm:p-5 mb-4
             rounded-2xl ${isPending ? 'bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-0.5' : 'bg-gray-50 dark:bg-slate-800/20 border border-gray-100 dark:border-slate-800'}
             transition-all duration-300 relative overflow-hidden group`}
         >
@@ -40,10 +37,7 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
 
             {/* Avatar Section */}
             <div className="relative shrink-0">
-                <AnimatePresence>
-                    {showUserTooltip && <UserInfoTooltip user={user} />}
-                </AnimatePresence>
-                <ProfileWrapper className="w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm block">
+                <ProfileWrapper className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm block">
                     <img
                         src={user.photoURL || "https://ui-avatars.com/api/?name=" + user.name}
                         alt={user.name}
@@ -54,8 +48,8 @@ const RequestCard = ({ req, isPending, onAccept, onReject }) => {
 
 
             {/* Info Section */}
-            <div className="flex-1 w-full min-w-0 z-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
+            <div className="flex-1 min-w-0 z-10">
+                <div className="flex flex-row items-center justify-between gap-1 mb-2.5">
                     <div className="flex items-center gap-2.5">
                         <div className="flex flex-col">
                             <ProfileWrapper className="block">

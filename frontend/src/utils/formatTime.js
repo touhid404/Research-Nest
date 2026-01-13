@@ -16,7 +16,7 @@ export const formatTime = (date) => {
 
     const diffInMinutes = Math.floor(diffInSeconds / 60);
     if (diffInMinutes < 60) {
-        return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+        return `${diffInMinutes} min${diffInMinutes > 1 ? 's' : ''} ago`;
     }
 
     const diffInHours = Math.floor(diffInMinutes / 60);

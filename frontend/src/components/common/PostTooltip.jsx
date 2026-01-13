@@ -9,20 +9,12 @@ export const UserInfoTooltip = ({ user }) => {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 z-60 pointer-events-none mb-3"
+            className="absolute top-full left-0 z-60 pointer-events-none"
         >
-            <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-4 px-4 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] border border-gray-100 dark:border-slate-800 flex flex-col gap-3.5 min-w-[200px]">
+            <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-2 rounded-xl border border-white/10 dark:border-slate-200 flex flex-col gap-2 min-w-[170px]">
                 {/* Header: User Avatar & Name */}
-                <div className="flex items-center gap-3 pb-3 border-b border-gray-50 dark:border-slate-800/50">
-                    <div className="relative shrink-0">
-                        <img
-                            src={user.photoURL || `https://ui-avatars.com/api/?name=${user.name}`}
-                            alt={user.name}
-                            className="w-10 h-10 rounded-2xl object-cover border border-gray-100 dark:border-slate-700 shadow-sm"
-                        />
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
-                    </div>
-                    <div className="flex flex-col">
+                <div className="flex items-center gap-3 pb-1 border-b border-white/10 dark:border-slate-200/50">
+                    <div className="flex gap-2">
                         <p className="text-sm font-black tracking-tight leading-none mb-1">
                             {user.occupation}
                         </p>
@@ -33,9 +25,9 @@ export const UserInfoTooltip = ({ user }) => {
                 </div>
 
                 {/* Details Section */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                     {user.researchInterests?.length > 0 && (
-                        <div className="flex items-start gap-2.5">
+                        <div className="flex items-start gap-2">
                             <div className="w-6 h-6 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
                                 <FaFlask size={10} />
                             </div>
