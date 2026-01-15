@@ -15,12 +15,6 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
     const { createMeeting } = useWorkspaceStore();
     const { user } = useAuth();
 
-    // Filter out current user (owner) from selectable members
-    const selectableMembers = useMemo(() => {
-        if (!workspace?.members || !user) return [];
-        return workspace.members.filter((member) => member.uid !== user.uid);
-    }, [workspace?.members, user?.uid]);
-
     const [meetingMode, setMeetingMode] = useState("instant");
     const [formData, setFormData] = useState({
         title: "",
@@ -29,7 +23,7 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
         startTime: "",
         duration: null, // null means no end time
     });
-    const [selectedParticipants, setSelectedParticipants] = useState([]);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCustomDuration, setShowCustomDuration] = useState(false);
     const [customMinutes, setCustomMinutes] = useState("");
@@ -45,20 +39,11 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                 startTime: "",
                 duration: null, // null means no end time
             });
-            setSelectedParticipants([]);
+
             setShowCustomDuration(false);
             setCustomMinutes("");
         }
     }, [isOpen]);
-
-    const handleToggleParticipant = (member) => {
-        const isSelected = selectedParticipants.some((p) => p.uid === member.uid);
-        if (isSelected) {
-            setSelectedParticipants(selectedParticipants.filter((p) => p.uid !== member.uid));
-        } else {
-            setSelectedParticipants([...selectedParticipants, member]);
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -70,23 +55,13 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
             return;
         }
 
-        // Require at least 1 participant (other than owner)
-        if (selectedParticipants.length === 0) {
-            toast.error("Please select at least one participant");
-            return;
-        }
-
         setIsSubmitting(true);
 
         try {
-            // Auto-include owner and selected participants
-            const participantIds = [user.uid, ...selectedParticipants.map((p) => p.uid)];
-
             const meetingData = {
                 workspaceId: workspace._id,
                 title: formData.title.trim() || (isInstant ? "Quick Meeting" : "Scheduled Meeting"),
                 description: formData.description.trim(),
-                participants: participantIds,
                 isInstant,
                 duration: formData.duration,
             };
@@ -290,81 +265,27 @@ const CreateMeetingModal = ({ isOpen, onClose, workspace }) => {
                             {/* External Link */}
 
 
-                            {/* Participants */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                        <IoPeopleOutline className="w-3.5 h-3.5" />
-                                        Participants ({selectedParticipants.length + 1} total)
-                                    </label>
-                                    {selectableMembers.length > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedParticipants(
-                                                selectedParticipants.length === selectableMembers.length ? [] : selectableMembers
-                                            )}
-                                            className="text-xs text-violet-600 dark:text-violet-400 hover:underline font-medium"
-                                        >
-                                            {selectedParticipants.length === selectableMembers.length ? "Clear" : "Select All"}
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-1">
-                                    {/* Owner - always included */}
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500">
-                                        <div className="w-5 h-5 rounded-full overflow-hidden bg-linear-to-br from-emerald-500 to-green-600 shrink-0">
-                                            {user?.photoURL ? (
-                                                <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="flex items-center justify-center w-full h-full text-white text-[9px] font-medium">
-                                                    {user?.displayName?.charAt(0)}
-                                                </span>
-                                            )}
-                                        </div>
-                                        You (Host)
+                            {/* Participants Note */}
+                            <div className="bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/20 rounded-xl p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-800 flex items-center justify-center shrink-0">
+                                        <IoPeopleOutline className="w-4 h-4 text-violet-600 dark:text-violet-300" />
                                     </div>
-
-                                    {/* Selectable members */}
-                                    {selectableMembers.map((member) => (
-                                        <button
-                                            key={member.uid}
-                                            type="button"
-                                            onClick={() => handleToggleParticipant(member)}
-                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${selectedParticipants.some((p) => p.uid === member.uid)
-                                                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-1 ring-violet-500"
-                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                                }`}
-                                        >
-                                            <div className="w-5 h-5 rounded-full overflow-hidden bg-linear-to-br from-violet-500 to-purple-600 shrink-0">
-                                                {member.user?.photoURL ? (
-                                                    <img src={member.user.photoURL} alt="" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <span className="flex items-center justify-center w-full h-full text-white text-[9px] font-medium">
-                                                        {member.user?.name?.charAt(0)}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {member.user?.name?.split(" ")[0]}
-                                        </button>
-                                    ))}
-
-                                    {selectableMembers.length === 0 && (
-                                        <p className="text-xs text-slate-400 dark:text-slate-500 py-2">
-                                            No other members in this workspace
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-violet-900 dark:text-violet-200">
+                                            Everyone is invited
+                                        </h3>
+                                        <p className="text-xs text-violet-700 dark:text-violet-400 mt-0.5">
+                                            All workspace members will be automatically added to this meeting.
                                         </p>
-                                    )}
+                                    </div>
                                 </div>
-                                {selectableMembers.length > 0 && selectedParticipants.length === 0 && (
-                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
-                                        Select at least one participant
-                                    </p>
-                                )}
                             </div>
 
                             {/* Submit */}
                             <button
                                 type="submit"
-                                disabled={isSubmitting || (selectableMembers.length > 0 && selectedParticipants.length === 0)}
+                                disabled={isSubmitting}
                                 className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-lg shadow-violet-500/25 transition-all active:scale-[0.98]"
                             >
                                 {isSubmitting ? (

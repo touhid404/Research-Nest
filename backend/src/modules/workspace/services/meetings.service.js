@@ -14,15 +14,11 @@ export const createMeetingService = async ({
         return { error: "Workspace access denied", status: 403 };
     }
 
-    // Prepare participants (add scheduler as accepted)
-    const meetingParticipants = [{ uid, status: "accepted" }];
-    if (participants && Array.isArray(participants)) {
-        participants.forEach((pUid) => {
-            if (pUid !== uid) {
-                meetingParticipants.push({ uid: pUid, status: "pending" });
-            }
-        });
-    }
+    // Prepare participants - Auto-include ALL workspace members
+    const meetingParticipants = workspace.members.map(member => ({
+        uid: member.uid,
+        status: member.uid === uid ? "accepted" : "pending"
+    }));
 
     // Handle instant meeting - start immediately
     const meetingStartTime = isInstant ? new Date() : new Date(startTime);
