@@ -125,7 +125,7 @@ const WorkspaceBase = () => {
     return (
         <div className="h-full flex flex-col">
             {/* Header - Transparent with backdrop blur like ProposalPostsBase */}
-            <div className="sticky top-0 bg-transparent backdrop-blur-md z-[60] px-4">
+            <div className="sticky top-0 bg-transparent backdrop-blur-md z-[60] sm:z-[500] px-4">
                 <div className="flex items-center justify-between">
                     {/* Left: Workspace Selector */}
                     {workspaces.length > 0 && (

@@ -72,7 +72,7 @@ const DocumentCard = ({
             {!isFolder && doc.fileUrl && doc.mimeType?.startsWith('image/') ? (
                 <div className="h-32 w-full bg-slate-100 dark:bg-slate-900 relative">
                     <img
-                        src={doc.fileUrl.startsWith('http') ? doc.fileUrl : `${import.meta.env.VITE_API_URL}${doc.fileUrl}`}
+                        src={doc.fileUrl.startsWith('http') ? doc.fileUrl : `${import.meta.env.VITE_BACKEND_URL}${doc.fileUrl}`}
                         className="w-full h-full object-cover"
                         alt={doc.title}
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}

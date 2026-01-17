@@ -7,7 +7,9 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
 import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
 import * as Y from "yjs";
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from "y-protocols/awareness";
 import {
@@ -95,6 +97,17 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
     // Initialize TipTap editor with Yjs collaboration
     const editor = useEditor({
         extensions: [
+            Collaboration.configure({
+                document: ydoc,
+                field: "content", // Use 'content' field in Yjs
+            }),
+            CollaborationCaret.configure({
+                provider: { awareness }, // Pass awareness for caret rendering
+                user: {
+                    name: user?.displayName || user?.email || "Anonymous",
+                    color: getUserColor(user?.uid),
+                },
+            }),
             StarterKit.configure({
                 heading: { levels: [1, 2, 3] },
                 history: false, // Disable default history, Yjs handles it
@@ -115,17 +128,8 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
             Highlight.configure({
                 multicolor: false,
             }),
-            Collaboration.configure({
-                document: ydoc,
-                field: "content", // Use 'content' field in Yjs
-            }),
-            CollaborationCursor.configure({
-                provider: { awareness }, // Pass awareness for cursor rendering
-                user: {
-                    name: user?.displayName || user?.email || "Anonymous",
-                    color: getUserColor(user?.uid),
-                },
-            }),
+            TextStyle,
+            Color,
         ],
         editorProps: {
             attributes: {
@@ -144,6 +148,7 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
         socket.emit("document:join", {
             documentId,
             userName: user?.displayName || user?.email || "Anonymous",
+            photoURL: user?.photoURL,
         });
 
         // Handle initial sync state from server
@@ -181,6 +186,7 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
         // Local awareness state
         awareness.setLocalStateField("user", {
             name: user?.displayName || user?.email || "Anonymous",
+            photoURL: user?.photoURL,
             color: getUserColor(user?.uid),
         });
 
@@ -314,187 +320,169 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
 
     return (
         <div className="h-full flex flex-col bg-white dark:bg-slate-900">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={onBack}
-                        className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                        <IoArrowBackOutline className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                    </button>
-
-                    <IoDocumentTextOutline className="w-6 h-6 text-violet-600" />
-
-                    {isEditingTitle ? (
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            onBlur={handleTitleSave}
-                            onKeyDown={(e) => e.key === "Enter" && handleTitleSave()}
-                            className="text-lg font-semibold bg-transparent border-b-2 border-violet-500 focus:outline-none px-1 text-slate-800 dark:text-slate-100"
-                            autoFocus
-                        />
-                    ) : (
-                        <h2
-                            onClick={() => setIsEditingTitle(true)}
-                            className="text-lg font-semibold cursor-pointer hover:text-violet-600 transition-colors text-slate-800 dark:text-slate-100"
+            {/* Consolidated Editor Nav & Toolbar */}
+            <div className="sticky top-0 z-[50] border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                <div className="flex items-center h-14 px-3 gap-3">
+                    {/* Left: Back & Title (Compact) */}
+                    <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[150px] sm:max-w-[200px]">
+                        <button
+                            onClick={onBack}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+                            title="Go back"
                         >
-                            {title}
-                        </h2>
-                    )}
-
-                    {/* Sync indicator */}
-                    {!isSynced && (
-                        <span className="text-xs text-amber-500 animate-pulse">Syncing...</span>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {/* Active collaborators */}
-                    <div className="flex items-center gap-2">
-                        <IoPeopleOutline className="w-5 h-5 text-slate-400" />
-                        <div className="flex -space-x-2">
-                            <div
-                                className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-medium border-2 border-white dark:border-slate-900"
-                                title="You"
-                            >
-                                {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "?"}
-                            </div>
-                            {collaborators.slice(0, 3).map((collab, index) => (
-                                <div
-                                    key={collab.uid || index}
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium border-2 border-white dark:border-slate-900"
-                                    style={{ backgroundColor: collab.color || getUserColor(collab.uid) }}
-                                    title={collab.name}
+                            <IoArrowBackOutline className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                        </button>
+                        <div className="min-w-0">
+                            {isEditingTitle ? (
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    onBlur={handleTitleSave}
+                                    onKeyDown={(e) => e.key === "Enter" && handleTitleSave()}
+                                    className="text-sm font-semibold bg-transparent border-b-2 border-violet-500 focus:outline-none px-1 text-slate-800 dark:text-slate-100 w-full"
+                                    autoFocus
+                                />
+                            ) : (
+                                <h2
+                                    onClick={() => setIsEditingTitle(true)}
+                                    className="text-sm font-semibold cursor-pointer hover:text-violet-600 transition-colors text-slate-800 dark:text-slate-100 truncate"
+                                    title={title}
                                 >
-                                    {collab.name?.charAt(0) || "?"}
-                                </div>
-                            ))}
-                            {collaborators.length > 3 && (
-                                <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-sm font-medium border-2 border-white dark:border-slate-900">
-                                    +{collaborators.length - 3}
-                                </div>
+                                    {title}
+                                </h2>
                             )}
                         </div>
                     </div>
 
-                    {/* Save status */}
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                        {isSaving ? (
-                            <>
-                                <IoCloudUploadOutline className="w-4 h-4 animate-pulse" />
-                                <span>Saving...</span>
-                            </>
-                        ) : lastSaved ? (
-                            <>
-                                <IoCloudDoneOutline className="w-4 h-4 text-green-500" />
-                                <span className="hidden sm:inline">
-                                    Saved {lastSaved.toLocaleTimeString()}
-                                </span>
-                            </>
-                        ) : null}
+                    <ToolbarDivider />
+
+                    {/* Middle: ALL Editing Tools (Scrollable) */}
+                    <div className="flex-1 flex items-center gap-0.5 overflow-x-auto no-scrollbar py-1">
+                        {/* Undo/Redo */}
+                        <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo"><LuUndo className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo"><LuRedo className="w-4 h-4" /></ToolbarButton>
+
+                        <ToolbarDivider />
+
+                        {/* Basic Formatting */}
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive("bold")} title="Bold"><LuBold className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive("italic")} title="Italic"><LuItalic className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive("underline")} title="Underline"><LuUnderline className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive("strike")} title="Strike"><LuStrikethrough className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} isActive={editor.isActive("highlight")} title="Highlight"><LuHighlighter className="w-4 h-4" /></ToolbarButton>
+
+                        <ToolbarDivider />
+
+                        {/* Text Color */}
+                        <div className="flex items-center gap-1 px-1">
+                            <button
+                                onClick={() => editor.chain().focus().unsetColor().run()}
+                                className="p-1 px-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-[10px] font-bold text-slate-500"
+                                title="Reset Color"
+                            >
+                                A
+                            </button>
+                            {[
+                                { color: "#ef4444", title: "Red" },
+                                { color: "#3b82f6", title: "Blue" },
+                                { color: "#22c55e", title: "Green" },
+                                { color: "#8b5cf6", title: "Violet" },
+                                { color: "#f59e0b", title: "Amber" },
+                                { color: "#000000", title: "Black" },
+                            ].map((c) => (
+                                <button
+                                    key={c.color}
+                                    onClick={() => editor.chain().focus().setColor(c.color).run()}
+                                    className={`w-4 h-4 rounded-full border border-slate-200 dark:border-slate-700 transition-transform hover:scale-125 ${editor.isActive("textStyle", { color: c.color }) ? "ring-2 ring-violet-500 ring-offset-1" : ""}`}
+                                    style={{ backgroundColor: c.color }}
+                                    title={c.title}
+                                />
+                            ))}
+                        </div>
+
+                        <ToolbarDivider />
+
+                        {/* Headings */}
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive("heading", { level: 1 })} title="H1"><LuHeading1 className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive("heading", { level: 2 })} title="H2"><LuHeading2 className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive("heading", { level: 3 })} title="H3"><LuHeading3 className="w-4 h-4" /></ToolbarButton>
+
+                        <ToolbarDivider />
+
+                        {/* Lists */}
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive("bulletList")} title="Bullet List"><LuList className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive("orderedList")} title="Numbered List"><LuListOrdered className="w-4 h-4" /></ToolbarButton>
+
+                        <ToolbarDivider />
+
+                        {/* Alignment */}
+                        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("left").run()} isActive={editor.isActive({ textAlign: "left" })} title="Left"><LuAlignLeft className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("center").run()} isActive={editor.isActive({ textAlign: "center" })} title="Center"><LuAlignCenter className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("right").run()} isActive={editor.isActive({ textAlign: "right" })} title="Right"><LuAlignRight className="w-4 h-4" /></ToolbarButton>
+
+                        <ToolbarDivider />
+
+                        {/* Miscellaneous */}
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive("code")} title="Code"><LuCode className="w-4 h-4" /></ToolbarButton>
+                        <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive("blockquote")} title="Quote"><LuQuote className="w-4 h-4" /></ToolbarButton>
+
+                        <ToolbarDivider />
+
+                        <ToolbarButton onClick={setLink} isActive={editor.isActive("link")} title="Link"><LuLink className="w-4 h-4" /></ToolbarButton>
+                        {editor.isActive("link") && (
+                            <ToolbarButton onClick={() => editor.chain().focus().unsetLink().run()} title="Remove Link">
+                                <LuUnlink className="w-4 h-4" />
+                            </ToolbarButton>
+                        )}
                     </div>
 
-                    {/* Save button */}
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="btn btn-sm btn-primary gap-2"
-                    >
-                        <IoSaveOutline className="w-4 h-4" />
-                        <span className="hidden sm:inline">Save</span>
-                    </button>
+                    <ToolbarDivider />
+
+                    {/* Right: Presence & Save */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Collaborators: Shown as previous on desktop, hidden on mobile */}
+                        <div className="hidden sm:flex -space-x-2 mr-2">
+                            {/* Current User */}
+                            <div
+                                className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-slate-900 overflow-hidden shrink-0 z-30 transition-transform hover:scale-110"
+                                title={`You (${user?.displayName || "Me"})`}
+                            >
+                                {user?.photoURL ? <img src={user.photoURL} className="w-full h-full object-cover" /> : user?.displayName?.charAt(0) || "?"}
+                            </div>
+
+                            {/* Others */}
+                            {collaborators.slice(0, 4).map((collab, i) => (
+                                <div
+                                    key={i}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-slate-900 overflow-hidden shrink-0 transition-transform hover:scale-110"
+                                    style={{
+                                        backgroundColor: !collab.photoURL ? (collab.color || "#ccc") : "transparent",
+                                        zIndex: 20 - i
+                                    }}
+                                    title={collab.name}
+                                >
+                                    {collab.photoURL ? <img src={collab.photoURL} className="w-full h-full object-cover" /> : collab.name?.charAt(0) || "?"}
+                                </div>
+                            ))}
+
+                            {collaborators.length > 4 && (
+                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold border-2 border-white dark:border-slate-900 text-slate-500 shrink-0 z-10">
+                                    +{collaborators.length - 4}
+                                </div>
+                            )}
+                        </div>
+
+                        <button onClick={handleSave} disabled={isSaving} className="btn btn-sm btn-primary px-3 h-8 min-h-0 text-xs rounded-lg gap-1.5">
+                            {isSaving ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                                <IoSaveOutline className="w-3.5 h-3.5" />
+                            )}
+                            <span className="hidden sm:inline">Save</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            {/* Formatting Toolbar */}
-            <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex-wrap">
-                {/* Undo/Redo */}
-                <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
-                    <LuUndo className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
-                    <LuRedo className="w-4 h-4" />
-                </ToolbarButton>
-
-                <ToolbarDivider />
-
-                {/* Text formatting */}
-                <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive("bold")} title="Bold (Ctrl+B)">
-                    <LuBold className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive("italic")} title="Italic (Ctrl+I)">
-                    <LuItalic className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive("underline")} title="Underline (Ctrl+U)">
-                    <LuUnderline className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive("strike")} title="Strikethrough">
-                    <LuStrikethrough className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} isActive={editor.isActive("highlight")} title="Highlight">
-                    <LuHighlighter className="w-4 h-4" />
-                </ToolbarButton>
-
-                <ToolbarDivider />
-
-                {/* Headings */}
-                <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive("heading", { level: 1 })} title="Heading 1">
-                    <LuHeading1 className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive("heading", { level: 2 })} title="Heading 2">
-                    <LuHeading2 className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive("heading", { level: 3 })} title="Heading 3">
-                    <LuHeading3 className="w-4 h-4" />
-                </ToolbarButton>
-
-                <ToolbarDivider />
-
-                {/* Lists */}
-                <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive("bulletList")} title="Bullet List">
-                    <LuList className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive("orderedList")} title="Numbered List">
-                    <LuListOrdered className="w-4 h-4" />
-                </ToolbarButton>
-
-                <ToolbarDivider />
-
-                {/* Alignment */}
-                <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("left").run()} isActive={editor.isActive({ textAlign: "left" })} title="Align Left">
-                    <LuAlignLeft className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("center").run()} isActive={editor.isActive({ textAlign: "center" })} title="Align Center">
-                    <LuAlignCenter className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("right").run()} isActive={editor.isActive({ textAlign: "right" })} title="Align Right">
-                    <LuAlignRight className="w-4 h-4" />
-                </ToolbarButton>
-
-                <ToolbarDivider />
-
-                {/* Code & Quote */}
-                <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive("code")} title="Inline Code">
-                    <LuCode className="w-4 h-4" />
-                </ToolbarButton>
-                <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive("blockquote")} title="Quote">
-                    <LuQuote className="w-4 h-4" />
-                </ToolbarButton>
-
-                <ToolbarDivider />
-
-                {/* Link */}
-                <ToolbarButton onClick={setLink} isActive={editor.isActive("link")} title="Add Link">
-                    <LuLink className="w-4 h-4" />
-                </ToolbarButton>
-                {editor.isActive("link") && (
-                    <ToolbarButton onClick={() => editor.chain().focus().unsetLink().run()} title="Remove Link">
-                        <LuUnlink className="w-4 h-4" />
-                    </ToolbarButton>
-                )}
             </div>
 
             {/* Editor Content */}

@@ -151,7 +151,7 @@ export const initializeServer = (server) => {
         // ============== DOCUMENT COLLABORATION EVENTS ==============
 
         // Join document for collaborative editing
-        socket.on("document:join", async ({ documentId, userName }) => {
+        socket.on("document:join", async ({ documentId, userName, photoURL }) => {
             socket.join(`document:${documentId}`);
 
             // Initialize document collaborators map if needed
@@ -167,6 +167,7 @@ export const initializeServer = (server) => {
             documentCollaborators.get(documentId).set(socket.id, {
                 uid: userId,
                 name: userName || "Anonymous",
+                photoURL: photoURL || null,
                 color,
                 cursor: 0,
             });

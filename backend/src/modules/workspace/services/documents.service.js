@@ -135,7 +135,12 @@ export const getDocumentsService = async (uid, workspaceId) => {
     });
     const ownerMap = new Map(ownerships.map(o => [o.documentId.toString(), o.ownerId]));
 
-    const users = await getUsersByUids([...new Set(ownerships.map(o => o.ownerId))]);
+    const users = await getUsersByUids([
+        ...new Set([
+            ...ownerships.map(o => o.ownerId),
+            ...documents.map(d => d.lastEditedBy).filter(Boolean)
+        ])
+    ]);
     const userMap = new Map(users.map((u) => [u.uid, u]));
 
     const populatedDocs = documents.map((doc) => {
@@ -145,6 +150,7 @@ export const getDocumentsService = async (uid, workspaceId) => {
             ...docObj,
             _id: doc._id.toString(),
             creator: userMap.get(ownerId) || { uid: ownerId },
+            lastEditor: doc.lastEditedBy ? (userMap.get(doc.lastEditedBy) || { uid: doc.lastEditedBy }) : null,
             createdBy: ownerId
         };
     });

@@ -86,12 +86,13 @@ const DocumentList = ({ workspace }) => {
         handleUpload(files[0]);
     };
 
-    const handleUpload = async (file) => {
+    const handleUpload = async (file, targetFolderId = null) => {
         setIsUploading(true);
         try {
             const formData = new FormData();
             formData.append("workspaceId", workspace._id);
-            if (currentFolderId) formData.append("parentId", currentFolderId);
+            const parentId = targetFolderId || currentFolderId;
+            if (parentId) formData.append("parentId", parentId);
             formData.append("file", file);
 
             await uploadDocument(formData);
@@ -136,6 +137,15 @@ const DocumentList = ({ workspace }) => {
         e.preventDefault();
         e.stopPropagation();
         setDragTargetFolderId(null);
+
+        // Handle external files dropped on a folder
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            handleUpload(files[0], targetFolder._id);
+            return;
+        }
+
+        // Handle internal documents moved to a folder
         const draggedDocId = e.dataTransfer.getData("text/plain");
         if (draggedDocId) await handleMoveDocument(draggedDocId, targetFolder._id);
     };
@@ -143,8 +153,13 @@ const DocumentList = ({ workspace }) => {
     const handleDocumentClick = (doc) => {
         if (doc.type === "folder") {
             navigate(`/home/workspace/${workspaceId}/documents/${doc._id}`);
-        } else if (doc.type === "file" && doc.fileUrl) {
-            const url = doc.fileUrl.startsWith("http") ? doc.fileUrl : `${import.meta.env.VITE_API_URL}${doc.fileUrl}`;
+        } else if (doc.fileUrl) {
+            let filePath = doc.fileUrl;
+            // If it's a local path and missing the /public prefix, add it
+            if (!filePath.startsWith("http") && !filePath.startsWith("/public")) {
+                filePath = filePath.startsWith("/") ? `/public${filePath}` : `/public/${filePath}`;
+            }
+            const url = filePath.startsWith("http") ? filePath : `${import.meta.env.VITE_BACKEND_URL}${filePath}`;
             window.open(url, "_blank");
         } else {
             navigate(`/home/workspace/${workspaceId}/documents/edit/${doc._id}`);
@@ -185,12 +200,12 @@ const DocumentList = ({ workspace }) => {
         <div className="h-full flex flex-col sm:flex-row relative bg-white dark:bg-slate-900">
             {/* Sidebar Overlay */}
             {showSidebar && (
-                <div className="fixed inset-0 bg-black/60 z-[100] sm:hidden backdrop-blur-sm" onClick={() => setShowSidebar(false)} />
+                <div className="fixed inset-0 bg-black/60 z-[1100] sm:hidden backdrop-blur-sm" onClick={() => setShowSidebar(false)} />
             )}
 
             {/* Sidebar */}
             <div className={`
-                fixed sm:relative inset-y-0 left-0 z-[110] w-52 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-300
+                fixed sm:relative inset-y-0 left-0 z-[1200] sm:z-10 w-52 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-300
                 ${showSidebar ? "translate-x-0" : "-translate-x-full sm:translate-x-0"}
                 sm:flex ${!showSidebar && "sm:hidden"} flex flex-col
             `}>

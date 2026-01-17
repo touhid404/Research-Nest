@@ -49,7 +49,7 @@ const DocumentToolbar = ({
                 </button>
 
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar hidden md:flex">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex">
                         <button
                             onClick={() => onNavigate(null)}
                             className={`flex items-center gap-1 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded-md transition-colors whitespace-nowrap ${!currentFolderId ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}
@@ -69,23 +69,24 @@ const DocumentToolbar = ({
                             </div>
                         ))}
                     </div>
-
-                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden lg:block"></div>
-
-                    <div className="relative max-w-[240px] w-full flex-1">
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="input input-xs w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg pl-8 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                        <IoSearchOutline className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    </div>
                 </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+                {/* Search Bar */}
+                <div className="relative w-32 sm:w-48 lg:w-64">
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="input input-xs w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg pl-8 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <IoSearchOutline className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+
                 {/* View Mode Toggles */}
                 <div className="join bg-slate-100 dark:bg-slate-800 p-1 rounded-lg hidden sm:flex">
                     <button
@@ -102,7 +103,7 @@ const DocumentToolbar = ({
                     </button>
                 </div>
 
-                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block"></div>
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
 
                 {/* Actions */}
                 <input

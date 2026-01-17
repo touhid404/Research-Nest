@@ -97,33 +97,52 @@ const DocumentInfoModal = ({ document, onClose }) => {
                             </div>
                         </div>
 
-                        {/* Dates */}
-                        <div className="grid grid-cols-1 gap-3">
+                        {/* Dates & Modification */}
+                        <div className="space-y-3">
                             {/* Created At */}
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                                 <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                                     <IoCalendarOutline className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                 </div>
-                                <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Created</p>
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Created</p>
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                                         {formatFullTime(document.createdAt)}
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Updated At */}
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                            {/* Last Modified */}
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                                 <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                     <IoTimeOutline className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Last Modified</p>
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Last Modified Time</p>
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
                                         {formatFullTime(document.updatedAt)}
                                     </p>
                                 </div>
                             </div>
+
+                            {/* Last Modified By */}
+                            {document.lastEditor && (
+                                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center overflow-hidden text-white font-bold text-sm">
+                                        {document.lastEditor?.photoURL ? (
+                                            <img src={document.lastEditor.photoURL} className="w-full h-full object-cover" alt="" />
+                                        ) : (
+                                            (document.lastEditor?.name || document.lastEditor?.email || "?").charAt(0).toUpperCase()
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Last Modified By</p>
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            {document.lastEditor?.name || document.lastEditor?.email || "Unknown User"}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* File Size (for files only) */}

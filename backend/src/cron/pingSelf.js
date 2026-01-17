@@ -8,7 +8,7 @@ const PING_URL = process.env.PING_URL || "https://your-backend.onrender.com/heal
 cron.schedule("*/14 * * * *", async () => {
   try {
     const res = await axios.get(PING_URL);
-    console.log(`[CRON] Pinged self: ${PING_URL} - Status: ${res.status}`);
+    console.log(`Dont Sleep ........... Iam Alive MR.: ${PING_URL} - Status: ${res.status}`);
   } catch (err) {
     console.error(`[CRON] Error pinging self:`, err.message);
   }

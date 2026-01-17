@@ -72,7 +72,11 @@ const DocumentListItem = ({
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {!isFolder && doc.type === 'file' && (
-                    <button className="btn btn-xs btn-ghost btn-square text-slate-500 hover:text-primary" title="Download">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onNavigate(doc); }}
+                        className="btn btn-xs btn-ghost btn-square text-slate-500 hover:text-primary"
+                        title="Download"
+                    >
                         <IoCloudDownloadOutline className="w-3.5 h-3.5" />
                     </button>
                 )}

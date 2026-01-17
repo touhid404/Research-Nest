@@ -34,7 +34,7 @@ export const uploadDocument = [
                 type: "file",
                 parentId: parentId || null,
                 fileData: {
-                    fileUrl: `/workspace-documents/${file.filename}`,
+                    fileUrl: `/${file.path.replace(/\\/g, "/")}`,
                     mimeType: file.mimetype,
                     size: file.size,
                     originalName: file.originalname
