@@ -23,6 +23,23 @@ const documentSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
+        // File attachment details
+        fileUrl: {
+            type: String,
+            default: null,
+        },
+        mimeType: {
+            type: String,
+            default: null,
+        },
+        size: {
+            type: Number,
+            default: 0,
+        },
+        originalName: {
+            type: String,
+            default: null,
+        },
         createdBy: {
             type: String, // uid
             required: true,
@@ -43,7 +60,7 @@ const documentSchema = new mongoose.Schema(
         // Document type
         type: {
             type: String,
-            enum: ["research_paper", "notes", "outline", "draft", "other"],
+            enum: ["research_paper", "notes", "outline", "draft", "other", "file", "folder"],
             default: "notes",
         },
         // Version tracking

@@ -37,7 +37,7 @@ const WorkspaceSelector = ({ workspaces, selectedWorkspace, onSelect, onCreateNe
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50">
+                <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-[999]">
                     {/* Search */}
                     <div className="p-2 border-b border-slate-200 dark:border-slate-700">
                         <div className="relative">

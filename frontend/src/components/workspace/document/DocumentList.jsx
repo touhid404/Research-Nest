@@ -1,57 +1,157 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     IoDocumentTextOutline,
-    IoAddOutline,
+    IoCloseOutline,
+    IoMenuOutline,
     IoSearchOutline,
-    IoGridOutline,
-    IoListOutline,
-    IoTimeOutline,
-    IoTrashOutline,
-    IoCreateOutline,
-    IoPeopleOutline,
+    IoCloudUploadOutline,
+    IoFolderOutline,
 } from "react-icons/io5";
+
 import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 import DocumentEditor from "./DocumentEditor";
 import CreateDocumentModal from "./CreateDocumentModal";
+import CreateFolderModal from "./CreateFolderModal";
 import ConfirmModal from "../../common/ConfirmModal";
+import FileTree from "./FileTree";
+import DocumentInfoModal from "./DocumentInfoModal";
+import DocumentToolbar from "./DocumentToolbar";
+import DocumentCard from "./DocumentCard";
+import DocumentListItem from "./DocumentListItem";
+import toast from "react-hot-toast";
+import useAuth from "../../../hooks/useAuth";
 
 const DocumentList = ({ workspace }) => {
-    const { documents, fetchDocuments, deleteDocument, loadingDocuments } = useWorkspaceStore();
+    const {
+        documents,
+        fetchDocuments,
+        deleteDocument,
+        loadingDocuments,
+        uploadDocument,
+        updateDocument
+    } = useWorkspaceStore();
+
+    const { user } = useAuth();
+
+    // State
     const [searchQuery, setSearchQuery] = useState("");
     const [viewMode, setViewMode] = useState("grid");
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
     const [documentToDelete, setDocumentToDelete] = useState(null);
+    const [documentToShowInfo, setDocumentToShowInfo] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [currentFolderId, setCurrentFolderId] = useState(null);
+    const [dragTargetFolderId, setDragTargetFolderId] = useState(null);
+    const [showSidebar, setShowSidebar] = useState(true);
 
+    const fileInputRef = useRef(null);
+
+    // Initial Fetch
     useEffect(() => {
         if (workspace?._id) {
-            fetchDocuments(workspace._id, true); // Force refresh when documents tab opens
+            fetchDocuments(workspace._id, true);
         }
     }, [workspace?._id, fetchDocuments]);
 
-    const filteredDocuments = documents.filter((doc) =>
-        doc.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Filters
+    const filteredDocuments = documents.filter((doc) => {
+        const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFolder = searchQuery ? true : doc.parentId === (currentFolderId || null);
+        return matchesSearch && matchesFolder;
+    }).sort((a, b) => {
+        if (a.type === 'folder' && b.type !== 'folder') return -1;
+        if (a.type !== 'folder' && b.type === 'folder') return 1;
+        return 0;
+    });
 
-    const handleDeleteDocument = async () => {
+    // Handlers
+    const handleFileInputChange = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        handleUpload(files[0]);
+    };
+
+    const handleUpload = async (file) => {
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append("workspaceId", workspace._id);
+            if (currentFolderId) formData.append("parentId", currentFolderId);
+            formData.append("file", file);
+
+            await uploadDocument(formData);
+            toast.success("File uploaded successfully");
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        } catch (error) {
+            console.error("Upload failed:", error);
+            toast.error("Failed to upload file");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const files = e.dataTransfer.files;
+        if (files.length > 0) handleUpload(files[0]);
+    };
+
+    const handleMoveDocument = async (docId, targetFolderId) => {
+        if (docId === targetFolderId) return;
+        try {
+            await updateDocument(workspace._id, docId, { parentId: targetFolderId });
+            toast.success("Moved successfully");
+        } catch (error) {
+            console.error("Move failed:", error);
+            toast.error("Failed to move item");
+        }
+    };
+
+    const handleItemDragStart = (e, doc) => {
+        e.dataTransfer.setData("text/plain", doc._id);
+    };
+
+    const handleItemDrop = async (e, targetFolder) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragTargetFolderId(null);
+        const draggedDocId = e.dataTransfer.getData("text/plain");
+        if (draggedDocId) await handleMoveDocument(draggedDocId, targetFolder._id);
+    };
+
+    const handleDocumentClick = (doc) => {
+        if (doc.type === "folder") {
+            setCurrentFolderId(doc._id);
+        } else if (doc.type === "file" && doc.fileUrl) {
+            const url = doc.fileUrl.startsWith("http") ? doc.fileUrl : `${import.meta.env.VITE_API_URL}${doc.fileUrl}`;
+            window.open(url, "_blank");
+        } else {
+            setSelectedDocument(doc);
+        }
+    };
+
+    const confirmDelete = async () => {
         if (!documentToDelete) return;
         try {
             await deleteDocument(workspace._id, documentToDelete._id);
             setDocumentToDelete(null);
+            toast.success("Item deleted successfully");
         } catch (error) {
-            console.error("Failed to delete document:", error);
+            console.error("Delete failed:", error);
+            toast.error("Failed to delete item");
         }
     };
 
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
-    };
-
-    // If a document is selected, show the editor
+    // Main render condition
     if (selectedDocument) {
         return (
             <DocumentEditor
@@ -63,227 +163,128 @@ const DocumentList = ({ workspace }) => {
     }
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-2xl font-bold">Documents</h2>
-                    <p className="text-base-content/60">
-                        {documents.length} document{documents.length !== 1 ? "s" : ""} in this workspace
-                    </p>
-                </div>
+        <div className="h-full flex flex-col sm:flex-row relative bg-white dark:bg-slate-900">
+            {/* Sidebar Overlay */}
+            {showSidebar && (
+                <div className="fixed inset-0 bg-black/60 z-[100] sm:hidden backdrop-blur-sm" onClick={() => setShowSidebar(false)} />
+            )}
 
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="btn btn-primary gap-2"
-                >
-                    <IoAddOutline className="w-5 h-5" />
-                    New Document
-                </button>
+            {/* Sidebar */}
+            <div className={`
+                fixed sm:relative inset-y-0 left-0 z-[110] w-52 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-300
+                ${showSidebar ? "translate-x-0" : "-translate-x-full sm:translate-x-0"}
+                sm:flex ${!showSidebar && "sm:hidden"} flex flex-col
+            `}>
+                <div className="flex items-center justify-between p-2 border-b border-slate-200 dark:border-slate-800 sm:hidden">
+                    <span className="font-bold text-slate-700 dark:text-slate-200">Explorer</span>
+                    <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><IoCloseOutline className="w-6 h-6" /></button>
+                </div>
+                <FileTree documents={documents} activeFolderId={currentFolderId} onSelectFolder={(id) => { setCurrentFolderId(id); if (window.innerWidth < 640) setShowSidebar(false); }} />
             </div>
 
-            {/* Search and View Toggle */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <div className="relative flex-1">
-                    <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
-                    <input
-                        type="text"
-                        placeholder="Search documents..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="input input-bordered w-full pl-10"
-                    />
-                </div>
+            {/* Main Area */}
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative" onDragOver={handleDragOver} onDragLeave={(e) => { e.preventDefault(); if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) { setIsDragging(false); } }} onDrop={handleDrop}>
+                {isDragging && !dragTargetFolderId && (
+                    <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm border-2 border-primary border-dashed m-4 rounded-3xl flex items-center justify-center pointer-events-none">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl flex flex-col items-center animate-bounce">
+                            <IoCloudUploadOutline className="w-12 h-12 text-primary mb-2" />
+                            <p className="font-bold text-lg text-slate-700 dark:text-slate-200">Drop files to upload</p>
+                        </div>
+                    </div>
+                )}
 
-                <div className="flex items-center gap-2 bg-base-200 rounded-lg p-1">
-                    <button
-                        onClick={() => setViewMode("grid")}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
-                                ? "bg-base-100 shadow-sm"
-                                : "hover:bg-base-300"
-                            }`}
-                    >
-                        <IoGridOutline className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setViewMode("list")}
-                        className={`p-2 rounded-lg transition-colors ${viewMode === "list"
-                                ? "bg-base-100 shadow-sm"
-                                : "hover:bg-base-300"
-                            }`}
-                    >
-                        <IoListOutline className="w-5 h-5" />
-                    </button>
-                </div>
-            </div>
+                <DocumentToolbar
+                    searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+                    viewMode={viewMode} setViewMode={setViewMode}
+                    setShowSidebar={setShowSidebar}
+                    onUploadClick={() => fileInputRef.current?.click()}
+                    onNewFolderClick={() => setShowCreateFolderModal(true)}
+                    onNewDocClick={() => setShowCreateModal(true)}
+                    fileInputRef={fileInputRef} handleFileInputChange={handleFileInputChange}
+                    documents={documents}
+                    currentFolderId={currentFolderId}
+                    onNavigate={(id) => setCurrentFolderId(id)}
+                />
 
-            {/* Content */}
-            {loadingDocuments ? (
-                <div className="flex-1 flex items-center justify-center">
-                    <span className="loading loading-spinner loading-lg text-primary"></span>
-                </div>
-            ) : filteredDocuments.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center">
-                    <IoDocumentTextOutline className="w-16 h-16 text-base-content/20 mb-4" />
-                    {searchQuery ? (
-                        <>
-                            <h3 className="text-lg font-semibold mb-2">No documents found</h3>
-                            <p className="text-base-content/60">
-                                No documents match your search "{searchQuery}"
-                            </p>
-                        </>
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-slate-50 dark:bg-slate-950">
+
+                    {loadingDocuments ? (
+                        <div className="flex items-center justify-center h-full pb-20"><span className="loading loading-spinner loading-lg text-primary"></span></div>
+                    ) : filteredDocuments.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center text-center py-20 opacity-60">
+                            <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4"><IoDocumentTextOutline className="w-10 h-10 text-slate-300" /></div>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Empty Folder</h3>
+                        </div>
                     ) : (
-                        <>
-                            <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
-                            <p className="text-base-content/60 mb-4">
-                                Create your first document to get started
-                            </p>
-                            <button
-                                onClick={() => setShowCreateModal(true)}
-                                className="btn btn-primary gap-2"
-                            >
-                                <IoAddOutline className="w-5 h-5" />
-                                Create Document
-                            </button>
-                        </>
+                        <div className="space-y-8">
+                            {/* Folders Section */}
+                            {filteredDocuments.some(d => d.type === 'folder') && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">Folders</h3>
+                                    <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4" : "flex flex-col gap-2"}>
+                                        {filteredDocuments.filter(d => d.type === 'folder').map(doc => (
+                                            viewMode === 'grid' ? (
+                                                <DocumentCard
+                                                    key={doc._id} doc={doc} user={user} documents={documents} currentFolderId={currentFolderId}
+                                                    onNavigate={handleDocumentClick} onDelete={setDocumentToDelete} onShowInfo={setDocumentToShowInfo}
+                                                    dragTargetFolderId={dragTargetFolderId} setDragTargetFolderId={setDragTargetFolderId}
+                                                    handleItemDragStart={handleItemDragStart} handleItemDrop={handleItemDrop}
+                                                />
+                                            ) : (
+                                                <DocumentListItem
+                                                    key={doc._id} doc={doc} user={user} documents={documents}
+                                                    onNavigate={handleDocumentClick} onDelete={setDocumentToDelete} onShowInfo={setDocumentToShowInfo}
+                                                    dragTargetFolderId={dragTargetFolderId} setDragTargetFolderId={setDragTargetFolderId}
+                                                    handleItemDragStart={handleItemDragStart} handleItemDrop={handleItemDrop}
+                                                />
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Files Section */}
+                            {filteredDocuments.some(d => d.type !== 'folder') && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">Files</h3>
+                                    <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4" : "flex flex-col gap-2"}>
+                                        {filteredDocuments.filter(d => d.type !== 'folder').map(doc => (
+                                            viewMode === 'grid' ? (
+                                                <DocumentCard
+                                                    key={doc._id} doc={doc} user={user} documents={documents}
+                                                    onNavigate={handleDocumentClick} onDelete={setDocumentToDelete} onShowInfo={setDocumentToShowInfo}
+                                                    onDownload={handleDocumentClick} onEdit={(d) => setSelectedDocument(d)}
+                                                    handleItemDragStart={handleItemDragStart}
+                                                />
+                                            ) : (
+                                                <DocumentListItem
+                                                    key={doc._id} doc={doc} user={user} documents={documents}
+                                                    onNavigate={handleDocumentClick} onDelete={setDocumentToDelete} onShowInfo={setDocumentToShowInfo}
+                                                    handleItemDragStart={handleItemDragStart}
+                                                />
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
-            ) : viewMode === "grid" ? (
-                /* Grid View */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredDocuments.map((doc) => (
-                        <div
-                            key={doc._id}
-                            onClick={() => setSelectedDocument(doc)}
-                            className="group bg-base-200 rounded-xl p-4 cursor-pointer hover:bg-base-300 transition-colors border border-transparent hover:border-violet-500"
-                        >
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="w-12 h-12 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                                    <IoDocumentTextOutline className="w-6 h-6 text-violet-600" />
-                                </div>
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedDocument(doc);
-                                        }}
-                                        className="p-2 rounded-lg hover:bg-base-100"
-                                        title="Edit"
-                                    >
-                                        <IoCreateOutline className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDocumentToDelete(doc);
-                                        }}
-                                        className="p-2 rounded-lg hover:bg-base-100 text-red-500"
-                                        title="Delete"
-                                    >
-                                        <IoTrashOutline className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
 
-                            <h3 className="font-semibold mb-2 line-clamp-1">{doc.title}</h3>
-                            <p className="text-sm text-base-content/60 line-clamp-2 mb-3">
-                                {doc.plainText?.slice(0, 100) || "No content yet"}
-                            </p>
-
-                            <div className="flex items-center justify-between text-xs text-base-content/50">
-                                <div className="flex items-center gap-1">
-                                    <IoTimeOutline className="w-3 h-3" />
-                                    {formatDate(doc.updatedAt)}
-                                </div>
-                                {doc.activeEditors?.length > 0 && (
-                                    <div className="flex items-center gap-1 text-green-500">
-                                        <IoPeopleOutline className="w-3 h-3" />
-                                        {doc.activeEditors.length} editing
-                                    </div>
-                                )}
-                            </div>
+                {/* Modals */}
+                {showCreateModal && <CreateDocumentModal onClose={() => setShowCreateModal(false)} workspace={workspace} parentId={currentFolderId} />}
+                {showCreateFolderModal && <CreateFolderModal onClose={() => setShowCreateFolderModal(false)} workspace={workspace} parentId={currentFolderId} />}
+                <ConfirmModal isOpen={!!documentToDelete} onClose={() => setDocumentToDelete(null)} onConfirm={confirmDelete} title="Delete Item" message={`Are you sure you want to delete "${documentToDelete?.title}"?`} confirmText="Delete" type="danger" />
+                <DocumentInfoModal document={documentToShowInfo} onClose={() => setDocumentToShowInfo(null)} />
+                {isUploading && (
+                    <div className="absolute inset-4 z-50 flex items-end justify-center pointer-events-none">
+                        <div className="bg-slate-900/90 text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-3 animate-in slide-in-from-bottom-5">
+                            <span className="loading loading-spinner loading-xs"></span>
+                            <span className="text-sm font-medium">Uploading...</span>
                         </div>
-                    ))}
-                </div>
-            ) : (
-                /* List View */
-                <div className="space-y-2">
-                    {filteredDocuments.map((doc) => (
-                        <div
-                            key={doc._id}
-                            onClick={() => setSelectedDocument(doc)}
-                            className="group flex items-center gap-4 p-4 bg-base-200 rounded-xl cursor-pointer hover:bg-base-300 transition-colors"
-                        >
-                            <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                                <IoDocumentTextOutline className="w-5 h-5 text-violet-600" />
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold truncate">{doc.title}</h3>
-                                <p className="text-sm text-base-content/60 truncate">
-                                    {doc.plainText?.slice(0, 100) || "No content yet"}
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-4 text-sm text-base-content/50 shrink-0">
-                                {doc.activeEditors?.length > 0 && (
-                                    <div className="flex items-center gap-1 text-green-500">
-                                        <IoPeopleOutline className="w-4 h-4" />
-                                        {doc.activeEditors.length}
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                    <IoTimeOutline className="w-4 h-4" />
-                                    {formatDate(doc.updatedAt)}
-                                </div>
-                            </div>
-
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedDocument(doc);
-                                    }}
-                                    className="p-2 rounded-lg hover:bg-base-100"
-                                    title="Edit"
-                                >
-                                    <IoCreateOutline className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDocumentToDelete(doc);
-                                    }}
-                                    className="p-2 rounded-lg hover:bg-base-100 text-red-500"
-                                    title="Delete"
-                                >
-                                    <IoTrashOutline className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Modals */}
-            {showCreateModal && (
-                <CreateDocumentModal
-                    workspace={workspace}
-                    onClose={() => setShowCreateModal(false)}
-                />
-            )}
-
-            {documentToDelete && (
-                <ConfirmModal
-                    isOpen={!!documentToDelete}
-                    title="Delete Document"
-                    message={`Are you sure you want to delete "${documentToDelete.title}"? This action cannot be undone.`}
-                    confirmText="Delete"
-                    isDanger={true}
-                    onConfirm={handleDeleteDocument}
-                    onClose={() => setDocumentToDelete(null)}
-                />
-            )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

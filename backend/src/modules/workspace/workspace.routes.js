@@ -27,6 +27,7 @@ import {
 
 import {
     createDocument,
+    uploadDocument,
     getDocuments,
     getDocumentById,
     updateDocument,
@@ -64,6 +65,7 @@ router.delete("/meetings/:id", deleteMeeting);
 
 
 // Document routes
+router.post("/documents/upload", uploadDocument);
 router.post("/documents", createDocument);
 router.get("/:workspaceId/documents", getDocuments);
 router.get("/documents/:id", getDocumentById);

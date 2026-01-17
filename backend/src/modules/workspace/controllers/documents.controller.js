@@ -7,7 +7,57 @@ import {
     deleteDocumentService,
 } from "../services/documents.service.js";
 
+import { documentUpload } from "../../../middleware/documentUpload.middleware.js";
+
 // ============== DOCUMENT CONTROLLERS ==============
+
+export const uploadDocument = [
+    documentUpload.single("file"),
+    async (req, res) => {
+        try {
+            const uid = req.headers["x-user-id"];
+            const { workspaceId, parentId } = req.body;
+            const file = req.file;
+
+            if (!uid) {
+                return res.status(400).json({ success: false, message: "User ID required" });
+            }
+
+            if (!file) {
+                return res.status(400).json({ success: false, message: "No file uploaded" });
+            }
+
+            const result = await createDocumentService({
+                uid,
+                workspaceId,
+                title: file.originalname,
+                type: "file",
+                parentId: parentId || null,
+                fileData: {
+                    fileUrl: `/workspace-documents/${file.filename}`,
+                    mimeType: file.mimetype,
+                    size: file.size,
+                    originalName: file.originalname
+                }
+            });
+
+            if (result.error) {
+                return res.status(result.status).json({ success: false, message: result.error });
+            }
+
+            // Emit socket event
+            const io = req.app.get("io");
+            if (io) {
+                io.to(`workspace:${result.workspaceId}`).emit("document:created", result.data);
+            }
+
+            res.status(201).json({ success: true, data: result.data });
+        } catch (error) {
+            console.error("Error uploading document:", error);
+            res.status(500).json({ success: false, message: "Failed to upload document" });
+        }
+    }
+];
 
 export const createDocument = async (req, res) => {
     try {

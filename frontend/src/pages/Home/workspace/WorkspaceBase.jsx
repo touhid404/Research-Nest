@@ -125,16 +125,16 @@ const WorkspaceBase = () => {
     return (
         <div className="h-full flex flex-col">
             {/* Header - Transparent with backdrop blur like ProposalPostsBase */}
-            <div className="sticky top-0 bg-transparent backdrop-blur-md z-10 px-4">
+            <div className="sticky top-0 bg-transparent backdrop-blur-md z-[60] px-4">
                 <div className="flex items-center justify-between">
                     {/* Left: Workspace Selector */}
                     {workspaces.length > 0 && (
                         <div className="relative shrink-0" ref={selectorRef}>
                             <button
                                 onClick={() => setIsSelectorOpen(!isSelectorOpen)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border border-slate-200/50 dark:border-slate-700/50 rounded-xl transition-all group cursor-pointer"
+                                className="flex items-center gap-2 transition-all group cursor-pointer"
                             >
-                                <div className="w-6 h-6 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shrink-0 shadow-sm">
+                                <div className="w-5 h-5 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shrink-0 shadow-sm">
                                     {selectedWorkspace?.name?.charAt(0) || "W"}
                                 </div>
                                 <span className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate max-w-[120px] md:max-w-[180px]">
@@ -145,7 +145,7 @@ const WorkspaceBase = () => {
 
                             {/* Dropdown */}
                             {isSelectorOpen && (
-                                <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-100">
+                                <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-[999]">
                                     <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700">
                                         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Workspaces</p>
                                     </div>

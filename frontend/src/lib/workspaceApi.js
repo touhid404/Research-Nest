@@ -2,7 +2,7 @@ import { axiosInstance } from "./axios";
 
 export const workspaceApi = {
     // ============== WORKSPACE ==============
-    
+
     // Create a new workspace
     createWorkspace: async (data) => {
         const response = await axiosInstance.post("/workspaces", data);
@@ -35,8 +35,8 @@ export const workspaceApi = {
 
     // Remove member from workspace
     removeMember: async (workspaceId, memberUid) => {
-        const response = await axiosInstance.delete(`/workspaces/${workspaceId}/members`, { 
-            data: { memberUid } 
+        const response = await axiosInstance.delete(`/workspaces/${workspaceId}/members`, {
+            data: { memberUid }
         });
         return response.data;
     },
@@ -142,6 +142,16 @@ export const workspaceApi = {
         const response = await axiosInstance.put(`/workspaces/documents/${documentId}/content`, {
             content,
             plainText,
+        });
+        return response.data;
+    },
+
+    // Upload document file
+    uploadDocument: async (data) => {
+        const response = await axiosInstance.post("/workspaces/documents/upload", data, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
         });
         return response.data;
     },

@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import TextAlign from "@tiptap/extension-text-align";
+import Highlight from "@tiptap/extension-highlight";
 import {
     IoDocumentTextOutline,
     IoSaveOutline,
@@ -8,74 +15,147 @@ import {
     IoCloudDoneOutline,
     IoCloudUploadOutline,
 } from "react-icons/io5";
+import {
+    LuBold,
+    LuItalic,
+    LuUnderline,
+    LuStrikethrough,
+    LuHeading1,
+    LuHeading2,
+    LuHeading3,
+    LuList,
+    LuListOrdered,
+    LuCode,
+    LuQuote,
+    LuLink,
+    LuUnlink,
+    LuAlignLeft,
+    LuAlignCenter,
+    LuAlignRight,
+    LuHighlighter,
+    LuUndo,
+    LuRedo,
+} from "react-icons/lu";
 import useAuth from "../../../hooks/useAuth";
 import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 
-const DocumentEditor = ({ document, workspace, onBack }) => {
-    const { user, socket } = useAuth();
-    const { updateDocument } = useWorkspaceStore();
+// Toolbar button component
+const ToolbarButton = ({ onClick, isActive, disabled, children, title }) => (
+    <button
+        onClick={onClick}
+        disabled={disabled}
+        title={title}
+        className={`p-1.5 rounded-lg transition-colors ${isActive
+            ? "bg-primary text-primary-content"
+            : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+    >
+        {children}
+    </button>
+);
 
-    const [content, setContent] = useState(document?.plainText || "");
-    const [title, setTitle] = useState(document?.title || "Untitled Document");
+// Toolbar divider
+const ToolbarDivider = () => (
+    <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
+);
+
+const DocumentEditor = ({ document: doc, workspace, onBack }) => {
+    const { user, socket } = useAuth();
+    const { updateDocument, saveDocumentContent } = useWorkspaceStore();
+
+    const [title, setTitle] = useState(doc?.title || "Untitled Document");
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [activeEditors, setActiveEditors] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
-    const [cursors, setCursors] = useState({});
 
-    const textareaRef = useRef(null);
-    const saveTimeoutRef = useRef(null);
+    // Initialize TipTap editor
+    const editor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                heading: {
+                    levels: [1, 2, 3],
+                },
+            }),
+            Underline,
+            Link.configure({
+                openOnClick: false,
+                HTMLAttributes: {
+                    class: "text-primary underline cursor-pointer hover:text-primary/80",
+                },
+            }),
+            Placeholder.configure({
+                placeholder: "Start writing your document...",
+            }),
+            TextAlign.configure({
+                types: ["heading", "paragraph"],
+            }),
+            Highlight.configure({
+                multicolor: false,
+            }),
+        ],
+        content: doc?.plainText || "",
+        editorProps: {
+            attributes: {
+                class: "prose prose-slate dark:prose-invert max-w-none focus:outline-none min-h-full",
+            },
+        },
+        onUpdate: ({ editor }) => {
+            handleContentChange(editor.getHTML());
+        },
+    });
+
+    // Handle link insertion
+    const setLink = useCallback(() => {
+        if (!editor) return;
+
+        const previousUrl = editor.getAttributes("link").href;
+        const url = window.prompt("Enter URL:", previousUrl);
+
+        if (url === null) return;
+        if (url === "") {
+            editor.chain().focus().extendMarkRange("link").unsetLink().run();
+            return;
+        }
+
+        editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    }, [editor]);
 
     // Join document room
     useEffect(() => {
-        if (!socket || !document) return;
+        if (!socket || !doc) return;
 
         socket.emit("document:join", {
-            documentId: document._id,
+            documentId: doc._id,
             userName: user?.displayName || user?.email,
         });
 
         return () => {
-            socket.emit("document:leave", document._id);
+            socket.emit("document:leave", doc._id);
         };
-    }, [socket, document, user]);
+    }, [socket, doc, user]);
 
     // Socket event listeners
     useEffect(() => {
         if (!socket) return;
 
-        // Handle editor joined
         socket.on("document:editor-joined", ({ userId, userName }) => {
             setActiveEditors((prev) => {
-                if (prev.find((e) => e.oderId === userId)) return prev;
-                return [...prev, { oderId: userId, userName }];
+                if (prev.find((e) => e.userId === userId)) return prev;
+                return [...prev, { userId, userName }];
             });
         });
 
-        // Handle editor left
         socket.on("document:editor-left", ({ userId }) => {
-            setActiveEditors((prev) => prev.filter((e) => e.oderId !== userId));
-            setCursors((prev) => {
-                const newCursors = { ...prev };
-                delete newCursors[userId];
-                return newCursors;
-            });
+            setActiveEditors((prev) => prev.filter((e) => e.userId !== userId));
         });
 
-        // Handle content update from other editors
         socket.on("document:updated", ({ content: newContent, updatedBy }) => {
-            if (updatedBy !== user?.uid) {
-                setContent(newContent);
-            }
-        });
-
-        // Handle cursor updates
-        socket.on("document:cursor-update", ({ userId, userName, position }) => {
-            if (userId !== user?.uid) {
-                setCursors((prev) => ({
-                    ...prev,
-                    [userId]: { userName, position },
-                }));
+            if (updatedBy !== user?.uid && editor) {
+                const { from, to } = editor.state.selection;
+                editor.commands.setContent(newContent, false);
+                // Try to restore cursor position
+                editor.commands.setTextSelection({ from, to });
             }
         });
 
@@ -83,60 +163,47 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
             socket.off("document:editor-joined");
             socket.off("document:editor-left");
             socket.off("document:updated");
-            socket.off("document:cursor-update");
         };
-    }, [socket, user]);
+    }, [socket, user, editor]);
 
-    // Auto-save with debounce
-    const handleContentChange = useCallback(
-        (newContent) => {
-            setContent(newContent);
-
-            // Broadcast to other editors
-            socket?.emit("document:update", {
-                documentId: document._id,
-                content: newContent,
-            });
-
-            // Debounced save
-            if (saveTimeoutRef.current) {
-                clearTimeout(saveTimeoutRef.current);
-            }
-
+    // Debounced auto-save
+    const saveTimeoutRef = useCallback(() => {
+        let timeout = null;
+        return (content) => {
+            if (timeout) clearTimeout(timeout);
             setIsSaving(true);
-            saveTimeoutRef.current = setTimeout(async () => {
+            timeout = setTimeout(async () => {
                 try {
-                    await updateDocument(workspace._id, document._id, {
-                        plainText: newContent,
-                    });
+                    await saveDocumentContent(doc._id, null, content);
                     setLastSaved(new Date());
                 } catch (error) {
                     console.error("Failed to save document:", error);
                 } finally {
                     setIsSaving(false);
                 }
-            }, 1000);
+            }, 1500);
+        };
+    }, [doc, saveDocumentContent]);
+
+    const debouncedSave = useCallback(saveTimeoutRef(), [saveTimeoutRef]);
+
+    const handleContentChange = useCallback(
+        (newContent) => {
+            socket?.emit("document:update", {
+                documentId: doc._id,
+                content: newContent,
+            });
+            debouncedSave(newContent);
         },
-        [socket, document, workspace, updateDocument]
+        [socket, doc, debouncedSave]
     );
-
-    // Handle cursor position change
-    const handleCursorChange = useCallback(() => {
-        if (!textareaRef.current) return;
-
-        const position = textareaRef.current.selectionStart;
-        socket?.emit("document:cursor", {
-            documentId: document._id,
-            position,
-        });
-    }, [socket, document]);
 
     // Save title
     const handleTitleSave = async () => {
         setIsEditingTitle(false);
-        if (title !== document.title) {
+        if (title !== doc.title) {
             try {
-                await updateDocument(workspace._id, document._id, { title });
+                await updateDocument(workspace._id, doc._id, { title });
             } catch (error) {
                 console.error("Failed to update title:", error);
             }
@@ -145,12 +212,15 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
 
     // Manual save
     const handleSave = async () => {
+        if (!editor) return;
         setIsSaving(true);
         try {
-            await updateDocument(workspace._id, document._id, {
-                title,
-                plainText: content,
-            });
+            // Save title if changed
+            if (title !== doc.title) {
+                await updateDocument(workspace._id, doc._id, { title });
+            }
+            // Save content
+            await saveDocumentContent(doc._id, null, editor.getHTML());
             setLastSaved(new Date());
         } catch (error) {
             console.error("Failed to save document:", error);
@@ -159,7 +229,7 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
         }
     };
 
-    // Generate random color for cursor
+    // Get cursor color for active editors
     const getCursorColor = (userId) => {
         const colors = [
             "bg-red-500",
@@ -171,20 +241,28 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
             "bg-orange-500",
             "bg-teal-500",
         ];
-        const index = userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const index = userId?.split("")?.reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0;
         return colors[index % colors.length];
     };
 
+    if (!editor) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+        );
+    }
+
     return (
-        <div className="h-full flex flex-col bg-base-100">
+        <div className="h-full flex flex-col bg-white dark:bg-slate-900">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onBack}
-                        className="p-2 rounded-lg hover:bg-base-200 transition-colors"
+                        className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
-                        <IoArrowBackOutline className="w-5 h-5" />
+                        <IoArrowBackOutline className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                     </button>
 
                     <IoDocumentTextOutline className="w-6 h-6 text-violet-600" />
@@ -196,13 +274,13 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
                             onChange={(e) => setTitle(e.target.value)}
                             onBlur={handleTitleSave}
                             onKeyDown={(e) => e.key === "Enter" && handleTitleSave()}
-                            className="text-lg font-semibold bg-transparent border-b-2 border-violet-500 focus:outline-none px-1"
+                            className="text-lg font-semibold bg-transparent border-b-2 border-violet-500 focus:outline-none px-1 text-slate-800 dark:text-slate-100"
                             autoFocus
                         />
                     ) : (
                         <h2
                             onClick={() => setIsEditingTitle(true)}
-                            className="text-lg font-semibold cursor-pointer hover:text-violet-600 transition-colors"
+                            className="text-lg font-semibold cursor-pointer hover:text-violet-600 transition-colors text-slate-800 dark:text-slate-100"
                         >
                             {title}
                         </h2>
@@ -212,27 +290,25 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
                 <div className="flex items-center gap-4">
                     {/* Active editors */}
                     <div className="flex items-center gap-2">
-                        <IoPeopleOutline className="w-5 h-5 text-base-content/60" />
+                        <IoPeopleOutline className="w-5 h-5 text-slate-400" />
                         <div className="flex -space-x-2">
-                            {/* Self */}
                             <div
-                                className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-medium border-2 border-base-100"
+                                className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-medium border-2 border-white dark:border-slate-900"
                                 title="You"
                             >
                                 {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "?"}
                             </div>
-                            {/* Other editors */}
-                            {activeEditors.slice(0, 3).map((editor, index) => (
+                            {activeEditors.slice(0, 3).map((editor) => (
                                 <div
                                     key={editor.userId}
-                                    className={`w-8 h-8 rounded-full ${getCursorColor(editor.userId)} flex items-center justify-center text-white text-sm font-medium border-2 border-base-100`}
+                                    className={`w-8 h-8 rounded-full ${getCursorColor(editor.userId)} flex items-center justify-center text-white text-sm font-medium border-2 border-white dark:border-slate-900`}
                                     title={editor.userName}
                                 >
                                     {editor.userName?.charAt(0) || "?"}
                                 </div>
                             ))}
                             {activeEditors.length > 3 && (
-                                <div className="w-8 h-8 rounded-full bg-base-300 flex items-center justify-center text-sm font-medium border-2 border-base-100">
+                                <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-sm font-medium border-2 border-white dark:border-slate-900">
                                     +{activeEditors.length - 3}
                                 </div>
                             )}
@@ -240,7 +316,7 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
                     </div>
 
                     {/* Save status */}
-                    <div className="flex items-center gap-2 text-sm text-base-content/60">
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
                         {isSaving ? (
                             <>
                                 <IoCloudUploadOutline className="w-4 h-4 animate-pulse" />
@@ -249,7 +325,7 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
                         ) : lastSaved ? (
                             <>
                                 <IoCloudDoneOutline className="w-4 h-4 text-green-500" />
-                                <span>
+                                <span className="hidden sm:inline">
                                     Saved {lastSaved.toLocaleTimeString()}
                                 </span>
                             </>
@@ -263,56 +339,118 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
                         className="btn btn-sm btn-primary gap-2"
                     >
                         <IoSaveOutline className="w-4 h-4" />
-                        Save
+                        <span className="hidden sm:inline">Save</span>
                     </button>
                 </div>
             </div>
 
-            {/* Editor */}
-            <div className="flex-1 relative overflow-hidden">
-                <div className="absolute inset-0 p-6">
-                    <div className="h-full max-w-4xl mx-auto">
-                        <textarea
-                            ref={textareaRef}
-                            value={content}
-                            onChange={(e) => handleContentChange(e.target.value)}
-                            onSelect={handleCursorChange}
-                            onClick={handleCursorChange}
-                            onKeyUp={handleCursorChange}
-                            placeholder="Start writing..."
-                            className="w-full h-full resize-none bg-base-100 focus:outline-none text-lg leading-relaxed"
-                            style={{ fontFamily: "inherit" }}
-                        />
-                    </div>
-                </div>
+            {/* Formatting Toolbar */}
+            <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex-wrap">
+                {/* Undo/Redo */}
+                <ToolbarButton onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo">
+                    <LuUndo className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo">
+                    <LuRedo className="w-4 h-4" />
+                </ToolbarButton>
 
-                {/* Remote cursors indicator */}
-                {Object.entries(cursors).length > 0 && (
-                    <div className="absolute top-4 right-4 space-y-2">
-                        {Object.entries(cursors).map(([userId, { userName }]) => (
-                            <div
-                                key={userId}
-                                className={`px-2 py-1 rounded text-white text-xs ${getCursorColor(userId)}`}
-                            >
-                                {userName} is editing
-                            </div>
-                        ))}
-                    </div>
+                <ToolbarDivider />
+
+                {/* Text formatting */}
+                <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive("bold")} title="Bold (Ctrl+B)">
+                    <LuBold className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive("italic")} title="Italic (Ctrl+I)">
+                    <LuItalic className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive("underline")} title="Underline (Ctrl+U)">
+                    <LuUnderline className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive("strike")} title="Strikethrough">
+                    <LuStrikethrough className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} isActive={editor.isActive("highlight")} title="Highlight">
+                    <LuHighlighter className="w-4 h-4" />
+                </ToolbarButton>
+
+                <ToolbarDivider />
+
+                {/* Headings */}
+                <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive("heading", { level: 1 })} title="Heading 1">
+                    <LuHeading1 className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive("heading", { level: 2 })} title="Heading 2">
+                    <LuHeading2 className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive("heading", { level: 3 })} title="Heading 3">
+                    <LuHeading3 className="w-4 h-4" />
+                </ToolbarButton>
+
+                <ToolbarDivider />
+
+                {/* Lists */}
+                <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive("bulletList")} title="Bullet List">
+                    <LuList className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive("orderedList")} title="Numbered List">
+                    <LuListOrdered className="w-4 h-4" />
+                </ToolbarButton>
+
+                <ToolbarDivider />
+
+                {/* Alignment */}
+                <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("left").run()} isActive={editor.isActive({ textAlign: "left" })} title="Align Left">
+                    <LuAlignLeft className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("center").run()} isActive={editor.isActive({ textAlign: "center" })} title="Align Center">
+                    <LuAlignCenter className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().setTextAlign("right").run()} isActive={editor.isActive({ textAlign: "right" })} title="Align Right">
+                    <LuAlignRight className="w-4 h-4" />
+                </ToolbarButton>
+
+                <ToolbarDivider />
+
+                {/* Code & Quote */}
+                <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive("code")} title="Inline Code">
+                    <LuCode className="w-4 h-4" />
+                </ToolbarButton>
+                <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive("blockquote")} title="Quote">
+                    <LuQuote className="w-4 h-4" />
+                </ToolbarButton>
+
+                <ToolbarDivider />
+
+                {/* Link */}
+                <ToolbarButton onClick={setLink} isActive={editor.isActive("link")} title="Add Link">
+                    <LuLink className="w-4 h-4" />
+                </ToolbarButton>
+                {editor.isActive("link") && (
+                    <ToolbarButton onClick={() => editor.chain().focus().unsetLink().run()} title="Remove Link">
+                        <LuUnlink className="w-4 h-4" />
+                    </ToolbarButton>
                 )}
             </div>
 
+            {/* Editor Content */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="max-w-4xl mx-auto p-8">
+                    <EditorContent editor={editor} className="min-h-[500px]" />
+                </div>
+            </div>
+
             {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-base-300 text-sm text-base-content/60">
+            <div className="flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-500 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-4">
-                    <span>{content.length} characters</span>
-                    <span>{content.split(/\s+/).filter(Boolean).length} words</span>
+                    <span>{editor.storage.characterCount?.characters?.() ?? editor.getText().length} characters</span>
+                    <span>{editor.storage.characterCount?.words?.() ?? editor.getText().split(/\s+/).filter(Boolean).length} words</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <IoTimeOutline className="w-4 h-4" />
                     <span>
                         Last updated:{" "}
-                        {document?.updatedAt
-                            ? new Date(document.updatedAt).toLocaleString()
+                        {doc?.updatedAt
+                            ? new Date(doc.updatedAt).toLocaleString()
                             : "Never"}
                     </span>
                 </div>
@@ -322,3 +460,4 @@ const DocumentEditor = ({ document, workspace, onBack }) => {
 };
 
 export default DocumentEditor;
+

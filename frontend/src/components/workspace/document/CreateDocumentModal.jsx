@@ -4,12 +4,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     IoCloseOutline,
     IoDocumentTextOutline,
+    IoReaderOutline,
+    IoListOutline,
+    IoCreateOutline,
 } from "react-icons/io5";
 import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 
-const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
+const documentTypes = [
+    { value: "notes", label: "Notes", icon: IoReaderOutline, color: "violet", description: "Quick notes and ideas" },
+    { value: "research_paper", label: "Research Paper", icon: IoDocumentTextOutline, color: "blue", description: "Formal research document" },
+    { value: "outline", label: "Outline", icon: IoListOutline, color: "emerald", description: "Document structure" },
+    { value: "draft", label: "Draft", icon: IoCreateOutline, color: "amber", description: "Work in progress" },
+];
+
+const CreateDocumentModal = ({ workspace, parentId, onClose, isOpen = true }) => {
     const { createDocument } = useWorkspaceStore();
     const [title, setTitle] = useState("");
+    const [type, setType] = useState("notes");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -27,6 +38,8 @@ const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
         try {
             await createDocument(workspace._id, {
                 title: title.trim(),
+                type,
+                parentId: parentId || null,
                 plainText: "",
             });
             onClose();
@@ -36,6 +49,8 @@ const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
             setIsLoading(false);
         }
     };
+
+    const selectedType = documentTypes.find(t => t.value === type);
 
     if (!isOpen) return null;
 
@@ -106,6 +121,38 @@ const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
                                         autoFocus
                                     />
                                 </div>
+
+                                {/* Document Type Selection */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+                                        Document Type
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {documentTypes.map((docType) => {
+                                            const Icon = docType.icon;
+                                            const isSelected = type === docType.value;
+                                            return (
+                                                <button
+                                                    key={docType.value}
+                                                    type="button"
+                                                    onClick={() => setType(docType.value)}
+                                                    className={`p-3 rounded-xl border-2 transition-all text-left ${isSelected
+                                                            ? `border-${docType.color}-500 bg-${docType.color}-50 dark:bg-${docType.color}-900/20`
+                                                            : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Icon className={`w-4 h-4 ${isSelected ? `text-${docType.color}-500` : "text-slate-400"}`} />
+                                                        <span className={`text-sm font-medium ${isSelected ? "text-slate-800 dark:text-slate-100" : "text-slate-600 dark:text-slate-400"}`}>
+                                                            {docType.label}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-400 mt-1">{docType.description}</p>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Footer Actions */}
@@ -146,3 +193,4 @@ const CreateDocumentModal = ({ workspace, onClose, isOpen = true }) => {
 };
 
 export default CreateDocumentModal;
+

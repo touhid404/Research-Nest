@@ -12,12 +12,12 @@ const initialState = {
     myMeetings: [],
     isLoading: false,
     error: null,
-    
+
     // Loading states for different data types
     loadingTasks: false,
     loadingMeetings: false,
     loadingDocuments: false,
-    
+
     // Cache to track what's been loaded
     loadedWorkspaceData: {},
 
@@ -48,7 +48,7 @@ const useWorkspaceStore = create((set, get) => ({
     // Actions
     setSocket: (socket) => set({ socket }),
 
-    setSelectedWorkspace: (workspace) => set((state) => ({ 
+    setSelectedWorkspace: (workspace) => set((state) => ({
         selectedWorkspace: workspace,
         tasks: [],
         meetings: [],
@@ -78,7 +78,7 @@ const useWorkspaceStore = create((set, get) => ({
         if (state.selectedWorkspace?._id === id && !state.isLoading) {
             return state.selectedWorkspace;
         }
-        
+
         set({ isLoading: true, error: null });
         try {
             const response = await workspaceApi.getWorkspaceById(id);
@@ -129,17 +129,17 @@ const useWorkspaceStore = create((set, get) => ({
     fetchTasks: async (workspaceId, params = {}) => {
         const state = get();
         const cacheKey = `${workspaceId}_tasks_${JSON.stringify(params)}`;
-        
+
         // Check if already loaded (unless force refresh)
         if (!params.forceRefresh && state.loadedWorkspaceData[cacheKey]) {
             return;
         }
-        
+
         set({ loadingTasks: true, error: null });
         try {
             const response = await workspaceApi.getTasks(workspaceId, params);
-            set((state) => ({ 
-                tasks: response.data, 
+            set((state) => ({
+                tasks: response.data,
                 loadingTasks: false,
                 loadedWorkspaceData: { ...state.loadedWorkspaceData, [cacheKey]: true }
             }));
@@ -207,17 +207,17 @@ const useWorkspaceStore = create((set, get) => ({
     fetchMeetings: async (workspaceId, params = {}) => {
         const state = get();
         const cacheKey = `${workspaceId}_meetings_${JSON.stringify(params)}`;
-        
+
         // Check if already loaded (unless force refresh)
         if (!params.forceRefresh && state.loadedWorkspaceData[cacheKey]) {
             return;
         }
-        
+
         set({ loadingMeetings: true, error: null });
         try {
             const response = await workspaceApi.getMeetings(workspaceId, params);
-            set((state) => ({ 
-                meetings: response.data, 
+            set((state) => ({
+                meetings: response.data,
                 loadingMeetings: false,
                 loadedWorkspaceData: { ...state.loadedWorkspaceData, [cacheKey]: true }
             }));
@@ -309,17 +309,17 @@ const useWorkspaceStore = create((set, get) => ({
     fetchDocuments: async (workspaceId, forceRefresh = false) => {
         const state = get();
         const cacheKey = `${workspaceId}_documents`;
-        
+
         // Check if already loaded (unless force refresh)
         if (!forceRefresh && state.loadedWorkspaceData[cacheKey]) {
             return;
         }
-        
+
         set({ loadingDocuments: true, error: null });
         try {
             const response = await workspaceApi.getDocuments(workspaceId);
-            set((state) => ({ 
-                documents: response.data, 
+            set((state) => ({
+                documents: response.data,
                 loadingDocuments: false,
                 loadedWorkspaceData: { ...state.loadedWorkspaceData, [cacheKey]: true }
             }));
@@ -331,6 +331,23 @@ const useWorkspaceStore = create((set, get) => ({
     createDocument: async (workspaceId, data) => {
         try {
             const response = await workspaceApi.createDocument({ ...data, workspaceId });
+            set((state) => {
+                const exists = state.documents.some(d => d._id === response.data._id);
+                if (exists) return state;
+                return {
+                    documents: [...state.documents, response.data],
+                };
+            });
+            return response.data;
+        } catch (error) {
+            set({ error: error.message });
+            throw error;
+        }
+    },
+
+    uploadDocument: async (data) => {
+        try {
+            const response = await workspaceApi.uploadDocument(data);
             set((state) => ({
                 documents: [...state.documents, response.data],
             }));
@@ -349,6 +366,16 @@ const useWorkspaceStore = create((set, get) => ({
                     d._id === documentId ? response.data : d
                 ),
             }));
+            return response.data;
+        } catch (error) {
+            set({ error: error.message });
+            throw error;
+        }
+    },
+
+    saveDocumentContent: async (documentId, content, plainText) => {
+        try {
+            const response = await workspaceApi.saveDocumentContent(documentId, content, plainText);
             return response.data;
         } catch (error) {
             set({ error: error.message });
@@ -426,9 +453,13 @@ const useWorkspaceStore = create((set, get) => ({
 
         // Document events
         socket.on("document:created", (document) => {
-            set((state) => ({
-                documents: [...state.documents, document],
-            }));
+            set((state) => {
+                const exists = state.documents.some(d => d._id === document._id);
+                if (exists) return state;
+                return {
+                    documents: [...state.documents, document],
+                };
+            });
         });
 
         socket.on("document:updated", (document) => {
