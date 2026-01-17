@@ -146,7 +146,7 @@ export const router = createBrowserRouter([
                         element: <MeetingRoomPage />,
                     },
                     {
-                        path: ":workspaceId/documents",
+                        path: ":workspaceId/documents/:folderId?/:docId?",
                         element: <WorkspaceDocumentsPage />,
                     },
                 ],

@@ -193,7 +193,12 @@ export const saveDocumentContentService = async (id, uid, content, plainText) =>
     }
 
     if (content) {
-        document.content = Buffer.from(content, "base64");
+        // Handle both array format (Yjs state) and base64 string (legacy)
+        if (Array.isArray(content)) {
+            document.content = Buffer.from(content);
+        } else {
+            document.content = Buffer.from(content, "base64");
+        }
     }
     if (plainText !== undefined) {
         document.plainText = plainText;

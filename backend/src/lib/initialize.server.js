@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import Conversation from "../models/conversation.model.js";
 import Meeting from "../models/meeting.model.js";
+import Document from "../models/document.model.js";
 import { config } from "../config/config.js";
 import { getUsersByUids } from "../modules/workspace/services/workspace.service.js";
 
@@ -177,6 +178,19 @@ export const initializeServer = (server) => {
                 collaborators,
             });
 
+            // Send initial Yjs state if exists
+            try {
+                const doc = await Document.findById(documentId);
+                if (doc?.content && doc.content.length > 0) {
+                    socket.emit("document:yjs-sync", {
+                        documentId,
+                        state: Array.from(doc.content), // Convert Buffer to array
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading document state:", error);
+            }
+
             console.log(`User ${userId} joined document ${documentId}`);
         });
 
@@ -204,7 +218,25 @@ export const initializeServer = (server) => {
             console.log(`User ${userId} left document ${documentId}`);
         });
 
-        // Broadcast document changes (Yjs updates)
+        // Broadcast Yjs document updates
+        socket.on("document:yjs-update", ({ documentId, update }) => {
+            socket.to(`document:${documentId}`).emit("document:yjs-update", {
+                documentId,
+                update,
+                senderId: userId,
+            });
+        });
+
+        // Broadcast awareness updates (cursor positions, selections)
+        socket.on("document:awareness-update", ({ documentId, update }) => {
+            socket.to(`document:${documentId}`).emit("document:awareness-update", {
+                documentId,
+                update,
+                senderId: userId,
+            });
+        });
+
+        // Legacy: Broadcast document changes (kept for backwards compatibility)
         socket.on("document:update", ({ documentId, update }) => {
             socket.to(`document:${documentId}`).emit("document:update", {
                 documentId,

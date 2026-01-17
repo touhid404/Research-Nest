@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -6,6 +6,10 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import * as Y from "yjs";
+import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from "y-protocols/awareness";
 import {
     IoDocumentTextOutline,
     IoSaveOutline,
@@ -59,23 +63,41 @@ const ToolbarDivider = () => (
     <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
 );
 
+// Cursor colors for collaborators
+const CURSOR_COLORS = [
+    "#ef4444", "#f97316", "#eab308", "#22c55e",
+    "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"
+];
+
+const getUserColor = (userId) => {
+    if (!userId) return CURSOR_COLORS[0];
+    const hash = userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return CURSOR_COLORS[hash % CURSOR_COLORS.length];
+};
+
 const DocumentEditor = ({ document: doc, workspace, onBack }) => {
     const { user, socket } = useAuth();
     const { updateDocument, saveDocumentContent } = useWorkspaceStore();
 
     const [title, setTitle] = useState(doc?.title || "Untitled Document");
     const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [activeEditors, setActiveEditors] = useState([]);
+    const [collaborators, setCollaborators] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState(null);
+    const [isSynced, setIsSynced] = useState(false);
 
-    // Initialize TipTap editor
+    const saveTimeoutRef = useRef(null);
+
+    // Create Yjs document and awareness
+    const ydoc = useMemo(() => new Y.Doc(), []);
+    const awareness = useMemo(() => new Awareness(ydoc), [ydoc]);
+
+    // Initialize TipTap editor with Yjs collaboration
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
-                heading: {
-                    levels: [1, 2, 3],
-                },
+                heading: { levels: [1, 2, 3] },
+                history: false, // Disable default history, Yjs handles it
             }),
             Underline,
             Link.configure({
@@ -93,110 +115,164 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
             Highlight.configure({
                 multicolor: false,
             }),
+            Collaboration.configure({
+                document: ydoc,
+                field: "content", // Use 'content' field in Yjs
+            }),
+            CollaborationCursor.configure({
+                provider: { awareness }, // Pass awareness for cursor rendering
+                user: {
+                    name: user?.displayName || user?.email || "Anonymous",
+                    color: getUserColor(user?.uid),
+                },
+            }),
         ],
-        content: doc?.plainText || "",
         editorProps: {
             attributes: {
                 class: "prose prose-slate dark:prose-invert max-w-none focus:outline-none min-h-full",
             },
         },
-        onUpdate: ({ editor }) => {
-            handleContentChange(editor.getHTML());
-        },
     });
+
+    // Socket event handlers for Yjs synchronization
+    useEffect(() => {
+        if (!socket || !doc?._id || !ydoc) return;
+
+        const documentId = doc._id;
+
+        // Join document room
+        socket.emit("document:join", {
+            documentId,
+            userName: user?.displayName || user?.email || "Anonymous",
+        });
+
+        // Handle initial sync state from server
+        const handleSync = ({ state }) => {
+            if (state && state.length > 0) {
+                try {
+                    const uint8State = new Uint8Array(state);
+                    Y.applyUpdate(ydoc, uint8State, "remote");
+                    setIsSynced(true);
+                } catch (error) {
+                    console.error("Error applying sync state:", error);
+                }
+            } else {
+                // No existing state, initialize with plainText if available
+                if (doc.plainText && editor) {
+                    editor.commands.setContent(doc.plainText);
+                }
+                setIsSynced(true);
+            }
+        };
+
+        // Handle Yjs updates from other clients
+        const handleYjsUpdate = ({ update, senderId }) => {
+            if (senderId === user?.uid) return; // Ignore own updates
+            if (update) {
+                try {
+                    const uint8Update = new Uint8Array(update);
+                    Y.applyUpdate(ydoc, uint8Update, "remote");
+                } catch (error) {
+                    console.error("Error applying Yjs update:", error);
+                }
+            }
+        };
+
+        // Local awareness state
+        awareness.setLocalStateField("user", {
+            name: user?.displayName || user?.email || "Anonymous",
+            color: getUserColor(user?.uid),
+        });
+
+        // Handle awareness updates from other clients
+        const onAwarenessUpdate = ({ update }) => {
+            if (update) {
+                try {
+                    applyAwarenessUpdate(awareness, new Uint8Array(update), "remote");
+                } catch (error) {
+                    // console.error("Error applying awareness update:", error);
+                }
+            }
+        };
+
+        // Broadcast local awareness updates
+        const onLocalAwarenessUpdate = ({ added, updated, removed }, origin) => {
+            if (origin === "remote") return;
+            const changedClients = added.concat(updated).concat(removed);
+            const awarenessUpdate = encodeAwarenessUpdate(awareness, changedClients);
+            socket.emit("document:awareness-update", {
+                documentId,
+                update: Array.from(awarenessUpdate),
+            });
+        };
+
+        // Handle collaborators list
+        const handleCollaborators = ({ collaborators: collabs }) => {
+            setCollaborators(collabs.filter(c => c.uid !== user?.uid));
+        };
+
+        // Listen for Yjs document updates and broadcast
+        const onDocUpdate = (update, origin) => {
+            if (origin === "remote") return;
+            socket.emit("document:yjs-update", {
+                documentId,
+                update: Array.from(update),
+            });
+
+            // Auto-save with debounce
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+            setIsSaving(true);
+            saveTimeoutRef.current = setTimeout(async () => {
+                try {
+                    const state = Y.encodeStateAsUpdate(ydoc);
+                    const plainText = editor?.getHTML() || "";
+                    await saveDocumentContent(doc._id, Array.from(state), plainText);
+                    setLastSaved(new Date());
+                } catch (error) {
+                    console.error("Error saving document:", error);
+                } finally {
+                    setIsSaving(false);
+                }
+            }, 2000);
+        };
+
+        // Set up listeners
+        socket.on("document:yjs-sync", handleSync);
+        socket.on("document:yjs-update", handleYjsUpdate);
+        socket.on("document:awareness-update", onAwarenessUpdate);
+        socket.on("document:collaborators", handleCollaborators);
+        ydoc.on("update", onDocUpdate);
+        awareness.on("update", onLocalAwarenessUpdate);
+
+        // Cleanup
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+            socket.emit("document:leave", documentId);
+            socket.off("document:yjs-sync", handleSync);
+            socket.off("document:yjs-update", handleYjsUpdate);
+            socket.off("document:awareness-update", onAwarenessUpdate);
+            socket.off("document:collaborators", handleCollaborators);
+            ydoc.off("update", onDocUpdate);
+            awareness.off("update", onLocalAwarenessUpdate);
+        };
+    }, [socket, doc?._id, ydoc, user, editor, saveDocumentContent]);
 
     // Handle link insertion
     const setLink = useCallback(() => {
         if (!editor) return;
-
         const previousUrl = editor.getAttributes("link").href;
         const url = window.prompt("Enter URL:", previousUrl);
-
         if (url === null) return;
         if (url === "") {
             editor.chain().focus().extendMarkRange("link").unsetLink().run();
             return;
         }
-
         editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
     }, [editor]);
-
-    // Join document room
-    useEffect(() => {
-        if (!socket || !doc) return;
-
-        socket.emit("document:join", {
-            documentId: doc._id,
-            userName: user?.displayName || user?.email,
-        });
-
-        return () => {
-            socket.emit("document:leave", doc._id);
-        };
-    }, [socket, doc, user]);
-
-    // Socket event listeners
-    useEffect(() => {
-        if (!socket) return;
-
-        socket.on("document:editor-joined", ({ userId, userName }) => {
-            setActiveEditors((prev) => {
-                if (prev.find((e) => e.userId === userId)) return prev;
-                return [...prev, { userId, userName }];
-            });
-        });
-
-        socket.on("document:editor-left", ({ userId }) => {
-            setActiveEditors((prev) => prev.filter((e) => e.userId !== userId));
-        });
-
-        socket.on("document:updated", ({ content: newContent, updatedBy }) => {
-            if (updatedBy !== user?.uid && editor) {
-                const { from, to } = editor.state.selection;
-                editor.commands.setContent(newContent, false);
-                // Try to restore cursor position
-                editor.commands.setTextSelection({ from, to });
-            }
-        });
-
-        return () => {
-            socket.off("document:editor-joined");
-            socket.off("document:editor-left");
-            socket.off("document:updated");
-        };
-    }, [socket, user, editor]);
-
-    // Debounced auto-save
-    const saveTimeoutRef = useCallback(() => {
-        let timeout = null;
-        return (content) => {
-            if (timeout) clearTimeout(timeout);
-            setIsSaving(true);
-            timeout = setTimeout(async () => {
-                try {
-                    await saveDocumentContent(doc._id, null, content);
-                    setLastSaved(new Date());
-                } catch (error) {
-                    console.error("Failed to save document:", error);
-                } finally {
-                    setIsSaving(false);
-                }
-            }, 1500);
-        };
-    }, [doc, saveDocumentContent]);
-
-    const debouncedSave = useCallback(saveTimeoutRef(), [saveTimeoutRef]);
-
-    const handleContentChange = useCallback(
-        (newContent) => {
-            socket?.emit("document:update", {
-                documentId: doc._id,
-                content: newContent,
-            });
-            debouncedSave(newContent);
-        },
-        [socket, doc, debouncedSave]
-    );
 
     // Save title
     const handleTitleSave = async () => {
@@ -215,34 +291,17 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
         if (!editor) return;
         setIsSaving(true);
         try {
-            // Save title if changed
             if (title !== doc.title) {
                 await updateDocument(workspace._id, doc._id, { title });
             }
-            // Save content
-            await saveDocumentContent(doc._id, null, editor.getHTML());
+            const state = Y.encodeStateAsUpdate(ydoc);
+            await saveDocumentContent(doc._id, Array.from(state), editor.getHTML());
             setLastSaved(new Date());
         } catch (error) {
             console.error("Failed to save document:", error);
         } finally {
             setIsSaving(false);
         }
-    };
-
-    // Get cursor color for active editors
-    const getCursorColor = (userId) => {
-        const colors = [
-            "bg-red-500",
-            "bg-blue-500",
-            "bg-green-500",
-            "bg-yellow-500",
-            "bg-purple-500",
-            "bg-pink-500",
-            "bg-orange-500",
-            "bg-teal-500",
-        ];
-        const index = userId?.split("")?.reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0;
-        return colors[index % colors.length];
     };
 
     if (!editor) {
@@ -285,10 +344,15 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                             {title}
                         </h2>
                     )}
+
+                    {/* Sync indicator */}
+                    {!isSynced && (
+                        <span className="text-xs text-amber-500 animate-pulse">Syncing...</span>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {/* Active editors */}
+                    {/* Active collaborators */}
                     <div className="flex items-center gap-2">
                         <IoPeopleOutline className="w-5 h-5 text-slate-400" />
                         <div className="flex -space-x-2">
@@ -298,18 +362,19 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                             >
                                 {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "?"}
                             </div>
-                            {activeEditors.slice(0, 3).map((editor) => (
+                            {collaborators.slice(0, 3).map((collab, index) => (
                                 <div
-                                    key={editor.userId}
-                                    className={`w-8 h-8 rounded-full ${getCursorColor(editor.userId)} flex items-center justify-center text-white text-sm font-medium border-2 border-white dark:border-slate-900`}
-                                    title={editor.userName}
+                                    key={collab.uid || index}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium border-2 border-white dark:border-slate-900"
+                                    style={{ backgroundColor: collab.color || getUserColor(collab.uid) }}
+                                    title={collab.name}
                                 >
-                                    {editor.userName?.charAt(0) || "?"}
+                                    {collab.name?.charAt(0) || "?"}
                                 </div>
                             ))}
-                            {activeEditors.length > 3 && (
+                            {collaborators.length > 3 && (
                                 <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-sm font-medium border-2 border-white dark:border-slate-900">
-                                    +{activeEditors.length - 3}
+                                    +{collaborators.length - 3}
                                 </div>
                             )}
                         </div>
@@ -444,6 +509,9 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                 <div className="flex items-center gap-4">
                     <span>{editor.storage.characterCount?.characters?.() ?? editor.getText().length} characters</span>
                     <span>{editor.storage.characterCount?.words?.() ?? editor.getText().split(/\s+/).filter(Boolean).length} words</span>
+                    {collaborators.length > 0 && (
+                        <span className="text-green-500">• {collaborators.length + 1} editing</span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <IoTimeOutline className="w-4 h-4" />
@@ -460,4 +528,3 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
 };
 
 export default DocumentEditor;
-
