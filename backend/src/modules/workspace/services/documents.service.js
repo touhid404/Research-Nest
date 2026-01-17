@@ -8,6 +8,22 @@ import path from "path";
 // Helper to sanitize filenames
 const sanitizeName = (name) => name.replace(/[^a-z0-9\s-_.]/gi, "_").trim();
 
+// Helper to get extension based on type
+const getExtension = (type) => {
+    switch (type) {
+        case "research_paper":
+            return ".doc";
+        case "notes":
+        case "outline":
+        case "draft":
+        case "other":
+        case "plain_text":
+            return ".md";
+        default:
+            return ".md";
+    }
+};
+
 // Helper to get full folder path recursively
 export const getFolderPath = async (documentId) => {
     if (!documentId) return "";
@@ -89,7 +105,8 @@ export const createDocumentService = async ({ uid, workspaceId, title, type, par
                 fs.mkdirSync(basePath, { recursive: true });
             }
 
-            const fileName = sanitizeName(title || "Untitled Document") + ".md";
+            const extension = getExtension(type || "notes");
+            const fileName = sanitizeName(title || "Untitled Document") + extension;
             const filePath = path.join(basePath, fileName);
             fs.writeFileSync(filePath, ""); // Create empty file
         } catch (error) {
@@ -214,7 +231,8 @@ export const saveDocumentContentService = async (id, uid, content, plainText) =>
         try {
             const parentPath = document.parentId ? await getFolderPath(document.parentId) : "";
             const basePath = path.join("public", "workspace-documents", parentPath);
-            const fileName = sanitizeName(document.title) + ".md";
+            const extension = getExtension(document.type);
+            const fileName = sanitizeName(document.title) + extension;
             const filePath = path.join(basePath, fileName);
 
             if (!fs.existsSync(basePath)) {
@@ -305,7 +323,8 @@ export const deleteDocumentService = async (id, uid) => {
     if (document.type !== "folder" && !document.fileUrl) {
         try {
             const parentPath = document.parentId ? await getFolderPath(document.parentId) : "";
-            const fileName = sanitizeName(document.title) + ".md";
+            const extension = getExtension(document.type);
+            const fileName = sanitizeName(document.title) + extension;
             const filePath = path.join("public", "workspace-documents", parentPath, fileName);
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);

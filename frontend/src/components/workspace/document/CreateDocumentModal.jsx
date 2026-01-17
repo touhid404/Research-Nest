@@ -20,7 +20,7 @@ const documentTypes = [
 const CreateDocumentModal = ({ workspace, parentId, onClose, isOpen = true }) => {
     const { createDocument } = useWorkspaceStore();
     const [title, setTitle] = useState("");
-    const [type, setType] = useState("notes");
+    const [type, setType] = useState("research_paper");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -137,8 +137,8 @@ const CreateDocumentModal = ({ workspace, parentId, onClose, isOpen = true }) =>
                                                     type="button"
                                                     onClick={() => setType(docType.value)}
                                                     className={`p-3 rounded-xl border-2 transition-all text-left ${isSelected
-                                                            ? `border-${docType.color}-500 bg-${docType.color}-50 dark:bg-${docType.color}-900/20`
-                                                            : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                                                        ? `border-${docType.color}-500 bg-${docType.color}-50 dark:bg-${docType.color}-900/20`
+                                                        : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-2">

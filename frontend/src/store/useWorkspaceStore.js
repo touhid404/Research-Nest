@@ -348,9 +348,6 @@ const useWorkspaceStore = create((set, get) => ({
     uploadDocument: async (data) => {
         try {
             const response = await workspaceApi.uploadDocument(data);
-            set((state) => ({
-                documents: [...state.documents, response.data],
-            }));
             return response.data;
         } catch (error) {
             set({ error: error.message });

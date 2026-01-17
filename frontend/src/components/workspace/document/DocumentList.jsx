@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useParams, useNavigate } from "react-router";
 import {
     IoDocumentTextOutline,
     IoCloseOutline,
@@ -33,19 +34,30 @@ const DocumentList = ({ workspace }) => {
 
     const { user } = useAuth();
 
+    const { workspaceId, folderId, docId } = useParams();
+    const navigate = useNavigate();
+
     // State
     const [searchQuery, setSearchQuery] = useState("");
     const [viewMode, setViewMode] = useState("grid");
-    const [selectedDocument, setSelectedDocument] = useState(null);
+    // selectedDocument and currentFolderId are now partially derived from URL
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
     const [documentToDelete, setDocumentToDelete] = useState(null);
     const [documentToShowInfo, setDocumentToShowInfo] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [currentFolderId, setCurrentFolderId] = useState(null);
+    // currentFolderId moved to derived or URL param
     const [dragTargetFolderId, setDragTargetFolderId] = useState(null);
     const [showSidebar, setShowSidebar] = useState(true);
+
+    const currentFolderId = folderId || null;
+
+    // Derived: Find the selected document from the documents array
+    const selectedDocument = useMemo(() => {
+        if (!docId) return null;
+        return documents.find(d => d._id === docId) || null;
+    }, [docId, documents]);
 
     const fileInputRef = useRef(null);
 
@@ -130,12 +142,12 @@ const DocumentList = ({ workspace }) => {
 
     const handleDocumentClick = (doc) => {
         if (doc.type === "folder") {
-            setCurrentFolderId(doc._id);
+            navigate(`/home/workspace/${workspaceId}/documents/${doc._id}`);
         } else if (doc.type === "file" && doc.fileUrl) {
             const url = doc.fileUrl.startsWith("http") ? doc.fileUrl : `${import.meta.env.VITE_API_URL}${doc.fileUrl}`;
             window.open(url, "_blank");
         } else {
-            setSelectedDocument(doc);
+            navigate(`/home/workspace/${workspaceId}/documents/edit/${doc._id}`);
         }
     };
 
@@ -152,12 +164,19 @@ const DocumentList = ({ workspace }) => {
     };
 
     // Main render condition
-    if (selectedDocument) {
+    if (docId) {
+        if (!selectedDocument) {
+            return (
+                <div className="h-full flex items-center justify-center">
+                    <span className="loading loading-spinner loading-lg text-primary"></span>
+                </div>
+            );
+        }
         return (
             <DocumentEditor
                 document={selectedDocument}
                 workspace={workspace}
-                onBack={() => setSelectedDocument(null)}
+                onBack={() => navigate(-1)}
             />
         );
     }
@@ -179,7 +198,14 @@ const DocumentList = ({ workspace }) => {
                     <span className="font-bold text-slate-700 dark:text-slate-200">Explorer</span>
                     <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><IoCloseOutline className="w-6 h-6" /></button>
                 </div>
-                <FileTree documents={documents} activeFolderId={currentFolderId} onSelectFolder={(id) => { setCurrentFolderId(id); if (window.innerWidth < 640) setShowSidebar(false); }} />
+                <FileTree
+                    documents={documents}
+                    activeFolderId={currentFolderId}
+                    onSelectFolder={(id) => {
+                        navigate(`/home/workspace/${workspaceId}/documents/${id || ""}`);
+                        if (window.innerWidth < 640) setShowSidebar(false);
+                    }}
+                />
             </div>
 
             {/* Main Area */}
@@ -203,7 +229,7 @@ const DocumentList = ({ workspace }) => {
                     fileInputRef={fileInputRef} handleFileInputChange={handleFileInputChange}
                     documents={documents}
                     currentFolderId={currentFolderId}
-                    onNavigate={(id) => setCurrentFolderId(id)}
+                    onNavigate={(id) => navigate(`/home/workspace/${workspaceId}/documents/${id || ""}`)}
                 />
 
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-slate-50 dark:bg-slate-950">
@@ -253,7 +279,7 @@ const DocumentList = ({ workspace }) => {
                                                 <DocumentCard
                                                     key={doc._id} doc={doc} user={user} documents={documents}
                                                     onNavigate={handleDocumentClick} onDelete={setDocumentToDelete} onShowInfo={setDocumentToShowInfo}
-                                                    onDownload={handleDocumentClick} onEdit={(d) => setSelectedDocument(d)}
+                                                    onDownload={handleDocumentClick} onEdit={(d) => navigate(`/home/workspace/${workspaceId}/documents/edit/${d._id}`)}
                                                     handleItemDragStart={handleItemDragStart}
                                                 />
                                             ) : (
