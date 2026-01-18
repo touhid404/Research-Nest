@@ -378,9 +378,6 @@ export const deleteMessage = async (req, res) => {
             return res.status(404).json({ message: "Message not found" });
         }
 
-        // Only sender can delete their message (or maybe receiver too? usually sender)
-        // Let's allow sender to delete for everyone, or maybe just for themselves?
-        // Requirement: "delete single message... should delete message of this conversations" implies deletion for everyone or at least DB removal.
         if (message.sender !== uid) {
             return res.status(403).json({ message: "You can only delete your own messages" });
         }
@@ -396,11 +393,14 @@ export const deleteMessage = async (req, res) => {
             await conversation.save();
         }
 
-        // Emit socket event (handled by frontend to remove from UI)
-        // This requires access to io structure or we just rely on clients reloading/refetching?
-        // Ideally we emit an event. But controller doesn't have direct access to io unless we pass it or import it.
-        // For now, client will remove it optimistically or we rely on re-fetch.
-        // Better: The client that triggers delete can emit "message:delete" via socket to other party.
+        // Emit socket event for real-time deletion
+        const io = req.app.get("io");
+        if (io) {
+            io.to(`conversation:${conversationId}`).emit("message:deleted", {
+                messageId,
+                conversationId
+            });
+        }
 
         res.status(200).json({ success: true, message: "Message deleted" });
     } catch (error) {

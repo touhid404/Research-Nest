@@ -380,6 +380,25 @@ const useChatStore = create((set, get) => ({
             }
         });
 
+        // Listen for message deletion
+        socket.on("message:deleted", ({ messageId, conversationId }) => {
+            const { messages, selectedConversation, conversations } = get();
+
+            // Remove from messages if currently viewing that conversation
+            if (selectedConversation && selectedConversation._id === conversationId) {
+                set({ messages: messages.filter(m => m._id !== messageId) });
+            }
+
+            // Update lastMessage in conversations list if needed (optional implementation)
+            // Ideally we'd fetch the conversation again or have the payload include the new last message
+            // For now, let's just trigger a conversation refresh if it was the last message to keep it synced
+            const conversation = conversations.find(c => c._id === conversationId);
+            if (conversation && conversation.lastMessage && conversation.lastMessage._id === messageId) {
+                // Fetch updated conversation or just conversations list to get new last message
+                get().fetchConversations();
+            }
+        });
+
         // Listen for being kicked from a group
         socket.on("conversation:kicked", ({ conversationId }) => {
             const { conversations, selectedConversation } = get();
@@ -473,6 +492,7 @@ const useChatStore = create((set, get) => ({
         socket.off("user:online");
         socket.off("user:offline");
         socket.off("message:new");
+        socket.off("message:deleted");
         socket.off("conversation:update");
         socket.off("typing:start");
         socket.off("typing:stop");

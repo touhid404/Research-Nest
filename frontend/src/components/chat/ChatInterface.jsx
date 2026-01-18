@@ -211,8 +211,8 @@ const ChatInterface = () => {
                 conversation={selectedConversation}
             />
 
-            {/* Messages List */}
-            <div className="bg-gray-100 dark:bg-slate-900 m-1 rounded-lg relative z-10 flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            {/* Messages List - Messenger Style */}
+            <div className="bg-gray-50 dark:bg-slate-900 m-1 rounded-lg relative z-10 flex-1 overflow-y-auto px-4 py-3 custom-scrollbar">
                 {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-3 opacity-60">
                         <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center">
@@ -224,80 +224,118 @@ const ChatInterface = () => {
                         </div>
                     </div>
                 ) : (
-                    messages.map((message, index) => {
-                        const isOwnMessage = message.sender === user?.uid;
-                        const showDate =
-                            index === 0 ||
-                            formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
+                    <div className="space-y-1">
+                        {messages.map((message, index) => {
+                            const isOwnMessage = message.sender === user?.uid;
+                            const showDate =
+                                index === 0 ||
+                                formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
 
-                        return (
-                            <div key={message._id}>
-                                {showDate && (
-                                    <div className="flex justify-center my-4">
-                                        <span className="text-[10px] font-semibold bg-slate-200/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-                                            {formatDate(message.createdAt)}
-                                        </span>
-                                    </div>
-                                )}
+                            // Check if previous message is from same sender (for grouping)
+                            const prevMessage = messages[index - 1];
+                            const nextMessage = messages[index + 1];
+                            const isFirstInGroup = !prevMessage || prevMessage.sender !== message.sender || showDate;
+                            const isLastInGroup = !nextMessage || nextMessage.sender !== message.sender ||
+                                (nextMessage && formatDate(nextMessage.createdAt) !== formatDate(message.createdAt));
 
-                                <div className={`chat ${isOwnMessage ? "chat-end" : "chat-start"}`}>
-                                    <div className="chat-image avatar">
-                                        <div className="w-8 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm transition-transform hover:scale-105">
-                                            {isOwnMessage ? (
-                                                user?.photoURL ? <img src={user.photoURL} alt="You" /> : <div className="bg-slate-200 text-slate-600 flex items-center justify-center h-full w-full font-bold text-xs">You</div>
-                                            ) : (
-                                                /* Logic for other user: if group, use message sender details, else use otherUser */
-                                                isGroup ? (
-                                                    message.senderDetails?.photoURL ?
-                                                        <img src={message.senderDetails.photoURL} alt={message.senderDetails.name} /> :
-                                                        <div className="bg-violet-200 text-violet-700 flex items-center justify-center h-full w-full font-bold text-xs">{(message.senderDetails?.name || "?").charAt(0)}</div>
-                                                ) : (
-                                                    otherUser?.photoURL ? <img src={otherUser.photoURL} alt={otherUser.name} /> : <div className="bg-violet-200 text-violet-700 flex items-center justify-center h-full w-full font-bold text-xs">{otherUser?.name?.charAt(0)}</div>
-                                                )
+                            return (
+                                <div key={message._id}>
+                                    {showDate && (
+                                        <div className="flex justify-center my-4">
+                                            <span className="text-[10px] font-semibold bg-slate-200/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+                                                {formatDate(message.createdAt)}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
+                                        {/* Avatar - only for other user's messages on last message of group */}
+                                        {!isOwnMessage && (
+                                            <div className="w-7 mr-2 flex-shrink-0 flex items-end">
+                                                {isLastInGroup ? (
+                                                    <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+                                                        {isGroup ? (
+                                                            message.senderDetails?.photoURL ?
+                                                                <img src={message.senderDetails.photoURL} alt="" className="w-full h-full object-cover" /> :
+                                                                <div className="bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center h-full w-full font-bold text-xs">{(message.senderDetails?.name || "?").charAt(0)}</div>
+                                                        ) : (
+                                                            otherUser?.photoURL ?
+                                                                <img src={otherUser.photoURL} alt="" className="w-full h-full object-cover" /> :
+                                                                <div className="bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center h-full w-full font-bold text-xs">{otherUser?.name?.charAt(0)}</div>
+                                                        )}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        )}
+
+                                        <div className={`max-w-[70%] group relative ${isOwnMessage ? "items-end" : "items-start"}`}>
+                                            {/* Sender name for group - only on first message of group */}
+                                            {isGroup && !isOwnMessage && isFirstInGroup && (
+                                                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 ml-1 mb-0.5">
+                                                    {message.senderDetails?.name || "Unknown"}
+                                                </p>
+                                            )}
+
+                                            {/* Message Bubble */}
+                                            <div
+                                                className={`
+                                                    relative px-3 py-2 text-sm leading-relaxed
+                                                    ${isOwnMessage
+                                                        ? "bg-violet-600 text-white"
+                                                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                                                    }
+                                                    ${isOwnMessage
+                                                        ? isFirstInGroup && isLastInGroup
+                                                            ? "rounded-2xl"
+                                                            : isFirstInGroup
+                                                                ? "rounded-2xl rounded-br-md"
+                                                                : isLastInGroup
+                                                                    ? "rounded-2xl rounded-tr-md"
+                                                                    : "rounded-2xl rounded-r-md"
+                                                        : isFirstInGroup && isLastInGroup
+                                                            ? "rounded-2xl"
+                                                            : isFirstInGroup
+                                                                ? "rounded-2xl rounded-bl-md"
+                                                                : isLastInGroup
+                                                                    ? "rounded-2xl rounded-tl-md"
+                                                                    : "rounded-2xl rounded-l-md"
+                                                    }
+                                                `}
+                                            >
+                                                {message.text && <p>{message.text}</p>}
+                                                {message.attachment && (
+                                                    <img src={message.attachment} alt="attachment" className="mt-2 rounded-lg max-w-full" />
+                                                )}
+
+                                                {/* Delete button for own messages */}
+                                                {isOwnMessage && (
+                                                    <button
+                                                        onClick={() => deleteMessage(message._id)}
+                                                        className="absolute -left-8 top-1/2 -translate-y-1/2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                        title="Delete message"
+                                                    >
+                                                        <FaTrash className="text-[10px]" />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Time and status - only on last message of group */}
+                                            {isLastInGroup && (
+                                                <div className={`flex items-center gap-1 mt-0.5 ${isOwnMessage ? "justify-end mr-1" : "ml-1"}`}>
+                                                    <span className="text-[10px] text-slate-400">{formatTime(message.createdAt)}</span>
+                                                    {isOwnMessage && (
+                                                        <span className={`text-[10px] ${message.isRead ? "text-violet-500 font-medium" : "text-slate-400"}`}>
+                                                            {message.isRead ? "Read" : "Sent"}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="chat-header text-[10px] opacity-70 mb-1 ml-1 flex gap-2">
-                                        <span className="font-semibold text-slate-600 dark:text-slate-400">
-                                            {isOwnMessage ? "You" : (isGroup ? (message.senderDetails?.name || "Unknown") : otherUser?.name)}
-                                        </span>
-                                        <time className="text-[10px] opacity-50">{formatTime(message.createdAt)}</time>
-                                    </div>
-                                    <div className={`chat-bubble min-h-0 text-sm shadow-md backdrop-blur-sm group relative pr-8 ${isOwnMessage
-                                        ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
-                                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
-                                        }`}
-                                    >
-                                        {message.text && <p className="leading-relaxed">{message.text}</p>}
-                                        {message.attachment && (
-                                            <img src={message.attachment} alt="attachment" className="mt-2 rounded-lg max-w-xs border border-white/20" />
-                                        )}
-
-                                        {isOwnMessage && (
-                                            <button
-                                                onClick={() => deleteMessage(message._id)}
-                                                className="absolute top-1 right-1 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-white/70 hover:text-white"
-                                                title="Delete message"
-                                            >
-                                                <FaTrash className="text-xs" />
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="chat-footer opacity-50 text-[10px] mt-0.5 flex gap-1 items-center">
-                                        {isOwnMessage && (
-                                            <span>
-                                                {message.isRead ? (
-                                                    <span className="text-fuchsia-500 font-bold">Read</span>
-                                                ) : (
-                                                    "Delivered"
-                                                )}
-                                            </span>
-                                        )}
-                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+                    </div>
                 )}
                 <div ref={messagesEndRef} />
             </div>
