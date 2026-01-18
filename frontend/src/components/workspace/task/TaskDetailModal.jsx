@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -14,23 +14,67 @@ import {
 } from "react-icons/io5";
 import toast from "react-hot-toast";
 import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import useAuth from "../../../hooks/useAuth";
 import ConfirmModal from "../../common/ConfirmModal";
 
 const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
-    const { updateTask, deleteTask } = useWorkspaceStore();
+    const { user } = useAuth();
+    const { updateTask, deleteTask, tasks } = useWorkspaceStore();
+
+    // Get live task data from store to handle real-time updates
+    const liveTask = tasks.find(t => t._id === task._id) || task;
 
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
-        title: task.title,
-        description: task.description || "",
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : "",
+        title: liveTask.title,
+        description: liveTask.description || "",
+        status: liveTask.status,
+        priority: liveTask.priority,
+        dueDate: liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : "",
     });
+
+    // Check for external updates when not editing
+    useEffect(() => {
+        if (!isEditing && liveTask) {
+            setFormData(prev => {
+                // Only update if values actually changed to avoid unnecessary renders
+                if (
+                    prev.title === liveTask.title &&
+                    prev.description === (liveTask.description || "") &&
+                    prev.status === liveTask.status &&
+                    prev.priority === liveTask.priority &&
+                    // Compare dates loosely as strings/nulls might vary slightly
+                    (prev.dueDate === (liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : ""))
+                ) {
+                    return prev;
+                }
+
+                return {
+                    title: liveTask.title,
+                    description: liveTask.description || "",
+                    status: liveTask.status,
+                    priority: liveTask.priority,
+                    dueDate: liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : "",
+                };
+            });
+        }
+    }, [liveTask, isEditing]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Permission checks
+    const member = workspace?.members?.find(m => m.uid === user?.uid);
+    const isOwnerOrAdmin = member && (member.role === 'owner' || member.role === 'admin');
+    const isTaskCreator = task.createdBy === user?.uid;
+
+    const canDelete = isOwnerOrAdmin || isTaskCreator;
+    const canEditFull = isOwnerOrAdmin || isTaskCreator;
+
+    // Assigned users can update status, but if they are not owner/admin/creator they can't do full edits
+    const isAssignee = task.assignedTo?.includes(user?.uid) || task.assignedToUsers?.some(u => u.uid === user?.uid);
+    const canUpdateStatus = canEditFull || isAssignee;
 
     const handleUpdateClick = () => {
         if (!formData.title.trim()) {
@@ -79,8 +123,17 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
     };
 
     const handleStatusChange = async (newStatus) => {
-        await updateTask(task._id, { status: newStatus });
-        setFormData({ ...formData, status: newStatus });
+        if (!canUpdateStatus) {
+            toast.error("You don't have permission to update this task");
+            return;
+        }
+        try {
+            await updateTask(task._id, { status: newStatus });
+            setFormData({ ...formData, status: newStatus });
+            toast.success("Status updated");
+        } catch (error) {
+            toast.error("Failed to update status");
+        }
     };
 
     const getPriorityColor = (priority) => {
@@ -149,11 +202,11 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-br from-violet-500/10 to-purple-500/10 rounded-bl-full" />
                             <div className="relative flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${task.status === "completed"
-                                            ? "bg-linear-to-br from-green-500 to-emerald-600 shadow-green-500/25"
-                                            : "bg-linear-to-br from-violet-500 to-purple-600 shadow-violet-500/25"
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${liveTask.status === "completed"
+                                        ? "bg-linear-to-br from-green-500 to-emerald-600 shadow-green-500/25"
+                                        : "bg-linear-to-br from-violet-500 to-purple-600 shadow-violet-500/25"
                                         }`}>
-                                        {task.status === "completed"
+                                        {liveTask.status === "completed"
                                             ? <IoCheckmarkOutline className="w-5 h-5 text-white" />
                                             : <IoFlagOutline className="w-5 h-5 text-white" />
                                         }
@@ -166,21 +219,27 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => setIsEditing(!isEditing)}
-                                        className={`p-2 rounded-xl transition-colors ${isEditing
+                                    {canEditFull && (
+                                        <button
+                                            onClick={() => setIsEditing(!isEditing)}
+                                            className={`p-2 rounded-xl transition-colors ${isEditing
                                                 ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600"
                                                 : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
-                                            }`}
-                                    >
-                                        <IoCreateOutline className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteClick}
-                                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors text-red-500"
-                                    >
-                                        <IoTrashOutline className="w-5 h-5" />
-                                    </button>
+                                                }`}
+                                            title="Edit Task"
+                                        >
+                                            <IoCreateOutline className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                    {canDelete && (
+                                        <button
+                                            onClick={handleDeleteClick}
+                                            className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors text-red-500"
+                                            title="Delete Task"
+                                        >
+                                            <IoTrashOutline className="w-5 h-5" />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={onClose}
                                         className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
@@ -292,48 +351,50 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                     {/* Title */}
                                     <div>
                                         <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-                                            {task.title}
+                                            {liveTask.title}
                                         </h3>
-                                        {task.description && (
+                                        {liveTask.description && (
                                             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                                                {task.description}
+                                                {liveTask.description}
                                             </p>
                                         )}
                                     </div>
 
                                     {/* Status & Priority Badges */}
                                     <div className="flex flex-wrap gap-2">
-                                        <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${getStatusColor(task.status)}`}>
-                                            {task.status.replace("_", " ")}
+                                        <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${getStatusColor(liveTask.status)}`}>
+                                            {liveTask.status.replace("_", " ")}
                                         </span>
-                                        <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${getPriorityColor(task.priority)}`}>
-                                            {task.priority} priority
+                                        <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold ${getPriorityColor(liveTask.priority)}`}>
+                                            {liveTask.priority} priority
                                         </span>
                                     </div>
 
                                     {/* Quick Status Change */}
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-                                            Quick Status Update
-                                        </label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {["todo", "in_progress", "review", "completed"].map((status) => (
-                                                <button
-                                                    key={status}
-                                                    onClick={() => handleStatusChange(status)}
-                                                    className={`
-                                                        px-3 py-2 rounded-xl text-xs font-semibold transition-all
-                                                        ${task.status === status
-                                                            ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
-                                                            : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600"
-                                                        }
-                                                    `}
-                                                >
-                                                    {status.replace("_", " ")}
-                                                </button>
-                                            ))}
+                                    {canUpdateStatus && (
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+                                                Quick Status Update
+                                            </label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {["todo", "in_progress", "review", "completed"].map((status) => (
+                                                    <button
+                                                        key={status}
+                                                        onClick={() => handleStatusChange(status)}
+                                                        className={`
+                                                            px-3 py-2 rounded-xl text-xs font-semibold transition-all
+                                                            ${liveTask.status === status
+                                                                ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
+                                                                : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600"
+                                                            }
+                                                        `}
+                                                    >
+                                                        {status.replace("_", " ")}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     {/* Details */}
                                     <div className="space-y-3">
@@ -342,30 +403,30 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                                 <IoCalendarOutline className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                             </div>
                                             <span className="text-slate-600 dark:text-slate-300">
-                                                {formatDate(task.dueDate)}
+                                                {formatDate(liveTask.dueDate)}
                                             </span>
                                         </div>
 
-                                        {task.estimatedHours && (
+                                        {liveTask.estimatedHours && (
                                             <div className="flex items-center gap-3 text-sm">
                                                 <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                                     <IoTimeOutline className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                                 </div>
                                                 <span className="text-slate-600 dark:text-slate-300">
-                                                    {task.estimatedHours} hours estimated
+                                                    {liveTask.estimatedHours} hours estimated
                                                 </span>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Assignees */}
-                                    {task.assignedToUsers && task.assignedToUsers.length > 0 && (
+                                    {liveTask.assignedToUsers && liveTask.assignedToUsers.length > 0 && (
                                         <div>
                                             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
                                                 Assigned To
                                             </label>
                                             <div className="flex flex-wrap gap-2">
-                                                {task.assignedToUsers.map((assignee) => (
+                                                {liveTask.assignedToUsers.map((assignee) => (
                                                     <div
                                                         key={assignee.uid}
                                                         className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl"
@@ -408,7 +469,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                 onClose={() => setShowDeleteConfirm(false)}
                 onConfirm={handleConfirmDelete}
                 title="Delete Task"
-                message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+                message={`Are you sure you want to delete "${liveTask.title}"? This action cannot be undone.`}
                 confirmText="Delete"
                 cancelText="Cancel"
                 isDanger={true}

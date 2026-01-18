@@ -105,6 +105,27 @@ export const updateTaskService = async (id, uid, updates) => {
         return { error: "Access denied", status: 403 };
     }
 
+    // Check user's role in workspace
+    const member = workspace.members.find((m) => m.uid === uid);
+    const isOwnerOrAdmin = member && (member.role === "owner" || member.role === "admin");
+    const isTaskCreator = task.createdBy === uid;
+    const isAssignee = task.assignedTo.includes(uid);
+
+    // Non-owner/admin members can only update status of their assigned tasks
+    if (!isOwnerOrAdmin && !isTaskCreator) {
+        if (!isAssignee) {
+            return { error: "You can only update tasks assigned to you", status: 403 };
+        }
+        // Restrict to status-only updates for assignees who are not owner/admin/creator
+        const allowedUpdatesForAssignee = ["status"];
+        const attemptedFields = Object.keys(updates);
+        const disallowedFields = attemptedFields.filter(field => !allowedUpdatesForAssignee.includes(field));
+
+        if (disallowedFields.length > 0) {
+            return { error: "You can only update the status of this task", status: 403 };
+        }
+    }
+
     // Update allowed fields
     const allowedUpdates = [
         "title", "description", "assignedTo", "status", "priority",
@@ -142,8 +163,19 @@ export const deleteTaskService = async (id, uid) => {
         return { error: "Access denied", status: 403 };
     }
 
+    // Check user's role in workspace
+    const member = workspace.members.find((m) => m.uid === uid);
+    const isOwnerOrAdmin = member && (member.role === "owner" || member.role === "admin");
+    const isTaskCreator = task.createdBy === uid;
+
+    // Only owner, admin, or task creator can delete
+    if (!isOwnerOrAdmin && !isTaskCreator) {
+        return { error: "Only workspace owner, admin, or task creator can delete tasks", status: 403 };
+    }
+
     const workspaceId = task.workspaceId;
     await task.deleteOne();
 
     return { data: { taskId: id }, workspaceId };
 };
+
