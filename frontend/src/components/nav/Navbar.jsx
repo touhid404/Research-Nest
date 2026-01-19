@@ -4,6 +4,7 @@ import { useTheme } from "../../provider/ThemeProvider";
 import { MoonIcon, SunIcon } from "../../assets/rawIcon/Rawicon";
 import ResearchNestLogo from "../logo/ResearchNestLogo";
 import NotificationDropdown from "./NotificationDropdown";
+import useNotifications from "../../hooks/useNotifications";
 
 const Navbar = () => {
     const { theme, setTheme } = useTheme();
@@ -11,6 +12,7 @@ const Navbar = () => {
 
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const notificationRef = useRef(null);
+    const { totalNotifications } = useNotifications();
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -83,7 +85,11 @@ const Navbar = () => {
                             aria-label="Notifications"
                         >
                             <FaBell size={18} className="text-gray-700 dark:text-gray-300" />
-                            <span className="absolute top-1 right-1 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-gray-950"></span>
+                            {totalNotifications > 0 && (
+                                <span className="absolute top-1 right-1 flex items-center justify-center min-w-[16px] h-4 px-1 bg-primary text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-gray-950">
+                                    {totalNotifications}
+                                </span>
+                            )}
                         </button>
 
                         {/* Dropdown */}

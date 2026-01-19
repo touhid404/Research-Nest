@@ -20,6 +20,7 @@ import {
 } from "react-icons/io5";
 import useAuth from "../../hooks/useAuth";
 import ConfirmModal from "../common/ConfirmModal";
+import useNotifications from "../../hooks/useNotifications";
 
 
 const MobileBottomNav = () => {
@@ -27,14 +28,33 @@ const MobileBottomNav = () => {
     const navigate = useNavigate();
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
+    const { unreadMessagesCount, pendingRequestsCount, totalNotifications } = useNotifications();
+
     const navItems = [
         { icon: <IoGridOutline size={22} />, activeIcon: <IoGrid size={22} />, path: "/home/posts", label: "Posts" },
-        { icon: <IoListOutline size={22} />, activeIcon: <IoList size={22} />, path: "/home/requests", label: "Requests" },
+        {
+            icon: <IoListOutline size={22} />,
+            activeIcon: <IoList size={22} />,
+            path: "/home/requests",
+            label: "Requests",
+            badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
+        },
         { icon: <IoBookmarkOutline size={22} />, activeIcon: <IoBookmark size={22} />, path: "/home/workspace", label: "Workspace" },
-        { icon: <IoChatbubbleEllipsesOutline size={22} />, activeIcon: <IoChatbubbleEllipses size={22} />, path: "/home/messages", label: "Messages" },
+        {
+            icon: <IoChatbubbleEllipsesOutline size={22} />,
+            activeIcon: <IoChatbubbleEllipses size={22} />,
+            path: "/home/messages",
+            label: "Messages",
+            badge: unreadMessagesCount > 0 ? unreadMessagesCount : null
+        },
         { icon: <IoNewspaperOutline size={22} />, activeIcon: <IoNewspaper size={22} />, path: "/home/paper-hub", label: "Paper Hub" },
         { icon: <IoPersonOutline size={22} />, activeIcon: <IoPerson size={22} />, path: "/home/my-profile", label: "Profile" },
-        { icon: <IoNotificationsOutline size={22} />, activeIcon: <IoNotifications size={22} />, path: "/home/notifications", label: "Notifications" },
+        {
+            icon: <IoNotificationsOutline size={22} />,
+            activeIcon: <IoNotifications size={22} />,
+            path: "/home/notifications",
+            label: "Notifications",
+        },
     ];
 
     const handleLogout = async () => {
@@ -55,14 +75,22 @@ const MobileBottomNav = () => {
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
-                            `flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 ${
-                                isActive
-                                      ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20"
-                                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                            `flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 relative ${isActive
+                                ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20"
+                                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                             }`
                         }
                     >
-                        {({ isActive }) => (isActive ? item.activeIcon : item.icon)}
+                        {({ isActive }) => (
+                            <>
+                                {isActive ? item.activeIcon : item.icon}
+                                {item.badge && (
+                                    <span className="absolute top-1 right-1 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 bg-violet-600 text-white text-[8px] font-bold rounded-full border border-white dark:border-slate-800">
+                                        {item.badge}
+                                    </span>
+                                )}
+                            </>
+                        )}
                         {/* <span className="text-[10px] mt-1 font-medium">{item.label}</span> */}
                     </NavLink>
                 ))}

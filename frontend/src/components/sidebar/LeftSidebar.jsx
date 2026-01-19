@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
   IoGridOutline,
@@ -22,11 +22,14 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import ConfirmModal from "../common/ConfirmModal";
+import useNotifications from "../../hooks/useNotifications";
 
 const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
   const { user, signOutUser } = useAuth();
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const { unreadMessagesCount, pendingRequestsCount, totalNotifications } = useNotifications();
 
   const navItems = [
     {
@@ -40,6 +43,7 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
       activeIcon: <IoList size={22} />,
       text: "Requests",
       path: "/home/requests",
+      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null,
     }, // Requests / Tasks
     {
       icon: <IoBookmarkOutline size={22} />,
@@ -52,6 +56,7 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
       activeIcon: <IoChatbubbleEllipses size={22} />,
       text: "Messages",
       path: "/home/messages",
+      badge: unreadMessagesCount > 0 ? unreadMessagesCount : null,
     }, // Messages / Inbox
     {
       icon: <IoNewspaperOutline size={22} />,
@@ -128,10 +133,9 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
               className={({ isActive }) =>
                 `
               flex items-center gap-3 py-3 px-3 rounded-xl transition-all duration-300
-              hover:bg-gray-100 dark:hover:bg-slate-900/50
-              text-gray-600 dark:text-gray-300
- 
-              ${isActive ? "font-bold" : ""}
+              text-gray-600 dark:text-gray-300 relative
+  
+              ${isActive ? "font-bold bg-gray-100 dark:bg-slate-900/50" : ""}
               `
               }
             >
@@ -141,17 +145,43 @@ const LeftSidebar = ({ isCollapsed, setIsCollapsed }) => {
                   {isActive ? item.activeIcon : item.icon}
                   <AnimatePresence>
                     {!isCollapsed && (
-                      <motion.span
+                      <motion.div
                         initial={{ opacity: 0, width: 0 }}
                         animate={{ opacity: 1, width: "auto" }}
                         exit={{ opacity: 0, width: 0 }}
                         transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="text-[15px] whitespace-nowrap overflow-hidden"
+                        className="flex items-center justify-between flex-1 overflow-hidden"
                       >
-                        {item.text}
-                      </motion.span>
+                        <span className="text-[15px] whitespace-nowrap">
+                          {item.text}
+                        </span>
+                        {item.badge && (
+                          <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-violet-600 text-[10px] font-bold text-white ml-2">
+                            {item.badge}
+                          </span>
+                        )}
+                      </motion.div>
                     )}
                   </AnimatePresence>
+
+                  {/* Bubble Badge for Collapsed State */}
+                  {isCollapsed && item.badge && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="
+                        absolute -top-1 -right-1 
+                        flex items-center justify-center
+                        min-w-[18px] h-[18px] px-0.5
+                        bg-gradient-to-br from-violet-600 to-fuchsia-600 
+                        text-[9px] font-bold text-white 
+                        rounded-full border-2 border-white dark:border-slate-950 
+                        shadow-sm
+                      "
+                    >
+                      {item.badge}
+                    </motion.div>
+                  )}
                 </>
               )}
             </NavLink>
