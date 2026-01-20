@@ -44,6 +44,8 @@ import {
 } from "react-icons/lu";
 import useAuth from "../../../hooks/useAuth";
 import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
+import CollaboratorItem from "./CollaboratorItem";
+import { AvatarTooltip } from "../../common/AvatarTooltip";
 
 // Toolbar button component
 const ToolbarButton = ({ onClick, isActive, disabled, children, title }) => (
@@ -85,9 +87,9 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [collaborators, setCollaborators] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
-    const [lastSaved, setLastSaved] = useState(null);
+    const [lastSaved, setLastSaved] = useState(doc?.updatedAt || null);
     const [isSynced, setIsSynced] = useState(false);
-
+    const [ownShowTooltip, setOwnShowTooltip] = useState(false);
     const saveTimeoutRef = useRef(null);
 
     // Create Yjs document and awareness
@@ -227,9 +229,12 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
 
             // Auto-save with debounce
             if (saveTimeoutRef.current) {
+                setIsSaving(false);
                 clearTimeout(saveTimeoutRef.current);
             }
+
             setIsSaving(true);
+
             saveTimeoutRef.current = setTimeout(async () => {
                 try {
                     const state = Y.encodeStateAsUpdate(ydoc);
@@ -241,7 +246,7 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                 } finally {
                     setIsSaving(false);
                 }
-            }, 2000);
+            }, 5000);
         };
 
         // Set up listeners
@@ -445,25 +450,19 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                         <div className="hidden sm:flex -space-x-2 mr-2">
                             {/* Current User */}
                             <div
-                                className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-slate-900 overflow-hidden shrink-0 z-30 transition-transform hover:scale-110"
-                                title={`You (${user?.displayName || "Me"})`}
+                                className="relative group"
+                                onMouseEnter={() => setOwnShowTooltip(true)}
+                                onMouseLeave={() => setOwnShowTooltip(false)}
                             >
-                                {user?.photoURL ? <img src={user.photoURL} className="w-full h-full object-cover" /> : user?.displayName?.charAt(0) || "?"}
+                                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white cursor-pointer text-xs font-bold border-2 border-white dark:border-slate-900 overflow-hidden shrink-0 z-30 transition-transform hover:scale-110">
+                                    {user?.photoURL ? <img src={user.photoURL} className="w-full h-full object-cover" /> : user?.displayName?.charAt(0) || "?"}
+                                </div>
+                                <AvatarTooltip name={`You (${user?.displayName})`} photoURL={user?.photoURL} color={user?.color} show={ownShowTooltip} />
                             </div>
 
                             {/* Others */}
                             {collaborators.slice(0, 4).map((collab, i) => (
-                                <div
-                                    key={i}
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-slate-900 overflow-hidden shrink-0 transition-transform hover:scale-110"
-                                    style={{
-                                        backgroundColor: !collab.photoURL ? (collab.color || "#ccc") : "transparent",
-                                        zIndex: 20 - i
-                                    }}
-                                    title={collab.name}
-                                >
-                                    {collab.photoURL ? <img src={collab.photoURL} className="w-full h-full object-cover" /> : collab.name?.charAt(0) || "?"}
-                                </div>
+                                <CollaboratorItem key={i} collab={collab} index={i} />
                             ))}
 
                             {collaborators.length > 4 && (
@@ -473,14 +472,19 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                             )}
                         </div>
 
-                        <button onClick={handleSave} disabled={isSaving} className="btn btn-sm btn-primary px-3 h-8 min-h-0 text-xs rounded-lg gap-1.5">
-                            {isSaving ? (
+                        {isSaving && (
+                            <>
                                 <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                                <IoSaveOutline className="w-3.5 h-3.5" />
-                            )}
-                            <span className="hidden sm:inline">Save</span>
-                        </button>
+                                <span>Saving...</span>
+                            </>
+                        )}
+
+                        {!isSaving && (
+                            <button onClick={handleSave} disabled={isSaving} className="btn btn-sm btn-primary px-4 h-9 min-h-0 text-xs rounded-lg gap-2 min-w-[120px]">
+                                <IoSaveOutline className="w-4 h-4" />
+                                <span>Save changes</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -505,8 +509,8 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                     <IoTimeOutline className="w-4 h-4" />
                     <span>
                         Last updated:{" "}
-                        {doc?.updatedAt
-                            ? new Date(doc.updatedAt).toLocaleString()
+                        {lastSaved
+                            ? new Date(lastSaved).toLocaleString()
                             : "Never"}
                     </span>
                 </div>

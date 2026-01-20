@@ -13,6 +13,7 @@ const Home = () => {
     const location = useLocation();
     const isMessagesPage = location.pathname.includes("/messages");
     const isMeetingPage = location.pathname.includes("/meetings/");
+    const isDocumentEditPage = location.pathname.includes("/documents/edit/");
 
     useEffect(() => {
         if (socket) {
@@ -26,35 +27,37 @@ const Home = () => {
     return (
         <div className="h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500 flex flex-col overflow-hidden">
 
-            <Navbar />
+            {!isDocumentEditPage && <Navbar />}
 
             <div className="flex-1 flex justify-center overflow-hidden">
-                <div className="flex w-full lg:mx-3 h-full pb-3">
+                <div className={`flex w-full h-full ${!isDocumentEditPage ? "lg:mx-3 pb-3" : ""}`}>
 
                     {/* Left Sidebar - Hidden on mobile, visible on medium+ screens */}
-                    <div
-                        className={`
+                    {!isDocumentEditPage && (
+                        <div
+                            className={`
               hidden md:block
               shrink-0 transition-all duration-300 ease-in-out
               ${isCollapsed ? "w-[70px]" : "w-[250px]"}
               h-full
             `}
-                    >
-                        <LeftSidebar
-                            isCollapsed={isCollapsed}
-                            setIsCollapsed={setIsCollapsed}
-                        />
-                    </div>
+                        >
+                            <LeftSidebar
+                                isCollapsed={isCollapsed}
+                                setIsCollapsed={setIsCollapsed}
+                            />
+                        </div>
+                    )}
 
                     {/* Mobile Bottom Navigation - Visible only on mobile */}
-                    <MobileBottomNav />
+                    {!isDocumentEditPage && <MobileBottomNav />}
 
                     {/* Main Content Area */}
                     <div
                         className={`
               flex-1 flex flex-col min-w-0
-              ${(isMessagesPage || isMeetingPage) ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}
-              pb-20 md:pb-0
+              ${(isMessagesPage || isMeetingPage || isDocumentEditPage) ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}
+              ${!isDocumentEditPage ? 'pb-20' : ''} md:pb-0
             `}
                     >
                         <div className="flex-1 min-h-0">

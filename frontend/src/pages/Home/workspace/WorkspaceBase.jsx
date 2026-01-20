@@ -89,6 +89,8 @@ const WorkspaceBase = () => {
         { id: "documents", label: "Documents", icon: IoDocumentTextOutline, path: "documents" },
     ];
 
+    const isDocumentEditPage = location.pathname.includes("/documents/edit/");
+
     const renderNoWorkspace = () => (
         <div className="flex flex-col items-center justify-center h-full py-20 px-6">
             <div className="text-center max-w-md">
@@ -124,124 +126,126 @@ const WorkspaceBase = () => {
 
     return (
         <div className="h-full flex flex-col">
+
             {/* Header - Transparent with backdrop blur like ProposalPostsBase */}
-            <div className="sticky top-0 bg-transparent backdrop-blur-md z-[60] sm:z-[500] px-4">
-                <div className="flex items-center justify-between">
-                    {/* Left: Workspace Selector */}
-                    {workspaces.length > 0 && (
-                        <div className="relative shrink-0" ref={selectorRef}>
-                            <button
-                                onClick={() => setIsSelectorOpen(!isSelectorOpen)}
-                                className="flex items-center gap-2 transition-all group cursor-pointer"
-                            >
-                                <div className="w-5 h-5 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shrink-0 shadow-sm">
-                                    {selectedWorkspace?.name?.charAt(0) || "W"}
-                                </div>
-                                <span className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate max-w-[120px] md:max-w-[180px]">
-                                    {selectedWorkspace?.name || "Select Workspace"}
-                                </span>
-                                <IoChevronDownOutline className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${isSelectorOpen ? 'rotate-180' : ''} group-hover:text-primary`} />
-                            </button>
-
-                            {/* Dropdown */}
-                            {isSelectorOpen && (
-                                <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-[999]">
-                                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700">
-                                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Workspaces</p>
-                                    </div>
-                                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                                        {workspaces.map((ws) => (
-                                            <button
-                                                key={ws._id}
-                                                onClick={() => handleWorkspaceSelect(ws)}
-                                                className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedWorkspace?._id === ws._id ? 'bg-violet-50 dark:bg-violet-900/20' : ''
-                                                    }`}
-                                            >
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedWorkspace?._id === ws._id
-                                                    ? 'bg-linear-to-br from-violet-500 to-purple-600'
-                                                    : 'bg-slate-200 dark:bg-slate-600'
-                                                    }`}>
-                                                    <span className={`text-sm font-bold ${selectedWorkspace?._id === ws._id ? 'text-white' : 'text-slate-600 dark:text-slate-300'
-                                                        }`}>
-                                                        {ws.name?.charAt(0)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex-1 text-left min-w-0">
-                                                    <p className={`text-sm font-medium truncate ${selectedWorkspace?._id === ws._id
-                                                        ? 'text-violet-700 dark:text-violet-300'
-                                                        : 'text-slate-700 dark:text-slate-200'
-                                                        }`}>
-                                                        {ws.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-400 truncate">
-                                                        {ws.members?.length || 0} members
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Placeholder when no workspaces to maintain layout if needed, or simply let it collapse */}
-                    {workspaces.length === 0 && <div className="w-1" />}
-
-                    {/* Center: Tabs - Similar to ProposalPostsBase style */}
-                    {selectedWorkspace && (
-                        <div className="flex items-center gap-6">
-                            {tabs.map((tab) => (
-                                <NavLink
-                                    key={tab.id}
-                                    to={`/home/workspace/${selectedWorkspace._id}/${tab.path}`}
-                                    className={({ isActive }) =>
-                                        `pb-3 pt-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${isActive
-                                            ? "border-black dark:border-white text-black dark:text-white"
-                                            : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                                        }`
-                                    }
+            {!isDocumentEditPage && (
+                <div className="workspace-header sticky top-0 bg-transparent backdrop-blur-md z-[60] sm:z-[500] px-4">
+                    <div className="flex items-center justify-between">
+                        {/* Left: Workspace Selector */}
+                        {workspaces.length > 0 && (
+                            <div className="relative shrink-0" ref={selectorRef}>
+                                <button
+                                    onClick={() => setIsSelectorOpen(!isSelectorOpen)}
+                                    className="flex items-center gap-2 transition-all group cursor-pointer"
                                 >
-                                    <tab.icon className="w-4 h-4" />
-                                    <span className="hidden sm:inline">{tab.label}</span>
-                                </NavLink>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Right: Team Members */}
-                    {selectedWorkspace && (
-                        <div className="hidden  md:flex items-center shrink-0 pb-1">
-                            <div className="flex items-center -space-x-1.5">
-                                {selectedWorkspace.members?.slice(0, 3).map((member) => (
-                                    <div
-                                        key={member.uid}
-                                        className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 overflow-hidden bg-linear-to-br from-violet-500 to-purple-600"
-                                        title={member.user?.name || "Member"}
-                                    >
-                                        {member.user?.photoURL ? (
-                                            <img
-                                                src={member.user.photoURL}
-                                                alt={member.user.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <span className="flex items-center justify-center w-full h-full text-white text-[10px] font-medium">
-                                                {member.user?.name?.charAt(0) || "?"}
-                                            </span>
-                                        )}
+                                    <div className="w-5 h-5 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shrink-0 shadow-sm">
+                                        {selectedWorkspace?.name?.charAt(0) || "W"}
                                     </div>
-                                ))}
-                                {selectedWorkspace.members?.length > 3 && (
-                                    <div className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-                                        +{selectedWorkspace.members.length - 3}
+                                    <span className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate max-w-[120px] md:max-w-[180px]">
+                                        {selectedWorkspace?.name || "Select Workspace"}
+                                    </span>
+                                    <IoChevronDownOutline className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-300 ${isSelectorOpen ? 'rotate-180' : ''} group-hover:text-primary`} />
+                                </button>
+
+                                {/* Dropdown */}
+                                {isSelectorOpen && (
+                                    <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-[999]">
+                                        <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700">
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Workspaces</p>
+                                        </div>
+                                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                            {workspaces.map((ws) => (
+                                                <button
+                                                    key={ws._id}
+                                                    onClick={() => handleWorkspaceSelect(ws)}
+                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedWorkspace?._id === ws._id ? 'bg-violet-50 dark:bg-violet-900/20' : ''
+                                                        }`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedWorkspace?._id === ws._id
+                                                        ? 'bg-linear-to-br from-violet-500 to-purple-600'
+                                                        : 'bg-slate-200 dark:bg-slate-600'
+                                                        }`}>
+                                                        <span className={`text-sm font-bold ${selectedWorkspace?._id === ws._id ? 'text-white' : 'text-slate-600 dark:text-slate-300'
+                                                            }`}>
+                                                            {ws.name?.charAt(0)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-1 text-left min-w-0">
+                                                        <p className={`text-sm font-medium truncate ${selectedWorkspace?._id === ws._id
+                                                            ? 'text-violet-700 dark:text-violet-300'
+                                                            : 'text-slate-700 dark:text-slate-200'
+                                                            }`}>
+                                                            {ws.name}
+                                                        </p>
+                                                        <p className="text-xs text-slate-400 truncate">
+                                                            {ws.members?.length || 0} members
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+                        )}
+
+                        {/* Placeholder when no workspaces to maintain layout if needed, or simply let it collapse */}
+                        {workspaces.length === 0 && <div className="w-1" />}
+
+                        {/* Center: Tabs - Similar to ProposalPostsBase style */}
+                        {selectedWorkspace && (
+                            <div className="flex items-center gap-6">
+                                {tabs.map((tab) => (
+                                    <NavLink
+                                        key={tab.id}
+                                        to={`/home/workspace/${selectedWorkspace._id}/${tab.path}`}
+                                        className={({ isActive }) =>
+                                            `pb-3 pt-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-1.5 ${isActive
+                                                ? "border-black dark:border-white text-black dark:text-white"
+                                                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                            }`
+                                        }
+                                    >
+                                        <tab.icon className="w-4 h-4" />
+                                        <span className="hidden sm:inline">{tab.label}</span>
+                                    </NavLink>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Right: Team Members */}
+                        {selectedWorkspace && (
+                            <div className="hidden  md:flex items-center shrink-0 pb-1">
+                                <div className="flex items-center -space-x-1.5">
+                                    {selectedWorkspace.members?.slice(0, 3).map((member) => (
+                                        <div
+                                            key={member.uid}
+                                            className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 overflow-hidden bg-linear-to-br from-violet-500 to-purple-600"
+                                            title={member.user?.name || "Member"}
+                                        >
+                                            {member.user?.photoURL ? (
+                                                <img
+                                                    src={member.user.photoURL}
+                                                    alt={member.user.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="flex items-center justify-center w-full h-full text-white text-[10px] font-medium">
+                                                    {member.user?.name?.charAt(0) || "?"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {selectedWorkspace.members?.length > 3 && (
+                                        <div className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                            +{selectedWorkspace.members.length - 3}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>)}
 
             {/* Content */}
             <div className="flex-1 overflow-hidden">
