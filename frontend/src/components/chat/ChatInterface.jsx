@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers } from "react-icons/fa";
+import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers, FaMagic } from "react-icons/fa";
 import { useNavigate } from "react-router";
 import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 import ConversationInfoModal from "./ConversationInfoModal";
 import ConversationLoader from "../loader/ConversationLoader";
+import MeetingSummaryPanel from "./MeetingSummaryPanel";
 
 const ChatInterface = () => {
     const { user } = useAuth();
@@ -13,6 +14,7 @@ const ChatInterface = () => {
     const [messageText, setMessageText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
@@ -181,7 +183,7 @@ const ChatInterface = () => {
                             )
                         )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100">{chatName}</h3>
                         <div className="flex items-center gap-2 text-xs">
                             {/* Typing/Status for 1-1 */}
@@ -202,6 +204,14 @@ const ChatInterface = () => {
                             )}
                         </div>
                     </div>
+
+                    <button
+                        onClick={() => setIsSummaryOpen(true)}
+                        className="btn btn-ghost btn-circle btn-sm text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+                        title="AI Meeting Summary"
+                    >
+                        <FaMagic />
+                    </button>
                 </div>
             </div>
 
@@ -209,6 +219,12 @@ const ChatInterface = () => {
                 isOpen={isInfoModalOpen}
                 onClose={() => setIsInfoModalOpen(false)}
                 conversation={selectedConversation}
+            />
+
+            <MeetingSummaryPanel
+                isOpen={isSummaryOpen}
+                onClose={() => setIsSummaryOpen(false)}
+                conversationId={selectedConversation?._id}
             />
 
             {/* Messages List - Messenger Style */}

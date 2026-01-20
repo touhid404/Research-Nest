@@ -77,6 +77,10 @@ app.use('/api/workspaces', workspaceRoutes);
 // Message routes
 app.use('/api/messages', messageRoutes);
 
+// AI routes
+import { aiRoutes } from "./modules/ai/ai.routes.js";
+app.use('/api/ai', aiRoutes);
+
 
 
 
