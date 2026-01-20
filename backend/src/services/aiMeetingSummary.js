@@ -11,7 +11,7 @@ dotenv.config();
  */
 export const generateMeetingSummary = async ({ sourceType, content, metadata }) => {
     // Security Check
-    if (process.env.AI_RISKY_UPLOAD === 'deny' && sourceType === 'file_upload') {
+    if (process.env.AI_ALLOW_UPLOAD !== 'true' && sourceType === 'file_upload') {
         // Ideally we check if "content" is a raw file buffer.
         // Here "content" is string, but if it came from a file read, we might want to be careful.
         // But user instruction says: "AI_RISKY_UPLOAD=allow|deny and default to deny."

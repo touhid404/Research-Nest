@@ -8,7 +8,7 @@ This feature provides AI-generated summaries, action items, and decision logs fr
     Add the following to your `backend/.env` file:
     ```bash
     OPENAI_API_KEY=your-openai-api-key-here
-    AI_RISKY_UPLOAD=deny  # Set to 'allow' if you trust the provider with potentially sensitive file uploads
+    AI_ALLOW_UPLOAD=true  # Set to 'true' to allow sending files to LLM
     ```
 
 2.  **Providers**:
@@ -58,3 +58,41 @@ curl -X POST http://localhost:5000/api/ai/meeting-summary \
 The summary feature is accessible via the "Magic Wand" icon in the Chat Header.
 - It can summarize the current active conversation (if chat history exists).
 - You can also upload a text file to summarize.
+
+## Paper Hub Summarizer
+
+**POST** `/api/ai/paper-summary`
+
+**Body**:
+- `file`: (Multipart Form Data) The PDF file to summarize.
+- `content`: (JSON/Body) Raw text content.
+- `fileUrl`: (JSON/Body) URL to a PDF file to download and summarize.
+
+**Privacy Note**:
+- PII stripping is done via heuristic extraction (Metadata vs Content).
+- If `AI_ALLOW_UPLOAD=false` is set (default), and input is a file, the system attempts to extract only the Abstract and Conclusion to send to the LLM, rather than the full PDF content.
+
+## Spell Correction
+
+**POST** `/api/ai/spell-correct`
+
+**Body**:
+```json
+{
+  "text": "Sentance to correct",
+  "strategy": "local" // or "llm"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "correctedText": "Sentence to correct",
+    "corrections": [
+       { "original": "Sentance", "corrected": "Sentence" }
+    ]
+  }
+}
+```
