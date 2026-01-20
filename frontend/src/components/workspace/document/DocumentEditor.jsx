@@ -315,6 +315,19 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
         }
     };
 
+    // Keyboard shortcut for Save (Ctrl+S / Cmd+S)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSave();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleSave]);
+
     if (!editor) {
         return (
             <div className="h-full flex items-center justify-center">
