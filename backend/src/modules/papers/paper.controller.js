@@ -2,11 +2,17 @@ import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperById
 import User from "../../models/user.model.js";
 
 
+
+
 export const createPaper = async (req, res) => {
     try {
 
 
-        const { uid, title, abstract, researchDomain, tags, paperLink, coAuthors, publicationDate, publicationName, doi } = req.body;
+
+
+        const { uid, title, abstract, researchDomain, tags, paperLink, coAuthors, publicationDate, publicationName, doi, workspaceFile } = req.body;
+
+
 
 
         // Handle file upload (paperFile)
@@ -16,9 +22,19 @@ export const createPaper = async (req, res) => {
                 name: req.file.originalname,
                 url: `${req.protocol}://${req.get("host")}/public/papers-hub/${req.file.filename}`
             };
+        } else if (workspaceFile) {
+            // Handle workspace file
+            // Expected workspaceFile structure: { name: string, url: string, ... }
+            if (typeof workspaceFile === 'string') {
+                try {
+                    paperFile = JSON.parse(workspaceFile);
+                } catch (e) {
+                    paperFile = null;
+                }
+            } else {
+                paperFile = workspaceFile;
+            }
         }
-
-
         // Validate required fields
         if (!uid || !title || !abstract || !researchDomain) {
             return res.status(400).json({
@@ -26,8 +42,6 @@ export const createPaper = async (req, res) => {
                 message: "uid, title, abstract, and researchDomain are required",
             });
         }
-
-
         // Fetch user details
         const findUser = await User.findOne({ uid });
         if (!findUser) {
@@ -36,8 +50,6 @@ export const createPaper = async (req, res) => {
                 message: "Provided uid does not exist",
             });
         }
-
-
         // Parse tags if sent as string
         let parsedTags = [];
         if (tags) {
@@ -47,7 +59,6 @@ export const createPaper = async (req, res) => {
             }
         }
 
-
         // Parse coAuthors if sent as string (comma separated) or array
         let parsedCoAuthors = [];
         if (coAuthors) {
@@ -56,9 +67,6 @@ export const createPaper = async (req, res) => {
                 parsedCoAuthors = coAuthors.split(',').map(name => name.trim()).filter(Boolean);
             }
         }
-
-
-
 
         const paper = await createPaperInDB({
             user: {
@@ -80,9 +88,6 @@ export const createPaper = async (req, res) => {
             doi,
         });
 
-
-
-
         return res.status(201).json({
             success: true,
             message: "Paper published successfully",
@@ -97,13 +102,10 @@ export const createPaper = async (req, res) => {
     }
 };
 
-
 export const getAllPapers = async (req, res) => {
     try {
         const { excludeUid } = req.query;
         const papers = await getAllPapersInDB({ excludeUid });
-
-
         return res.status(200).json({
             success: true,
             count: papers.length,
@@ -116,7 +118,6 @@ export const getAllPapers = async (req, res) => {
         });
     }
 };
-
 
 export const getAllPapersByUser = async (req, res) => {
     try {
@@ -128,8 +129,6 @@ export const getAllPapersByUser = async (req, res) => {
             });
         }
         const papers = await getAllPapersByUserInDB(uid);
-
-
         return res.status(200).json({
             success: true,
             count: papers.length,
@@ -143,21 +142,16 @@ export const getAllPapersByUser = async (req, res) => {
     }
 };
 
-
 export const getPaperById = async (req, res) => {
     try {
         const { id } = req.params;
         const paper = await getPaperByIdInDB(id);
-
-
         if (!paper) {
             return res.status(404).json({
                 success: false,
                 message: "Paper not found",
             });
         }
-
-
         return res.status(200).json({
             success: true,
             data: paper,
@@ -170,12 +164,10 @@ export const getPaperById = async (req, res) => {
     }
 };
 
-
 export const deletePaper = async (req, res) => {
     try {
         const { id } = req.params;
         const deletedPaper = await deletePaperInDB(id);
-
 
         if (!deletedPaper) {
             return res.status(404).json({
@@ -183,8 +175,6 @@ export const deletePaper = async (req, res) => {
                 message: "Paper not found or could not be deleted",
             });
         }
-
-
         return res.status(200).json({
             success: true,
             message: "Paper deleted successfully",
@@ -196,6 +186,12 @@ export const deletePaper = async (req, res) => {
         });
     }
 };
+
+
+
+
+
+
 
 
 
