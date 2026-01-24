@@ -198,7 +198,7 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
            So total pages = breaks + 1.
         */
         const pageBreaks = document.querySelectorAll('.rm-page-break');
-        const count = pageBreaks.length + 1;
+        const count = pageBreaks.length;
         setTotalPages(Math.max(1, count));
     }, []);
 
