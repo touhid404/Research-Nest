@@ -352,3 +352,108 @@ html {
     opacity: 0.25;
     pointer-events: none;
 }
+
+/* --- Document Page Layout --- */
+.document-pages-container {
+    background: #e5e7eb;
+    padding: 32px 0;
+    min-height: 100%;
+}
+
+.dark .document-pages-container {
+    background: #1e293b;
+}
+
+/* Individual page styling (A4 dimensions at 96dpi = 794px x 1123px) */
+.document-page {
+    width: 794px;
+    min-height: 1123px;
+    max-width: 100%;
+    margin: 0 auto 32px auto;
+    padding: 72px 72px;
+    background: white;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        0 4px 6px rgba(0, 0, 0, 0.05),
+        0 10px 20px rgba(0, 0, 0, 0.04);
+    border-radius: 2px;
+    position: relative;
+}
+
+.dark .document-page {
+    background: #0f172a;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 4px 6px rgba(0, 0, 0, 0.2),
+        0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Page break indicator between pages */
+.page-break-indicator {
+    width: 794px;
+    max-width: 100%;
+    margin: 0 auto 32px auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+}
+
+
+
+/* --- Pagination Plus Styles --- */
+body {
+    counter-reset: page-counter;
+}
+
+
+.dark .tiptap-page {
+    background: #0f172a;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.25),
+        0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Page number indicator */
+.tiptap-page::before {
+    content: 'Page ' attr(data-page-number);
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dark .tiptap-page::before {
+    color: #64748b;
+}
+
+/* Content inside page */
+.tiptap-page>* {
+    max-width: 100%;
+}
+
+/* First page no top margin */
+.tiptap-page:first-child {
+    margin-top: 0;
+}
+
+/* Page gap visual separator */
+.tiptap-page+.tiptap-page {
+    margin-top: 0;
+}
+
+/* Editor content area styling */
+.tiptap-page .ProseMirror {
+    outline: none;
+    min-height: 100%;
+}
+
+/* Ensure content doesn't overflow visually */
+.tiptap-page .ProseMirror>*:last-child {
+    margin-bottom: 0;
+}

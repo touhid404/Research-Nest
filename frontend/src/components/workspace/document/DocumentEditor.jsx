@@ -46,7 +46,9 @@ import useAuth from "../../../hooks/useAuth";
 import { useWorkspaceStore } from "../../../store/useWorkspaceStore";
 import CollaboratorItem from "./CollaboratorItem";
 import { AvatarTooltip } from "../../common/AvatarTooltip";
-
+import { exportToPDF, exportToDOCX } from "../../../utils/ExportUtils";
+import { LuDownload, LuFileText, LuFileType } from "react-icons/lu";
+import { PaginationPlus } from "tiptap-pagination-plus";
 // Toolbar button component
 const ToolbarButton = ({ onClick, isActive, disabled, children, title }) => (
     <button
@@ -90,13 +92,19 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
     const [lastSaved, setLastSaved] = useState(doc?.updatedAt || null);
     const [isSynced, setIsSynced] = useState(false);
     const [ownShowTooltip, setOwnShowTooltip] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const saveTimeoutRef = useRef(null);
+    const editorContainerRef = useRef(null);
+
+    // A4 page height in pixels (approx 1123px at 96dpi)
+    const PAGE_HEIGHT = 1123;
 
     // Create Yjs document and awareness
     const ydoc = useMemo(() => new Y.Doc(), []);
     const awareness = useMemo(() => new Awareness(ydoc), [ydoc]);
 
-    // Initialize TipTap editor with Yjs collaboration
     const editor = useEditor({
         extensions: [
             Collaboration.configure({
@@ -132,13 +140,77 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
             }),
             TextStyle,
             Color,
+            // Pagination Plus Extension
+            PaginationPlus.configure({
+                pageHeight: 1123, // A4 height @ 96dpi
+                pageWidth: 794,   // A4 width @ 96dpi
+            }),
         ],
         editorProps: {
             attributes: {
                 class: "prose prose-slate dark:prose-invert max-w-none focus:outline-none min-h-full",
             },
         },
+        onSelectionUpdate: ({ editor }) => {
+            // Track cursor position for page detection
+            updateCursorPage(editor);
+        },
+        onUpdate: ({ editor }) => {
+            // Update total pages when content changes
+            updateTotalPages();
+        },
     });
+
+    // Calculate current page based on cursor position using math (more robust)
+    const updateCursorPage = useCallback((editorInstance) => {
+        if (!editorInstance || !editorContainerRef.current) return;
+
+        try {
+            const { selection } = editorInstance.state;
+            const cursorCoords = editorInstance.view.coordsAtPos(selection.from);
+            const containerRect = editorContainerRef.current.getBoundingClientRect();
+
+            // Calculate absolute Y position of cursor relative to the top of the scrolled content
+            const scrollTop = editorContainerRef.current.scrollTop;
+            const absoluteY = (cursorCoords.top - containerRect.top) + scrollTop;
+
+            // A4 Height (1123px) + Estimated Gap/Margin (approx 30-40px usually)
+            // We use 1130px to be safe, or just 1123px if no gaps
+            // PaginationPlus usually creates a visual height of exactly pageHeight per page
+            const effectivePageHeight = 1123;
+
+            // Page = (AbsoluteY / PageHeight) + 1
+            const pageIndex = Math.floor(absoluteY / effectivePageHeight) + 1;
+
+            setCurrentPage(Math.max(1, pageIndex));
+        } catch (e) {
+            console.error("Cursor calculation error:", e);
+        }
+    }, [editorContainerRef]);
+
+    // Calculate total pages by counting visual page breaks in the DOM
+    const updateTotalPages = useCallback(() => {
+        // Count break elements: n breaks = n + 1 pages
+        /* 
+           Note: We use querySelectorAll because the library renders visual breaks.
+           If there are 0 breaks, it's Page 1.
+           If there is 1 break, it's Page 2 (Page 1 + Break + Page 2).
+           So total pages = breaks + 1.
+        */
+        const pageBreaks = document.querySelectorAll('.rm-page-break');
+        const count = pageBreaks.length + 1;
+        setTotalPages(Math.max(1, count));
+    }, []);
+
+    // Initial page calculation after editor loads
+    useEffect(() => {
+        if (editor) {
+            setTimeout(() => {
+                updateTotalPages();
+                updateCursorPage(editor);
+            }, 100);
+        }
+    }, [editor, updateTotalPages, updateCursorPage]);
 
     // Socket event handlers for Yjs synchronization
     useEffect(() => {
@@ -502,30 +574,78 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                 </div>
             </div>
 
-            {/* Editor Content */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="max-w-4xl mx-auto p-8">
-                    <EditorContent editor={editor} className="min-h-[500px]" />
-                </div>
+            {/* Editor Content with Page Layout */}
+            <div
+                ref={editorContainerRef}
+                className="flex-1 overflow-y-auto custom-scrollbar tiptap-pages-container flex flex-col items-center py-8 bg-gray-200"
+            >
+                <style>
+                    {`
+                        .rm-pagination-gap {
+                            border-left: none !important;
+                            border-right: none !important;
+                            background-color: var(--color-gray-200) !important;
+                        }
+                    `}
+                </style>
+                <EditorContent editor={editor} className="bg-white" />
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-500 bg-white dark:bg-slate-900">
+            {/* Footer - Fixed at bottom */}
+            <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-500 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-4">
+                    <span className="font-medium">Page {currentPage} of {totalPages}</span>
+                    <span className="text-slate-300 dark:text-slate-600">|</span>
                     <span>{editor.storage.characterCount?.characters?.() ?? editor.getText().length} characters</span>
                     <span>{editor.storage.characterCount?.words?.() ?? editor.getText().split(/\s+/).filter(Boolean).length} words</span>
                     {collaborators.length > 0 && (
                         <span className="text-green-500">• {collaborators.length + 1} editing</span>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
-                    <IoTimeOutline className="w-4 h-4" />
-                    <span>
-                        Last updated:{" "}
-                        {lastSaved
-                            ? new Date(lastSaved).toLocaleString()
-                            : "Never"}
-                    </span>
+                <div className="flex items-center gap-4">
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <LuDownload className="w-4 h-4" />
+                            <span>Export</span>
+                        </button>
+                        {showExportMenu && (
+                            <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[160px] z-50">
+                                <button
+                                    onClick={() => {
+                                        exportToPDF(editor.getHTML(), title);
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
+                                >
+                                    <LuFileText className="w-4 h-4 text-red-500" />
+                                    <span>Export as PDF</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        exportToDOCX(editor.getHTML(), title);
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
+                                >
+                                    <LuFileType className="w-4 h-4 text-blue-500" />
+                                    <span>Export as DOCX</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <IoTimeOutline className="w-4 h-4" />
+                        <span>
+                            Last updated:{" "}
+                            {lastSaved
+                                ? new Date(lastSaved).toLocaleString()
+                                : "Never"}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
