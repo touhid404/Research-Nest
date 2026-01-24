@@ -486,6 +486,7 @@ body {
         padding: 0 !important;
         margin: 0 !important;
         overflow: visible !important;
+        align-items: start;
     }
 
     /* Hide page break visual gaps */

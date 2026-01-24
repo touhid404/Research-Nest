@@ -174,9 +174,6 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
             const scrollTop = editorContainerRef.current.scrollTop;
             const absoluteY = (cursorCoords.top - containerRect.top) + scrollTop;
 
-            // A4 Height (1123px) + Estimated Gap/Margin (approx 30-40px usually)
-            // We use 1130px to be safe, or just 1123px if no gaps
-            // PaginationPlus usually creates a visual height of exactly pageHeight per page
             const effectivePageHeight = 1123;
 
             // Page = (AbsoluteY / PageHeight) + 1
@@ -190,13 +187,6 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
 
     // Calculate total pages by counting visual page breaks in the DOM
     const updateTotalPages = useCallback(() => {
-        // Count break elements: n breaks = n + 1 pages
-        /* 
-           Note: We use querySelectorAll because the library renders visual breaks.
-           If there are 0 breaks, it's Page 1.
-           If there is 1 break, it's Page 2 (Page 1 + Break + Page 2).
-           So total pages = breaks + 1.
-        */
         const pageBreaks = document.querySelectorAll('.rm-page-break');
         const count = pageBreaks.length;
         setTotalPages(Math.max(1, count));
@@ -208,7 +198,7 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
             setTimeout(() => {
                 updateTotalPages();
                 updateCursorPage(editor);
-            }, 100);
+            }, 1e3);
         }
     }, [editor, updateTotalPages, updateCursorPage]);
 
