@@ -557,17 +557,20 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                             )}
                         </div>
 
-                        {isSaving && (
-                            <>
-                                <span className="loading loading-spinner loading-xs"></span>
-                                <span>Saving...</span>
-                            </>
-                        )}
 
-                        {!isSaving && (
-                            <button onClick={handleSave} disabled={isSaving} className="btn btn-sm btn-primary px-4 h-9 min-h-0 text-xs rounded-lg gap-2 min-w-[120px]">
-                                <IoSaveOutline className="w-4 h-4" />
-                                <span>Save changes</span>
+                        {isSaving ? (
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse">
+                                <span className="loading loading-spinner loading-xs text-primary"></span>
+                                <span>Saving...</span>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleSave}
+                                className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                title="Saved to cloud"
+                            >
+                                <IoCloudDoneOutline className="w-5 h-5 text-green-500" />
+                                <span>Saved</span>
                             </button>
                         )}
                     </div>
