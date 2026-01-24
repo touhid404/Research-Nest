@@ -457,3 +457,60 @@ body {
 .tiptap-page .ProseMirror>*:last-child {
     margin-bottom: 0;
 }
+
+/* ========================================
+   PRINT STYLES - For PDF Export
+   ======================================== */
+@media print {
+
+    /* Hide all UI elements */
+    header,
+    nav,
+    .toolbar,
+    .sidebar,
+    .header-bar,
+    .footer-bar,
+    .export-menu,
+    .collaborators,
+    button,
+    [class*="shrink-0"],
+    [class*="border-t"],
+    [class*="border-b"] {
+        display: none !important;
+    }
+
+
+    /* Make editor container fill the page */
+    .tiptap-pages-container {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Hide page break visual gaps */
+    .rm-page-break,
+    .rm-pagination-gap {
+        display: none !important;
+        height: 0 !important;
+        visibility: hidden !important;
+    }
+
+    div:has(.tiptap-pages-container) {
+        overflow: visible !important
+    }
+
+    /* Style the content area */
+    .ProseMirror {
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: white !important;
+    }
+
+    /* Page setup */
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+}

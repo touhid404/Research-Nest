@@ -527,9 +527,57 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                         )}
                     </div>
 
+
                     <ToolbarDivider />
 
-                    {/* Right: Presence & Save */}
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            className={`p-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${showExportMenu
+                                ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                                : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200"
+                                }`}
+                            title="Export Document"
+                        >
+                            <LuDownload className="w-4 h-4" />
+                            <span className="text-xs font-medium hidden sm:inline">Export</span>
+                        </button>
+
+                        {showExportMenu && (
+                            <div className="absolute top-full right-0 mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 min-w-[160px] z-[100]">
+                                <button
+                                    onClick={() => {
+                                        // Set tab title to paper name for PDF filename
+                                        const originalTitle = document.title;
+                                        document.title = title || "Document";
+
+                                        // Print using CSS @media print
+                                        window.print();
+
+                                        // Restore original title after print dialog closes
+                                        document.title = originalTitle;
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200"
+                                >
+                                    <LuFileType className="w-4 h-4 text-red-500" />
+                                    <span>PDF</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        exportToDOCX(editor.getHTML(), title);
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200"
+                                >
+                                    <LuFileText className="w-4 h-4 text-blue-500" />
+                                    <span>DOCX</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-2 shrink-0">
                         {/* Collaborators: Shown as previous on desktop, hidden on mobile */}
                         <div className="hidden sm:flex -space-x-2 mr-2">
@@ -606,40 +654,6 @@ const DocumentEditor = ({ document: doc, workspace, onBack }) => {
                     )}
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* Export Dropdown */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowExportMenu(!showExportMenu)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            <LuDownload className="w-4 h-4" />
-                            <span>Export</span>
-                        </button>
-                        {showExportMenu && (
-                            <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[160px] z-50">
-                                <button
-                                    onClick={() => {
-                                        exportToPDF(editor.getHTML(), title);
-                                        setShowExportMenu(false);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
-                                >
-                                    <LuFileText className="w-4 h-4 text-red-500" />
-                                    <span>Export as PDF</span>
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        exportToDOCX(editor.getHTML(), title);
-                                        setShowExportMenu(false);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
-                                >
-                                    <LuFileType className="w-4 h-4 text-blue-500" />
-                                    <span>Export as DOCX</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
                     <div className="flex items-center gap-2">
                         <IoTimeOutline className="w-4 h-4" />
                         <span>
