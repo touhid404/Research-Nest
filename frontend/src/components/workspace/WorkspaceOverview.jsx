@@ -6,7 +6,6 @@ import {
     IoVideocamOutline,
     IoCalendarOutline,
     IoTrendingUpOutline,
-    IoAddOutline,
     IoArrowForwardOutline,
     IoEllipseOutline,
     IoChevronForwardOutline,
@@ -15,7 +14,6 @@ import { HiOutlineClipboardDocumentCheck, HiOutlineUsers, HiOutlineDocumentText,
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import useWorkspaceStore from "../../store/useWorkspaceStore";
 import useAuth from "../../hooks/useAuth";
-import CreateTaskModal from "./task/CreateTaskModal";
 import { formatClockTime } from "../../utils/formatTime";
 import WorkspaceLoader from "../loader/WorkspaceLoader";
 
@@ -33,7 +31,6 @@ const WorkspaceOverview = ({ workspace }) => {
         loadingDocuments
     } = useWorkspaceStore();
 
-    const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
 
     useEffect(() => {
         if (workspace?._id) {
@@ -183,25 +180,16 @@ const WorkspaceOverview = ({ workspace }) => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
-            <div className="p-4 lg:p-6 space-y-6  mx-auto">
+            <div className="p-4 lg:p-6 space-y-4  mx-auto">
 
                 {/* Header with Quick Stats */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                            {workspace?.name || "Workspace"} Overview
-                        </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                        
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                             {new Date().toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsCreateTaskModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                        <IoAddOutline className="w-4 h-4" />
-                        New Task
-                    </button>
                 </div>
 
                 {/* Analytics Cards - Minimal Style */}
@@ -563,12 +551,7 @@ const WorkspaceOverview = ({ workspace }) => {
                 </div>
             </div>
 
-            {/* Create Task Modal */}
-            <CreateTaskModal
-                isOpen={isCreateTaskModalOpen}
-                onClose={() => setIsCreateTaskModalOpen(false)}
-                workspace={workspace}
-            />
+            {/* Main Content Grid */}
         </div>
     );
 };

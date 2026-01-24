@@ -161,9 +161,13 @@ const useWorkspaceStore = create((set, get) => ({
     createTask: async (data) => {
         try {
             const response = await workspaceApi.createTask(data);
-            set((state) => ({
-                tasks: [...state.tasks, response.data],
-            }));
+            set((state) => {
+                const exists = state.tasks.some(t => t._id === response.data._id);
+                if (exists) return state;
+                return {
+                    tasks: [...state.tasks, response.data],
+                };
+            });
             return response.data;
         } catch (error) {
             set({ error: error.message });
@@ -405,9 +409,13 @@ const useWorkspaceStore = create((set, get) => ({
 
         // Task events
         socket.on("task:created", (task) => {
-            set((state) => ({
-                tasks: [...state.tasks, task],
-            }));
+            set((state) => {
+                const exists = state.tasks.some(t => t._id === task._id);
+                if (exists) return state;
+                return {
+                    tasks: [...state.tasks, task],
+                };
+            });
         });
 
         socket.on("task:updated", (task) => {
