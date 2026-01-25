@@ -31,6 +31,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
         status: liveTask.status,
         priority: liveTask.priority,
         dueDate: liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : "",
+        startDate: liveTask.startDate ? new Date(liveTask.startDate).toISOString().slice(0, 16) : "",
     });
 
     // Check for external updates when not editing
@@ -44,7 +45,8 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                     prev.status === liveTask.status &&
                     prev.priority === liveTask.priority &&
                     // Compare dates loosely as strings/nulls might vary slightly
-                    (prev.dueDate === (liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : ""))
+                    (prev.dueDate === (liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : "")) &&
+                    (prev.startDate === (liveTask.startDate ? new Date(liveTask.startDate).toISOString().slice(0, 16) : ""))
                 ) {
                     return prev;
                 }
@@ -55,6 +57,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                     status: liveTask.status,
                     priority: liveTask.priority,
                     dueDate: liveTask.dueDate ? new Date(liveTask.dueDate).toISOString().slice(0, 16) : "",
+                    startDate: liveTask.startDate ? new Date(liveTask.startDate).toISOString().slice(0, 16) : "",
                 };
             });
         }
@@ -93,6 +96,7 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                 status: formData.status,
                 priority: formData.priority,
                 dueDate: formData.dueDate || null,
+                startDate: formData.startDate || null,
             });
             toast.success("Task updated successfully!");
             setIsEditing(false);
@@ -312,16 +316,29 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-                                            Due Date
-                                        </label>
-                                        <input
-                                            type="datetime-local"
-                                            value={formData.dueDate}
-                                            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all text-sm cursor-pointer"
-                                        />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                                                Start Date
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={formData.startDate}
+                                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all text-sm cursor-pointer"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+                                                Due Date
+                                            </label>
+                                            <input
+                                                type="datetime-local"
+                                                value={formData.dueDate}
+                                                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                                                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all text-sm cursor-pointer"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="flex justify-end gap-3 pt-2">
@@ -398,13 +415,44 @@ const TaskDetailModal = ({ task, workspace, onClose, isOpen = true }) => {
 
                                     {/* Details */}
                                     <div className="space-y-3">
-                                        <div className="flex items-center gap-3 text-sm">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                        <div className="flex items-start gap-3 text-sm">
+                                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 mt-0.5">
                                                 <IoCalendarOutline className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                             </div>
-                                            <span className="text-slate-600 dark:text-slate-300">
-                                                {formatDate(liveTask.dueDate)}
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                {liveTask.startDate && liveTask.dueDate ? (
+                                                    <>
+                                                        <span className="text-slate-800 dark:text-slate-100 font-medium">
+                                                            {new Date(liveTask.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {new Date(liveTask.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                        </span>
+                                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                            Duration: {(() => {
+                                                                const start = new Date(liveTask.startDate);
+                                                                const end = new Date(liveTask.dueDate);
+                                                                const diff = end - start;
+
+                                                                if (diff < 0) return "Invalid date range";
+
+                                                                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                                                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                                                                const parts = [];
+                                                                if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+                                                                if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+                                                                if (days === 0 && hours === 0 && minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+                                                                if (parts.length === 0) return "Less than a minute";
+
+                                                                return parts.join(" ");
+                                                            })()}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-600 dark:text-slate-300">
+                                                        {formatDate(liveTask.dueDate)}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {liveTask.estimatedHours && (

@@ -110,6 +110,8 @@ const TaskCalendar = ({ workspace }) => {
 
             taskBars.push({
                 ...task,
+                originalStartDate: task.startDate,
+                originalDueDate: task.dueDate,
                 startDate,
                 endDate,
             });
@@ -326,8 +328,25 @@ const TaskCalendar = ({ workspace }) => {
                                                 (task.priority === 'urgent' ? IoAlertCircleOutline :
                                                     (task.status === 'in_progress' ? IoTimeOutline : IoFlagOutline));
 
-                                            // Calculate duration in days
-                                            const durationDays = Math.ceil((task.endDate - task.startDate) / (1000 * 60 * 60 * 24)) + 1;
+                                            // Calculate precise duration text
+                                            const durationText = (() => {
+                                                const start = new Date(task.originalStartDate || task.startDate);
+                                                const end = new Date(task.originalDueDate || task.endDate);
+                                                const diff = end - start;
+
+                                                if (diff < 0) return "";
+
+                                                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                                                if (days === 0 && hours === 0) return "0h";
+
+                                                const parts = [];
+                                                if (days > 0) parts.push(`${days}d`);
+                                                if (hours > 0) parts.push(`${hours}h`);
+
+                                                return parts.join(" ");
+                                            })();
 
                                             return (
                                                 <div
@@ -342,11 +361,12 @@ const TaskCalendar = ({ workspace }) => {
                                                         ${task.status === "completed" ? "line-through opacity-60" : ""}
                                                         hover:brightness-95 dark:hover:brightness-110 hover:shadow-sm
                                                     `}
+                                                    title={`${task.title} (${durationText})`}
                                                 >
                                                     <StatusIcon className="w-3 h-3 shrink-0" />
                                                     <span className="truncate flex-1 min-w-0">{task.title}</span>
-                                                    {durationDays > 1 && (
-                                                        <span className="shrink-0 text-[9px] opacity-70">{durationDays}d</span>
+                                                    {durationText && (
+                                                        <span className="shrink-0 text-[9px] opacity-70 font-mono tracking-tight">{durationText}</span>
                                                     )}
                                                 </div>
                                             );
@@ -441,12 +461,32 @@ const TaskCalendar = ({ workspace }) => {
                                                         <span className={`w-1.5 h-1.5 rounded-full ${priorityColors[task.priority] || priorityColors.medium}`} />
                                                         <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{task.priority}</span>
                                                     </div>
-                                                    {task.startDate && task.dueDate && (
+                                                    {task.originalStartDate && task.originalDueDate && (
                                                         <>
                                                             <span className="text-slate-300 dark:text-slate-600">•</span>
                                                             <span className="text-xs text-slate-400 flex items-center gap-1">
                                                                 <IoTimeOutline className="w-3 h-3" />
-                                                                {new Date(task.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                                {new Date(task.originalStartDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {new Date(task.originalDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                                <span className="text-slate-300 dark:text-slate-600 px-1">|</span>
+                                                                <span className="text-violet-600 dark:text-violet-400 font-medium">
+                                                                    {(() => {
+                                                                        const start = new Date(task.originalStartDate);
+                                                                        const end = new Date(task.originalDueDate);
+                                                                        const diff = end - start;
+                                                                        if (diff < 0) return "";
+
+                                                                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                                                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                                                                        const parts = [];
+                                                                        if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+                                                                        if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+                                                                        if (days === 0 && hours === 0 && minutes > 0) parts.push(`${minutes} min`);
+
+                                                                        return parts.length > 0 ? parts.join(" ") : "0 min";
+                                                                    })()}
+                                                                </span>
                                                             </span>
                                                         </>
                                                     )}
@@ -476,7 +516,8 @@ const TaskCalendar = ({ workspace }) => {
                         )}
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Modals */}
             <CreateTaskModal
@@ -485,14 +526,16 @@ const TaskCalendar = ({ workspace }) => {
                 workspace={workspace}
             />
 
-            {selectedTask && (
-                <TaskDetailModal
-                    task={selectedTask}
-                    workspace={workspace}
-                    onClose={() => setSelectedTask(null)}
-                />
-            )}
-        </div>
+            {
+                selectedTask && (
+                    <TaskDetailModal
+                        task={selectedTask}
+                        workspace={workspace}
+                        onClose={() => setSelectedTask(null)}
+                    />
+                )
+            }
+        </div >
     );
 };
 
