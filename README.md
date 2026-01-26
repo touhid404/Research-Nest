@@ -1,42 +1,44 @@
 # Research-Nest
 
-A collaborative research platform. This project consists of a React-based frontend and a Node.js/Express-based backend.
+A collaborative research platform designed to bridge the gap between researchers with real-time tools and AI-powered insights.
 
-## Project Idea
+## Core Features
 
-Research-Nest is designed to bridge the gap between researchers by providing a centralized, collaborative environment. It allows users to share research papers, propose new research ideas, apply for collaborative positions, and work together in real-time virtual workspaces. The goal is to streamline the research process and foster global scientific collaboration.
+### Real-time Collaboration
+- **Interactive Workspace:** Synchronous document editing and brainstorming using Yjs and WebSockets.
+- **Collaborative Paper Hub:** Centralized system for uploading, discovering, and discussing research publications.
 
-## Main Features
+### AI-Powered Capabilities
+- **Meeting Summarizer:** Automatic generation of summaries, action items, and decision logs from chats.
+- **Paper Summarizer:** AI-driven extraction of abstracts and conclusions from research papers.
+- **Intelligent Spellcheck:** Strategic spell correction for research documentation.
 
-- **Real-time Collaborative Workspace:** Integrated virtual environment using Yjs and WebSockets for synchronous document editing and brainstorming.
-- **Research Proposal System:** Users can post research proposals, allowing others to view and apply to join the research team.
-- **Paper Hub:** A dedicated space for uploading, discovering, and discussing research papers and publications.
-- **Real-time Messaging:** Secure communication channels for team members to coordinate their work.
-- **Notification System:** Instant alerts for proposal applications, new messages, and workspace updates.
-- **User Profiles & Portfolio:** Showcasing researcher expertise, contributions, and active projects.
+### Networking & Proposals
+- **Research Proposal System:** Post research ideas or apply to join existing collaborative teams.
+- **Secure Messaging:** Real-time communication channels for project coordination.
+- **Notification Engine:** Instant updates on proposal status, messages, and workspace activity.
 
-## Project Structure
+### Researcher Portfolios
+- **Professional Profiles:** Showcase expertise, contributions, and active projects.
 
-```text
-Research-Nest/
-├── frontend/     # React + Vite Application
-└── backend/      # Node.js + Express Server
+## Quick Start
+
+### 1. Backend Setup
+```bash
+cd backend
+npm install
+# Configure .env file
+npm run dev
+```
+
+### 2. Frontend Setup
+```bash
+cd frontend
+npm install
+# Configure .env file
+npm run dev
 ```
 
 ## Tech Stack
-
-### Frontend
-- **Framework:** [React](https://reactjs.org/) (v19)
-- **Build Tool:** [Vite](https://vitejs.dev/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [DaisyUI](https://daisyui.com/)
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand)
-- **Data Fetching:** [TanStack Query](https://tanstack.com/query/latest)
-- **Other Tools:** Axios, Framer Motion, React Router, Socket.io-client, Firebase.
-
-### Backend
-- **Runtime:** [Node.js](https://nodejs.org/)
-- **Web Framework:** [Express](https://expressjs.com/)
-- **Database:** [MongoDB](https://www.mongodb.com/) (via Mongoose)
-- **Real-time / Collaboration:** Socket.io, Yjs, y-websocket, lib0
-- **Storage:** Firebase Admin, Multer
-- **Other Tools:** dotenv, cors, nodemon.
+- **Frontend:** React, Tailwind CSS, DaisyUI, Zustand, TanStack Query, Yjs.
+- **Backend:** Node.js, Express, MongoDB, Socket.io, Firebase, Grok API, Stream Chat.
