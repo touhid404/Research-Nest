@@ -1,21 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers, FaMagic } from "react-icons/fa";
+import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers } from "react-icons/fa";
+import { HiSparkles } from "react-icons/hi";
 import { useNavigate } from "react-router";
 import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 import ConversationInfoModal from "./ConversationInfoModal";
 import ConversationLoader from "../loader/ConversationLoader";
-import MeetingSummaryPanel from "./MeetingSummaryPanel";
+import AiSpellCheckModal from "../common/AiSpellCheckModal";
+import { aiApi } from "../../lib/aiApi";
 
 const ChatInterface = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
-    /* ... existing state ... */
+
     const [messageText, setMessageText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
     const [corrections, setCorrections] = useState([]);
+    const [fullCorrectedText, setFullCorrectedText] = useState("");
     const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
@@ -24,26 +26,13 @@ const ChatInterface = () => {
         if (!messageText.trim()) return;
         setIsCheckingSpelling(true);
         try {
-            // We use axios directly here or could use a hook. 
-            // Assuming axios is available (it is used in MeetingSummaryPanel)
-            // But ChatInterface doesn't import axios.
-            // We need to fetch or use a utility. 
-            // Let's use fetch for simplicity or import axios ?
-            // ChatInterface does NOT import axios. 
-            // We should add it or use fetch. Let's use fetch to avoid import noise if possible, but axios is standard.
-            // I'll add axios import next step.
-
-            // For now assuming axios is there, or I will add it.
-            const res = await fetch('http://localhost:5000/api/ai/spell-correct', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: messageText, strategy: 'local' })
-            });
-            const data = await res.json();
-            if (data.success && data.data.corrections.length > 0) {
-                setCorrections(data.data.corrections);
+            const data = await aiApi.spellCorrect({ text: messageText, strategy: 'llm' });
+            if (data?.corrections && data.corrections.length > 0) {
+                setCorrections(data.corrections);
+                setFullCorrectedText(data.correctedText || "");
             } else {
                 setCorrections([]);
+                setFullCorrectedText("");
             }
         } catch (e) {
             console.error(e);
@@ -53,20 +42,23 @@ const ChatInterface = () => {
     };
 
     const applyAllCorrections = () => {
-        let newText = messageText;
-        // Apply reversed to avoid index shifting if we used indices.
-        // But our correction objects are simple {original, corrected}.
-        // We'll just replaceAll or similar. 
-        // Note: Global replacement might be dangerous for "receiv" if it appears correctly elsewhere?
-        // But for MVP:
-        corrections.forEach(c => {
-            newText = newText.replace(c.original, c.corrected);
-        });
-        setMessageText(newText);
+        if (fullCorrectedText) {
+            setMessageText(fullCorrectedText);
+        } else {
+            let newText = messageText;
+            corrections.forEach(c => {
+                newText = newText.replace(c.original, c.corrected);
+            });
+            setMessageText(newText);
+        }
         setCorrections([]);
+        setFullCorrectedText("");
     };
 
-    const ignoreCorrections = () => setCorrections([]);
+    const ignoreCorrections = () => {
+        setCorrections([]);
+        setFullCorrectedText("");
+    };
 
     const {
         selectedConversation,
@@ -90,23 +82,18 @@ const ChatInterface = () => {
     const chatName = isGroup ? selectedConversation.groupName : otherUser?.name;
     const chatPhoto = isGroup ? null : otherUser?.photoURL;
 
-    // Join conversation room when selected
     useEffect(() => {
         if (selectedConversation?._id) {
             joinConversation(selectedConversation._id);
             markAsRead(selectedConversation._id);
-
             return () => {
                 leaveConversation(selectedConversation._id);
             };
         }
     }, [selectedConversation?._id, joinConversation, leaveConversation, markAsRead]);
 
-    // Scroll to bottom and mark as read on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-
-        // If the last message is from other user and not read, mark as read
         if (messages.length > 0 && selectedConversation) {
             const lastMessage = messages[messages.length - 1];
             if (lastMessage.sender !== user?.uid && !lastMessage.isRead) {
@@ -115,21 +102,15 @@ const ChatInterface = () => {
         }
     }, [messages, selectedConversation, user?.uid, markAsRead]);
 
-    // Handle typing
     const handleTyping = () => {
         if (!selectedConversation) return;
-
         if (!isTyping) {
             setIsTyping(true);
             emitTyping(selectedConversation._id);
         }
-
-        // Clear existing timeout
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
         }
-
-        // Set new timeout to stop typing
         typingTimeoutRef.current = setTimeout(() => {
             setIsTyping(false);
             emitStopTyping(selectedConversation._id);
@@ -145,10 +126,7 @@ const ChatInterface = () => {
                 selectedConversation._id,
                 messageText
             );
-
-            // Send via Socket.IO for real-time delivery
             sendSocketMessage(selectedConversation._id, newMessage);
-
             setMessageText("");
             setIsTyping(false);
             emitStopTyping(selectedConversation._id);
@@ -171,7 +149,6 @@ const ChatInterface = () => {
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
-
         if (d.toDateString() === today.toDateString()) return "Today";
         if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
         return d.toLocaleDateString();
@@ -199,7 +176,6 @@ const ChatInterface = () => {
             {/* Header */}
             <div className="flex-none z-20 border-b border-gray-100 dark:border-slate-900 p-1.5 bg-transparent backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                    {/* Back Button for Mobile */}
                     <button
                         onClick={() => navigate("/home/messages")}
                         className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
@@ -207,10 +183,7 @@ const ChatInterface = () => {
                         <FaArrowLeft />
                     </button>
 
-                    <div
-                        className="avatar placeholder relative group"
-                    >
-
+                    <div className="avatar placeholder relative group">
                         <div className="w-10 h-10 rounded-full ring ring-offset-2 ring-violet-500 ring-offset-base-100 transition-all duration-300 group-hover:scale-105 flex items-center justify-center bg-slate-100 dark:bg-slate-800">
                             {isGroup ? (
                                 <FaUsers className="text-violet-500 text-xl" />
@@ -236,7 +209,6 @@ const ChatInterface = () => {
                     <div className="flex-1">
                         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100">{chatName}</h3>
                         <div className="flex items-center gap-2 text-xs">
-                            {/* Typing/Status for 1-1 */}
                             {!isGroup && (
                                 typingUsers[otherUser?.uid] ? (
                                     <span className="text-fuchsia-600 dark:text-fuchsia-400 font-medium animate-pulse">Typing...</span>
@@ -246,7 +218,6 @@ const ChatInterface = () => {
                                     </span>
                                 )
                             )}
-                            {/* Group details could go here */}
                             {isGroup && (
                                 <span className="text-slate-500 dark:text-slate-400">
                                     {selectedConversation.participants?.length || 0} members
@@ -254,14 +225,6 @@ const ChatInterface = () => {
                             )}
                         </div>
                     </div>
-
-                    <button
-                        onClick={() => setIsSummaryOpen(true)}
-                        className="btn btn-ghost btn-circle btn-sm text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30"
-                        title="AI Meeting Summary"
-                    >
-                        <FaMagic />
-                    </button>
                 </div>
             </div>
 
@@ -271,13 +234,6 @@ const ChatInterface = () => {
                 conversation={selectedConversation}
             />
 
-            <MeetingSummaryPanel
-                isOpen={isSummaryOpen}
-                onClose={() => setIsSummaryOpen(false)}
-                conversationId={selectedConversation?._id}
-            />
-
-            {/* Messages List - Messenger Style */}
             <div className="bg-gray-50 dark:bg-slate-900 m-1 rounded-lg relative z-10 flex-1 overflow-y-auto px-4 py-3 custom-scrollbar">
                 {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-3 opacity-60">
@@ -297,7 +253,6 @@ const ChatInterface = () => {
                                 index === 0 ||
                                 formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
 
-                            // Check if previous message is from same sender (for grouping)
                             const prevMessage = messages[index - 1];
                             const nextMessage = messages[index + 1];
                             const isFirstInGroup = !prevMessage || prevMessage.sender !== message.sender || showDate;
@@ -315,10 +270,9 @@ const ChatInterface = () => {
                                     )}
 
                                     <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}>
-                                        {/* Avatar - only for other user's messages on last message of group */}
                                         {!isOwnMessage && (
                                             <div className="w-7 mr-2 flex-shrink-0 flex items-end">
-                                                {isLastInGroup ? (
+                                                {isLastInGroup && (
                                                     <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
                                                         {isGroup ? (
                                                             message.senderDetails?.photoURL ?
@@ -330,19 +284,17 @@ const ChatInterface = () => {
                                                                 <div className="bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center h-full w-full font-bold text-xs">{otherUser?.name?.charAt(0)}</div>
                                                         )}
                                                     </div>
-                                                ) : null}
+                                                )}
                                             </div>
                                         )}
 
-                                        <div className={`max-w-[70%] group relative ${isOwnMessage ? "items-end" : "items-start"}`}>
-                                            {/* Sender name for group - only on first message of group */}
+                                        <div className={`max-w-[70%] group relative flex flex-col ${isOwnMessage ? "items-end" : "items-start"}`}>
                                             {isGroup && !isOwnMessage && isFirstInGroup && (
                                                 <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 ml-1 mb-0.5">
                                                     {message.senderDetails?.name || "Unknown"}
                                                 </p>
                                             )}
 
-                                            {/* Message Bubble */}
                                             <div
                                                 className={`
                                                     relative px-3 py-2 text-sm leading-relaxed
@@ -373,7 +325,6 @@ const ChatInterface = () => {
                                                     <img src={message.attachment} alt="attachment" className="mt-2 rounded-lg max-w-full" />
                                                 )}
 
-                                                {/* Delete button for own messages */}
                                                 {isOwnMessage && (
                                                     <button
                                                         onClick={() => deleteMessage(message._id)}
@@ -385,7 +336,6 @@ const ChatInterface = () => {
                                                 )}
                                             </div>
 
-                                            {/* Time and status - only on last message of group */}
                                             {isLastInGroup && (
                                                 <div className={`flex items-center gap-1 mt-0.5 ${isOwnMessage ? "justify-end mr-1" : "ml-1"}`}>
                                                     <span className="text-[10px] text-slate-400">{formatTime(message.createdAt)}</span>
@@ -406,45 +356,18 @@ const ChatInterface = () => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input */}
-            <div className="flex-none z-20 p-1.5 bg-white/60 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 relative">
-                {/* Corrections Popover */}
-                {corrections.length > 0 && (
-                    <div className="absolute bottom-full mb-2 left-4 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 max-w-sm animate-in fade-in slide-in-from-bottom-2">
-                        <div className="flex justify-between items-center mb-2">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <FaMagic className="text-violet-500" /> Suggested Corrections
-                            </h4>
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={applyAllCorrections}
-                                    className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-2 py-1 rounded-md font-medium hover:bg-violet-200 transition-colors"
-                                >
-                                    Accept All
-                                </button>
-                                <button
-                                    onClick={ignoreCorrections}
-                                    className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 px-2 py-1 rounded-md transition-colors"
-                                >
-                                    Ignore
-                                </button>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
-                            {corrections.map((corr, idx) => (
-                                <div key={idx} className="flex items-center justify-between text-sm gap-3 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <div className="flex items-center gap-2">
-                                        <span className="line-through text-red-400 opacity-70 decoration-2">{corr.original}</span>
-                                        <span className="text-slate-300">→</span>
-                                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{corr.corrected}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
+            <div className="flex-none z-20 p-2 bg-white/60 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 relative">
                 <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative">
+                    <AiSpellCheckModal
+                        isOpen={corrections.length > 0}
+                        onClose={ignoreCorrections}
+                        originalText={messageText}
+                        correctedText={fullCorrectedText}
+                        corrections={corrections}
+                        onApply={applyAllCorrections}
+                        isLoading={isCheckingSpelling}
+                    />
+
                     <div className="flex gap-2 items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1.5 pr-1.5 border border-transparent focus-within:border-violet-500/30 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all shadow-sm">
                         <input
                             type="text"
@@ -452,22 +375,29 @@ const ChatInterface = () => {
                             onChange={(e) => {
                                 setMessageText(e.target.value);
                                 handleTyping();
-                                if (corrections.length > 0) setCorrections([]); // Clear on edit
+                                if (corrections.length > 0) {
+                                    setCorrections([]);
+                                    setFullCorrectedText("");
+                                }
                             }}
                             placeholder="Type a message..."
                             className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-4 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
                         />
 
-                        {/* Spell Check Toggle */}
                         {messageText.length > 5 && (
                             <button
                                 type="button"
                                 onClick={checkSpelling}
                                 disabled={isCheckingSpelling}
-                                className={`btn btn-circle btn-xs btn-ghost text-slate-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 ${isCheckingSpelling ? "animate-spin text-violet-500" : ""}`}
+                                className={`group relative overflow-hidden rounded-full p-2 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 ${isCheckingSpelling ? "ring-2 ring-violet-500/50" : ""}`}
                                 title="Check Spelling"
                             >
-                                <FaMagic />
+                                <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
+                                {isCheckingSpelling ? (
+                                    <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <HiSparkles className="text-lg text-violet-500 drop-shadow-[0_0_2px_rgba(139,92,246,0.2)] group-hover:rotate-12 transition-transform" />
+                                )}
                             </button>
                         )}
 

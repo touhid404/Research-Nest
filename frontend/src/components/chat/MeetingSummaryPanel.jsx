@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaMagic, FaFileUpload, FaTimes, FaListUl, FaCheckSquare, FaLightbulb, FaSpinner } from 'react-icons/fa';
-import axios from 'axios';
+import { aiApi } from '../../lib/aiApi';
 import toast from 'react-hot-toast';
 
 const MeetingSummaryPanel = ({ isOpen, onClose, conversationId }) => {
@@ -10,12 +10,8 @@ const MeetingSummaryPanel = ({ isOpen, onClose, conversationId }) => {
     const [inputFile, setInputFile] = useState(null);
 
     const { mutate: generateSummary, isPending } = useMutation({
-        mutationFn: async ({ sourceType, content }) => {
-            const response = await axios.post('http://localhost:5000/api/ai/meeting-summary', {
-                sourceType,
-                content
-            });
-            return response.data;
+        mutationFn: async (payload) => {
+            return await aiApi.summarizeMeeting(payload);
         },
         onSuccess: (data) => {
             if (data.success) {

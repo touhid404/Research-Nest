@@ -8,5 +8,9 @@ export const aiApi = {
     spellCorrect: async (payload) => {
         const response = await api.post("/ai/spell-correct", payload);
         return response.data.data;
+    },
+    summarizeMeeting: async (payload) => {
+        const response = await api.post("/ai/meeting-summary", payload);
+        return response.data;
     }
 };
