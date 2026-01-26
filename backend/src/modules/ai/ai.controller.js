@@ -1,4 +1,6 @@
 import { generateMeetingSummary } from "../../services/aiMeetingSummary.js";
+import { correctText } from "../../services/spellCorrector.js";
+import { enhanceDescription as enhanceDescriptionService } from "../../services/aiDescriptionEnhancer.js";
 
 export const summarizeMeeting = async (req, res) => {
     try {
@@ -35,8 +37,6 @@ export const summarizeMeeting = async (req, res) => {
     }
 };
 
-import { correctText } from "../../services/spellCorrector.js";
-
 export const spellCorrect = async (req, res) => {
     try {
         const { text, lang, strategy } = req.body;
@@ -60,6 +60,32 @@ export const spellCorrect = async (req, res) => {
             success: false,
             message: "Failed to correct text.",
             error: error.message
+        });
+    }
+};
+
+export const enhanceDescription = async (req, res) => {
+    try {
+        const { description, context, tone } = req.body;
+
+        if (!description) {
+            return res.status(400).json({
+                success: false,
+                message: "Description is required."
+            });
+        }
+
+        const result = await enhanceDescriptionService({ description, context, tone });
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error("Enhance Description Error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to enhance description.",
         });
     }
 };
