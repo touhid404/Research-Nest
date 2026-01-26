@@ -28,7 +28,7 @@
     "nspell": "^2.1.5",
     "openai": "^6.16.0",
     "pdf-parse": "^2.4.5",
-    "simple-spellchecker": "^1.0.2",
+    "simple-spellchecker": "^0.9.9",
     "socket.io": "^4.8.1",
     "stream-chat": "^9.28.0",
     "y-websocket": "^3.0.0",
