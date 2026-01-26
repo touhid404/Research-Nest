@@ -6,6 +6,9 @@ import { BiUpload, BiX } from "react-icons/bi";
 import axios from "axios"; // standard axios for external upload if needed
 import { useNavigate } from "react-router"; // Don't forget this
 import { proposalApi } from "../../lib/proposalApi";
+import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
+import AiDescriptionEnhancerModal from "../AiDescriptionEnhancerModal";
+import { HiSparkles } from "react-icons/hi";
 
 const CreateProposalPost = () => {
     const { user } = useAuth();
@@ -20,7 +23,33 @@ const CreateProposalPost = () => {
         attachments: [],
     });
 
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const enhanceMutation = useEnhanceDescription();
 
+    const handleEnhance = () => {
+        if (!formData.description || formData.description.length < 20) {
+            toast.error("Description must be at least 20 characters long to enhance.");
+            return;
+        }
+
+        enhanceMutation.mutate(
+            {
+                description: formData.description,
+                context: "proposal",
+                tone: "academic"
+            },
+            {
+                onSuccess: (data) => {
+                    setIsAiModalOpen(true);
+                }
+            }
+        );
+    };
+
+    const applyAiEnhancement = (newDescription) => {
+        setFormData(prev => ({ ...prev, description: newDescription }));
+        setIsAiModalOpen(false);
+    };
 
     const createPostMutation = useMutation({
         mutationFn: async (postData) => {
@@ -165,9 +194,24 @@ const CreateProposalPost = () => {
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Description
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Description
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleEnhance}
+                                disabled={!formData.description || formData.description.length < 20 || enhanceMutation.isPending}
+                                className="flex items-center gap-1.5 text-xs font-semibold py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                            >
+                                {enhanceMutation.isPending ? (
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                    <HiSparkles className="text-sm group-hover:rotate-12 transition-transform" />
+                                )}
+                                ✨ Enhance Description
+                            </button>
+                        </div>
                         <textarea
                             name="description"
                             value={formData.description}
@@ -264,6 +308,15 @@ const CreateProposalPost = () => {
                         </button>
                     </div>
                 </form>
+
+                <AiDescriptionEnhancerModal
+                    isOpen={isAiModalOpen}
+                    onClose={() => setIsAiModalOpen(false)}
+                    originalText={formData.description}
+                    enhancedData={enhanceMutation.data}
+                    isLoading={enhanceMutation.isPending}
+                    onApply={applyAiEnhancement}
+                />
             </div>
         </div>
     );

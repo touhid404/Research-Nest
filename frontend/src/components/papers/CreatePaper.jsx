@@ -6,6 +6,9 @@ import { BiUpload, BiX, BiCheck, BiFile, BiBuilding, BiUserPlus } from "react-ic
 import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import { useNavigate } from "react-router";
+import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
+import AiDescriptionEnhancerModal from "../AiDescriptionEnhancerModal";
+import { HiSparkles } from "react-icons/hi";
 
 
 const CreatePaper = () => {
@@ -32,6 +35,10 @@ const CreatePaper = () => {
         publicationName: "",
         doi: "",
     });
+
+    // AI state
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const enhanceMutation = useEnhanceDescription();
 
 
     // Fetch workspaces
@@ -90,6 +97,31 @@ const CreatePaper = () => {
             }));
         }
     }, [selectedWorkspaceFile]);
+
+    const handleEnhance = () => {
+        if (!formData.abstract || formData.abstract.length < 20) {
+            toast.error("Abstract must be at least 20 characters long to enhance.");
+            return;
+        }
+
+        enhanceMutation.mutate(
+            {
+                description: formData.abstract,
+                context: "paper-abstract",
+                tone: "academic"
+            },
+            {
+                onSuccess: () => {
+                    setIsAiModalOpen(true);
+                }
+            }
+        );
+    };
+
+    const applyAiEnhancement = (newAbstract) => {
+        setFormData(prev => ({ ...prev, abstract: newAbstract }));
+        setIsAiModalOpen(false);
+    };
 
 
     const createPaperMutation = useMutation({
@@ -215,19 +247,12 @@ const CreatePaper = () => {
             mutationData.file = formData.paperFile;
         } else {
             // Construct workspace file object matching what backend expects/stores
-            // Workspace docs have { fileData: { fileUrl: ..., originalName: ... } } usually
-            // Backend paper controller expects: { name, url }
-            // Let's check doc structure. usually docs have `fileData`.
             const fileData = selectedWorkspaceFile.fileData || {};
             mutationData.workspaceFile = {
                 name: fileData.originalName || selectedWorkspaceFile.title,
                 url: fileData.fileUrl
                     ? (fileData.fileUrl.startsWith('http') ? fileData.fileUrl : `${window.location.origin}${fileData.fileUrl}`)
-                    : "", // Backend needs absolute URL or relative path handling
-                // Ideally, pass the internal path and let backend handle it, but backend controller logic was:
-                // if workspaceFile -> paperFile = workspaceFile.
-                // It expects { name: string, url: string }.
-                // We should ensure the URL is correct.
+                    : "",
             };
         }
 
@@ -510,9 +535,24 @@ const CreatePaper = () => {
 
                     {/* Row 4: Abstract (Full Width) */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Abstract / Description
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Abstract / Description
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleEnhance}
+                                disabled={!formData.abstract || formData.abstract.length < 20 || enhanceMutation.isPending}
+                                className="flex items-center gap-1.5 text-xs font-semibold py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                            >
+                                {enhanceMutation.isPending ? (
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                    <HiSparkles className="text-sm group-hover:rotate-12 transition-transform" />
+                                )}
+                                ✨ Enhance Abstract
+                            </button>
+                        </div>
                         <textarea
                             name="abstract"
                             value={formData.abstract}
@@ -561,22 +601,17 @@ const CreatePaper = () => {
 
                 </form>
             </div>
+            <AiDescriptionEnhancerModal
+                isOpen={isAiModalOpen}
+                onClose={() => setIsAiModalOpen(false)}
+                originalText={formData.abstract}
+                enhancedData={enhanceMutation.data}
+                isLoading={enhanceMutation.isPending}
+                onApply={applyAiEnhancement}
+            />
         </div>
     );
 };
 
 
 export default CreatePaper;
-
-
-
-
-
-
-
-
-
-
-
-
-

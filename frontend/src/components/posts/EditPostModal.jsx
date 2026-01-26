@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaSave, FaTimes, FaTrash, FaPaperclip, FaFileAlt } from "react-icons/fa";
 import { BiUpload } from "react-icons/bi";
 import toast from "react-hot-toast";
+import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
+import AiDescriptionEnhancerModal from "../AiDescriptionEnhancerModal";
+import { HiSparkles } from "react-icons/hi";
 
 
 const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
@@ -17,6 +20,10 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
     const [newAttachments, setNewAttachments] = useState([]);
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // AI state
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const enhanceMutation = useEnhanceDescription();
+
     useEffect(() => {
         if (post) {
             setFormData({
@@ -29,6 +36,31 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
             setNewAttachments([]);
         }
     }, [post]);
+
+    const handleEnhance = () => {
+        if (!formData.description || formData.description.length < 20) {
+            toast.error("Description must be at least 20 characters long to enhance.");
+            return;
+        }
+
+        enhanceMutation.mutate(
+            {
+                description: formData.description,
+                context: "proposal-update",
+                tone: "academic"
+            },
+            {
+                onSuccess: () => {
+                    setIsAiModalOpen(true);
+                }
+            }
+        );
+    };
+
+    const applyAiEnhancement = (newDescription) => {
+        setFormData(prev => ({ ...prev, description: newDescription }));
+        setIsAiModalOpen(false);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -149,7 +181,22 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Description</label>
+                                    <div className="flex items-center justify-between ml-1 mb-0.5">
+                                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</label>
+                                        <button
+                                            type="button"
+                                            onClick={handleEnhance}
+                                            disabled={!formData.description || formData.description.length < 20 || enhanceMutation.isPending}
+                                            className="flex items-center gap-1.5 text-[10px] font-bold py-1 px-2.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                                        >
+                                            {enhanceMutation.isPending ? (
+                                                <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></span>
+                                            ) : (
+                                                <HiSparkles className="text-xs group-hover:rotate-12 transition-transform" />
+                                            )}
+                                            ✨ Enhance
+                                        </button>
+                                    </div>
                                     <textarea
                                         name="description"
                                         value={formData.description}
@@ -264,6 +311,14 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
                     </motion.div>
                 </div>
             )}
+            <AiDescriptionEnhancerModal
+                isOpen={isAiModalOpen}
+                onClose={() => setIsAiModalOpen(false)}
+                originalText={formData.description}
+                enhancedData={enhanceMutation.data}
+                isLoading={enhanceMutation.isPending}
+                onApply={applyAiEnhancement}
+            />
         </AnimatePresence>
     );
 

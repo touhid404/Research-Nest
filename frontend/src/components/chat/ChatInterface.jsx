@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers } from "react-icons/fa";
+import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers, FaMagic } from "react-icons/fa";
 import { useNavigate } from "react-router";
 import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 import ConversationInfoModal from "./ConversationInfoModal";
 import ConversationLoader from "../loader/ConversationLoader";
+import MeetingSummaryPanel from "./MeetingSummaryPanel";
 
 const ChatInterface = () => {
     const { user } = useAuth();
@@ -13,8 +14,59 @@ const ChatInterface = () => {
     const [messageText, setMessageText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+    const [corrections, setCorrections] = useState([]);
+    const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+
+    const checkSpelling = async () => {
+        if (!messageText.trim()) return;
+        setIsCheckingSpelling(true);
+        try {
+            // We use axios directly here or could use a hook. 
+            // Assuming axios is available (it is used in MeetingSummaryPanel)
+            // But ChatInterface doesn't import axios.
+            // We need to fetch or use a utility. 
+            // Let's use fetch for simplicity or import axios ?
+            // ChatInterface does NOT import axios. 
+            // We should add it or use fetch. Let's use fetch to avoid import noise if possible, but axios is standard.
+            // I'll add axios import next step.
+
+            // For now assuming axios is there, or I will add it.
+            const res = await fetch('http://localhost:5000/api/ai/spell-correct', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: messageText, strategy: 'local' })
+            });
+            const data = await res.json();
+            if (data.success && data.data.corrections.length > 0) {
+                setCorrections(data.data.corrections);
+            } else {
+                setCorrections([]);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsCheckingSpelling(false);
+        }
+    };
+
+    const applyAllCorrections = () => {
+        let newText = messageText;
+        // Apply reversed to avoid index shifting if we used indices.
+        // But our correction objects are simple {original, corrected}.
+        // We'll just replaceAll or similar. 
+        // Note: Global replacement might be dangerous for "receiv" if it appears correctly elsewhere?
+        // But for MVP:
+        corrections.forEach(c => {
+            newText = newText.replace(c.original, c.corrected);
+        });
+        setMessageText(newText);
+        setCorrections([]);
+    };
+
+    const ignoreCorrections = () => setCorrections([]);
 
     const {
         selectedConversation,
@@ -181,7 +233,7 @@ const ChatInterface = () => {
                             )
                         )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100">{chatName}</h3>
                         <div className="flex items-center gap-2 text-xs">
                             {/* Typing/Status for 1-1 */}
@@ -202,6 +254,14 @@ const ChatInterface = () => {
                             )}
                         </div>
                     </div>
+
+                    <button
+                        onClick={() => setIsSummaryOpen(true)}
+                        className="btn btn-ghost btn-circle btn-sm text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+                        title="AI Meeting Summary"
+                    >
+                        <FaMagic />
+                    </button>
                 </div>
             </div>
 
@@ -209,6 +269,12 @@ const ChatInterface = () => {
                 isOpen={isInfoModalOpen}
                 onClose={() => setIsInfoModalOpen(false)}
                 conversation={selectedConversation}
+            />
+
+            <MeetingSummaryPanel
+                isOpen={isSummaryOpen}
+                onClose={() => setIsSummaryOpen(false)}
+                conversationId={selectedConversation?._id}
             />
 
             {/* Messages List - Messenger Style */}
@@ -341,7 +407,43 @@ const ChatInterface = () => {
             </div>
 
             {/* Message Input */}
-            <div className="flex-none z-20 p-1.5 bg-white/60 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex-none z-20 p-1.5 bg-white/60 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 relative">
+                {/* Corrections Popover */}
+                {corrections.length > 0 && (
+                    <div className="absolute bottom-full mb-2 left-4 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 max-w-sm animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                <FaMagic className="text-violet-500" /> Suggested Corrections
+                            </h4>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={applyAllCorrections}
+                                    className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-2 py-1 rounded-md font-medium hover:bg-violet-200 transition-colors"
+                                >
+                                    Accept All
+                                </button>
+                                <button
+                                    onClick={ignoreCorrections}
+                                    className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 px-2 py-1 rounded-md transition-colors"
+                                >
+                                    Ignore
+                                </button>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
+                            {corrections.map((corr, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-sm gap-3 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    <div className="flex items-center gap-2">
+                                        <span className="line-through text-red-400 opacity-70 decoration-2">{corr.original}</span>
+                                        <span className="text-slate-300">→</span>
+                                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{corr.corrected}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative">
                     <div className="flex gap-2 items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1.5 pr-1.5 border border-transparent focus-within:border-violet-500/30 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all shadow-sm">
                         <input
@@ -350,10 +452,25 @@ const ChatInterface = () => {
                             onChange={(e) => {
                                 setMessageText(e.target.value);
                                 handleTyping();
+                                if (corrections.length > 0) setCorrections([]); // Clear on edit
                             }}
                             placeholder="Type a message..."
                             className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-4 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
                         />
+
+                        {/* Spell Check Toggle */}
+                        {messageText.length > 5 && (
+                            <button
+                                type="button"
+                                onClick={checkSpelling}
+                                disabled={isCheckingSpelling}
+                                className={`btn btn-circle btn-xs btn-ghost text-slate-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 ${isCheckingSpelling ? "animate-spin text-violet-500" : ""}`}
+                                title="Check Spelling"
+                            >
+                                <FaMagic />
+                            </button>
+                        )}
+
                         <button
                             type="submit"
                             disabled={!messageText.trim()}
