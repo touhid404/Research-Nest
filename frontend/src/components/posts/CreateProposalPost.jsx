@@ -6,8 +6,8 @@ import { BiUpload, BiX } from "react-icons/bi";
 import { useNavigate } from "react-router";
 import { proposalApi } from "../../lib/proposalApi";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
-import AiDescriptionEnhancerModal from "../common/AiDescriptionEnhancerModal";
-import AiEnhanceButton from "../common/AiEnhanceButton";
+import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
+import AiEnhanceButton from "../ai-common/AiEnhanceButton";
 
 const CreateProposalPost = () => {
     const { user } = useAuth();

@@ -5,9 +5,8 @@ import { FaSave, FaTimes, FaTrash, FaPaperclip, FaFileAlt } from "react-icons/fa
 import { BiUpload } from "react-icons/bi";
 import toast from "react-hot-toast";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
-import AiDescriptionEnhancerModal from "../common/AiDescriptionEnhancerModal";
-import AiEnhanceButton from "../common/AiEnhanceButton";
-import { HiSparkles } from "react-icons/hi";
+import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
+import AiEnhanceButton from "../ai-common/AiEnhanceButton";
 
 
 const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {

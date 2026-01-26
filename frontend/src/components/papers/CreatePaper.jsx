@@ -7,9 +7,8 @@ import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import { useNavigate } from "react-router";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
-import AiDescriptionEnhancerModal from "../common/AiDescriptionEnhancerModal";
-import AiEnhanceButton from "../common/AiEnhanceButton";
-import { HiSparkles } from "react-icons/hi";
+import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
+import AiEnhanceButton from "../ai-common/AiEnhanceButton";
 
 
 const CreatePaper = () => {
