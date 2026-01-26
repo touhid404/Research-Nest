@@ -1,8 +1,8 @@
-import Message from "../models/message.model.js";
-import Document from "../models/document.model.js";
-import User from "../models/user.model.js";
-import { decrypt } from "../utils/encryption.js";
-import { generateCompletion } from "../lib/llmClient.js";
+import Message from "../../../models/message.model.js";
+import Document from "../../../models/document.model.js";
+import User from "../../../models/user.model.js";
+import { decrypt } from "../../../utils/encryption.js";
+import { generateCompletion } from "../../../lib/llmClient.js";
 import dotenv from 'dotenv';
 dotenv.config();
 

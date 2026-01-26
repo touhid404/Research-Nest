@@ -1,5 +1,5 @@
 import nspell from 'nspell';
-import { generateCompletion } from '../lib/llmClient.js';
+import { generateCompletion } from '../../../lib/llmClient.js';
 import Dictionary from 'simple-spellchecker';
 
 let dictionaryEn = null;

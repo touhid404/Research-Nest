@@ -7,7 +7,8 @@ import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import { useNavigate } from "react-router";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
-import AiDescriptionEnhancerModal from "../AiDescriptionEnhancerModal";
+import AiDescriptionEnhancerModal from "../common/AiDescriptionEnhancerModal";
+import AiEnhanceButton from "../common/AiEnhanceButton";
 import { HiSparkles } from "react-icons/hi";
 
 
@@ -539,19 +540,12 @@ const CreatePaper = () => {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Abstract / Description
                             </label>
-                            <button
-                                type="button"
+                            <AiEnhanceButton
                                 onClick={handleEnhance}
                                 disabled={!formData.abstract || formData.abstract.length < 20 || enhanceMutation.isPending}
-                                className="flex items-center gap-1.5 text-xs font-semibold py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-                            >
-                                {enhanceMutation.isPending ? (
-                                    <span className="loading loading-spinner loading-xs"></span>
-                                ) : (
-                                    <HiSparkles className="text-sm group-hover:rotate-12 transition-transform" />
-                                )}
-                                ✨ Enhance Abstract
-                            </button>
+                                isLoading={enhanceMutation.isPending}
+                                text="AI Enhance Abstract"
+                            />
                         </div>
                         <textarea
                             name="abstract"

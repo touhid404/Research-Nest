@@ -13,6 +13,7 @@ import { initializeServer } from "./lib/initialize.server.js";
 import { paperRoutes } from "./modules/papers/paper.routes.js";
 import { workspaceRoutes } from "./modules/workspace/workspace.routes.js";
 import "./cron/pingSelf.js";
+import { aiRoutes } from "./modules/ai-services/ai.routes.js";
 
 
 const app = express();
@@ -77,8 +78,7 @@ app.use('/api/workspaces', workspaceRoutes);
 // Message routes
 app.use('/api/messages', messageRoutes);
 
-// AI routes
-import { aiRoutes } from "./modules/ai/ai.routes.js";
+// AI Routes
 app.use('/api/ai', aiRoutes);
 
 

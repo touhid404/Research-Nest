@@ -5,7 +5,8 @@ import { FaSave, FaTimes, FaTrash, FaPaperclip, FaFileAlt } from "react-icons/fa
 import { BiUpload } from "react-icons/bi";
 import toast from "react-hot-toast";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
-import AiDescriptionEnhancerModal from "../AiDescriptionEnhancerModal";
+import AiDescriptionEnhancerModal from "../common/AiDescriptionEnhancerModal";
+import AiEnhanceButton from "../common/AiEnhanceButton";
 import { HiSparkles } from "react-icons/hi";
 
 
@@ -183,19 +184,12 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between ml-1 mb-0.5">
                                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</label>
-                                        <button
-                                            type="button"
+                                        <AiEnhanceButton
                                             onClick={handleEnhance}
                                             disabled={!formData.description || formData.description.length < 20 || enhanceMutation.isPending}
-                                            className="flex items-center gap-1.5 text-[10px] font-bold py-1 px-2.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-                                        >
-                                            {enhanceMutation.isPending ? (
-                                                <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></span>
-                                            ) : (
-                                                <HiSparkles className="text-xs group-hover:rotate-12 transition-transform" />
-                                            )}
-                                            ✨ Enhance
-                                        </button>
+                                            isLoading={enhanceMutation.isPending}
+                                            text="AI Enhance"
+                                        />
                                     </div>
                                     <textarea
                                         name="description"

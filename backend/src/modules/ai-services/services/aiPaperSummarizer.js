@@ -1,5 +1,5 @@
-import { extractTextFromPDF, roughExtractSections } from "../lib/extractors.js";
-import { generateCompletion } from "../lib/llmClient.js";
+import { extractTextFromPDF, roughExtractSections } from "../../../lib/extractors.js";
+import { generateCompletion } from "../../../lib/llmClient.js";
 import dotenv from 'dotenv';
 dotenv.config();
 

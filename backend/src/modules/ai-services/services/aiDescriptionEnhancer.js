@@ -1,4 +1,4 @@
-import { generateCompletion } from "../lib/llmClient.js";
+import { generateCompletion } from "../../../lib/llmClient.js";
 
 /**
  * Enhances a description using AI for academic/professional tone.
