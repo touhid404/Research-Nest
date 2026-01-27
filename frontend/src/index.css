@@ -113,7 +113,53 @@ html {
     animation: fade 0.7s ease-in-out;
 }
 
+/* --- Magical Border Flow --- */
+.magical-border-flow {
+    position: relative;
+    padding: 1.5px;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 
+
+.magical-border-flow::before {
+    content: '';
+    position: absolute;
+    width: 150%;
+    height: 300%;
+    background: conic-gradient(from 0deg,
+            transparent,
+            #06b6d4,
+            /* cyan-500 */
+            #3b82f6,
+            /* blue-500 */
+            #6366f1,
+            /* indigo-500 */
+            transparent 40%);
+    animation: border-rotate 3s linear infinite;
+    z-index: 0;
+}
+
+
+@keyframes border-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+.magical-border-flow>* {
+    position: relative;
+    z-index: 10;
+}
 /* --- Custom Uniform Scrollbar --- */
 .custom-scrollbar::-webkit-scrollbar {
     width: 5px;
