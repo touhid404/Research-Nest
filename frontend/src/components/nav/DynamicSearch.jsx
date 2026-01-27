@@ -1,36 +1,45 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaSearch, FaArrowRight, FaTimes } from "react-icons/fa";
+import {
+    IoGridOutline,
+    IoListOutline,
+    IoBookmarkOutline,
+    IoChatbubbleEllipsesOutline,
+    IoNewspaperOutline,
+    IoPersonOutline,
+    IoNotificationsOutline,
+} from "react-icons/io5";
 import { useNavigate } from "react-router";
 
 const APP_ROUTES = [
     // Feed
-    { path: "/home/posts/explore", label: "Explore Proposals & Posts", category: "Feed" },
-    { path: "/home/posts/myposts", label: "My Proposal Posts", category: "Feed" },
-    { path: "/home/posts/create-post", label: "Create New Proposal", category: "Feed" },
+    { path: "/home/posts/explore", label: "Explore Proposals & Posts", category: "Feed", icon: <IoGridOutline /> },
+    { path: "/home/posts/myposts", label: "My Proposal Posts", category: "Feed", icon: <IoGridOutline /> },
+    { path: "/home/posts/create-post", label: "Create New Proposal", category: "Feed", icon: <IoGridOutline /> },
 
     // Requests
-    { path: "/home/requests/pending", label: "Incoming / Pending Requests", category: "Requests" },
-    { path: "/home/requests/accepted", label: "Accepted Connections", category: "Requests" },
-    { path: "/home/requests/sent", label: "Sent Request History", category: "Requests" },
+    { path: "/home/requests/pending", label: "Incoming / Pending Requests", category: "Requests", icon: <IoListOutline /> },
+    { path: "/home/requests/accepted", label: "Accepted Connections", category: "Requests", icon: <IoListOutline /> },
+    { path: "/home/requests/sent", label: "Sent Request History", category: "Requests", icon: <IoListOutline /> },
 
     // Paper Hub
-    { path: "/home/paper-hub/explore-papers", label: "Explore Research Papers", category: "Paper Hub" },
-    { path: "/home/paper-hub/my-papers", label: "My Published Papers", category: "Paper Hub" },
-    { path: "/home/paper-hub/share-my-paper", label: "Publish / Share Paper", category: "Paper Hub" },
+    { path: "/home/paper-hub/explore-papers", label: "Explore Research Papers", category: "Paper Hub", icon: <IoNewspaperOutline /> },
+    { path: "/home/paper-hub/my-papers", label: "My Published Papers", category: "Paper Hub", icon: <IoNewspaperOutline /> },
+    { path: "/home/paper-hub/share-my-paper", label: "Publish / Share Paper", category: "Paper Hub", icon: <IoNewspaperOutline /> },
 
     // Workspace
-    { path: "/home/workspace", label: "Workspace Overview & Collaboration", category: "Workspace" },
-    { path: "/home/workspace", label: "Workspace Calendar & Events", category: "Workspace" },
-    { path: "/home/workspace", label: "Meeting Room & Video Calls", category: "Workspace" },
-    { path: "/home/workspace", label: "Shared Documents & Files", category: "Workspace" },
+    { path: "/home/workspace", label: "Workspace Overview & Collaboration", category: "Workspace", icon: <IoBookmarkOutline /> },
+    { path: "/home/workspace", label: "Workspace Calendar & Events", category: "Workspace", icon: <IoBookmarkOutline /> },
+    { path: "/home/workspace", label: "Meeting Room & Video Calls", category: "Workspace", icon: <IoBookmarkOutline /> },
+    { path: "/home/workspace", label: "Shared Documents & Files", category: "Workspace", icon: <IoBookmarkOutline /> },
 
     // Communication & System
-    { path: "/home/messages", label: "Messages & Chat", category: "Communication" },
-    { path: "/home/notifications", label: "My Notifications", category: "System" },
+    { path: "/home/messages", label: "Messages & Chat", category: "Communication", icon: <IoChatbubbleEllipsesOutline /> },
+    { path: "/home/notifications", label: "My Notifications", category: "System", icon: <IoNotificationsOutline /> },
 
     // Profile
-    { path: "/home/my-profile/overview", label: "My Profile Overview", category: "Profile" },
-    { path: "/home/my-profile/posts", label: "My Profile Posts", category: "Profile" },
+    { path: "/home/my-profile/overview", label: "My Profile Overview", category: "Profile", icon: <IoPersonOutline /> },
+    { path: "/home/my-profile/posts", label: "My Profile Posts", category: "Profile", icon: <IoPersonOutline /> },
 ];
 
 const DynamicSearch = () => {
@@ -40,6 +49,21 @@ const DynamicSearch = () => {
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const navigate = useNavigate();
     const containerRef = useRef(null);
+    const inputRef = useRef(null);
+
+    // Keyboard shortcut handler (Ctrl + K)
+    useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                inputRef.current?.focus();
+                setIsOpen(true);
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, []);
 
     // Filter routes based on query
     useEffect(() => {
@@ -86,6 +110,7 @@ const DynamicSearch = () => {
             }
         } else if (e.key === "Escape") {
             setIsOpen(false);
+            inputRef.current?.blur();
         }
     };
 
@@ -98,8 +123,9 @@ const DynamicSearch = () => {
                     <FaSearch size={14} />
                 </div>
                 <input
+                    ref={inputRef}
                     type="text"
-                    placeholder="Search Research Nest..."
+                    placeholder="Search Anything..."
                     value={query}
                     onChange={(e) => {
                         setQuery(e.target.value);
@@ -109,7 +135,7 @@ const DynamicSearch = () => {
                     onFocus={() => setIsOpen(true)}
                     onKeyDown={handleKeyDown}
                     className="
-                        w-full rounded-full pl-11 pr-10 py-2.5
+                        w-full rounded-full pl-11 pr-16 py-2
                         bg-gray-100 dark:bg-gray-800/80
                         text-gray-900 dark:text-gray-100
                         placeholder-gray-500 dark:placeholder-gray-400
@@ -119,14 +145,26 @@ const DynamicSearch = () => {
                         transition-all duration-200 text-sm
                     "
                 />
-                {query && (
-                    <button
-                        onClick={() => setQuery("")}
-                        className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-                    >
-                        <FaTimes size={12} />
-                    </button>
-                )}
+
+                {/* Shortcut Hint */}
+                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    {query ? (
+                        <button
+                            onClick={() => {
+                                setQuery("");
+                                inputRef.current?.focus();
+                            }}
+                            className="pointer-events-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        >
+                            <FaTimes size={12} />
+                        </button>
+                    ) : (
+                        <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[10px] font-bold text-gray-400 whitespace-nowrap">
+                            <span className="text-[9px]">CTRL</span>
+                            <span>K</span>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Backdrop for clarity when open */}
@@ -145,7 +183,7 @@ const DynamicSearch = () => {
                     animate-in fade-in slide-in-from-top-2
                     backdrop-blur-xl bg-opacity-98 dark:bg-opacity-98
                 ">
-                    <div className="p-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                         {results.length > 0 ? (
                             <div className="space-y-0.5">
                                 <p className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Navigation</p>
@@ -154,13 +192,19 @@ const DynamicSearch = () => {
                                         key={result.path}
                                         onClick={() => handleSelect(result.path)}
                                         className={`
-                                            w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-150
+                                            w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150
                                             ${selectedIndex === index
                                                 ? "bg-primary text-white"
                                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"}
                                         `}
                                     >
-                                        <div className="flex flex-col items-start min-w-0">
+                                        <div className={`
+                                            w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors
+                                            ${selectedIndex === index ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500"}
+                                        `}>
+                                            {result.icon}
+                                        </div>
+                                        <div className="flex flex-col items-start min-w-0 flex-1">
                                             <span className={`font-medium text-[14px] truncate ${selectedIndex === index ? "text-white" : "text-gray-900 dark:text-gray-100"}`}>
                                                 {result.label}
                                             </span>
