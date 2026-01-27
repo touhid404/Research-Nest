@@ -174,7 +174,7 @@ const ChatInterface = () => {
     return (
         <div className="flex flex-col h-full relative">
             {/* Header */}
-            <div className="flex-none z-20 border-b border-gray-100 dark:border-slate-900 p-1.5 bg-transparent backdrop-blur-md">
+            <div className="flex-none z-20 border-b border-gray-100 dark:border-slate-900 px-3 py-2 bg-transparent backdrop-blur-md">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate("/home/messages")}
@@ -184,7 +184,7 @@ const ChatInterface = () => {
                     </button>
 
                     <div className="avatar placeholder relative group">
-                        <div className="w-10 h-10 rounded-full ring ring-offset-2 ring-violet-500 ring-offset-base-100 transition-all duration-300 group-hover:scale-105 flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                        <div className="w-8 h-8 rounded-full ring ring-offset-1 ring-violet-50 ring-offset-base-100 transition-all duration-300 group-hover:scale-105 flex items-center justify-center bg-slate-100 dark:bg-slate-800">
                             {isGroup ? (
                                 <FaUsers className="text-violet-500 text-xl" />
                             ) : otherUser?.photoURL ? (
