@@ -29,7 +29,7 @@ Requested Tone: ${tone}.
 
 Tasks:
 1. Refine the given "title" to be more professional, impactful, and academically sound. If no title is provided, generate a compelling one based on the description/topic.
-2. Refine the given "researchTopic" or suggest a more precise academic category if the provided one is too broad.
+2. Refine the given "researchTopic" or suggest a more precise set of research categories. You MUST provide exactly 2 to 3 specific research topics or categories, separated by commas.
 3. Refine the "description" for clarity, grammar, and academic flow. If the description is missing or very short, expand it into a professional abstract/summary based on the title and topic.
 
 Guidelines:
@@ -38,7 +38,7 @@ Guidelines:
 - Avoid marketing fluff; focus on scholarly value.
 - Output the result strictly as a JSON object with these fields:
   1. "suggestedTitle": The refined/suggested title.
-  2. "suggestedTopic": The refined/suggested research topic or domain.
+  2. "suggestedTopic": A comma-separated string of exactly 2 or 3 refined/suggested research topics or domains.
   3. "enhancedDescription": The improved and potentially expanded description (STRICT MAXIMUM 900 CHARACTERS).
   4. "changesSummary": An array of strings summarizing your improvements (e.g., "Refined title for clarity", "Expanded abstract based on keywords").
     `.trim();
@@ -49,7 +49,9 @@ Title: ${title || "N/A"}
 Research Topic: ${researchTopic || "N/A"}
 Description: ${description || "N/A"}
 
-Please provide suggested refinements for all three fields. Ensure the "enhancedDescription" is concise and does not exceed 900 characters.
+Please provide suggested refinements for all three fields. 
+Ensure the "suggestedTopic" contains exactly 2 to 3 relevant research areas (comma-separated).
+Ensure the "enhancedDescription" is concise and does not exceed 900 characters.
     `.trim();
 
     try {
