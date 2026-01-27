@@ -1,55 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import NotificationItem from '../../pages/Home/notifications/NotificationItem.jsx';
 import { getIcon, getIconBg } from '../../pages/Home/notifications/NotificationHelpers.jsx';
 import { Link } from 'react-router';
+import useNotifications from '../../hooks/useNotifications';
+import { formatTime } from '../../utils/formatTime';
 
 const NotificationDropdown = ({ onClose }) => {
-    // Mock Data - In a real app this would come from a Context or Store
-    const notifications = [
-        {
-            id: 1,
-            type: 'request',
-            actor: {
-                name: "Dr. Sarah Mitchell",
-                username: "@s_mitchell",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "sent you a connection request",
-            time: "2h ago",
-            read: false,
-        },
-        {
-            id: 2,
-            type: 'post_share',
-            actor: {
-                name: "James Anderson",
-                username: "@j_anderson",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "shared a post with you",
-            time: "4h ago",
-            read: false,
-            postSnippet: {
-                title: "The Future of Quantum Computing in 2025",
-                preview: "New breakthroughs in qubit stability might change everything we know about..."
-            }
-        },
-        {
-            id: 3,
-            type: 'workspace_invite',
-            actor: {
-                name: "Research-Nest Team",
-                username: "@rn_official",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "invited you to join the 'Global Sustainability' workspace",
-            time: "1d ago",
-            read: true,
-        },
-    ];
+    const { notifications, markAllAsRead, markAsRead } = useNotifications();
 
-    const newNotifications = notifications.filter(n => !n.read);
-    const earlierNotifications = notifications.filter(n => n.read);
+    useEffect(() => {
+        markAllAsRead();
+    }, []);
+    const mappedNotifications = notifications.map(n => ({
+        id: n._id,
+        type: n.type, // 'proposal_request', 'workspace_invite', etc.
+        actor: {
+            name: n.sender?.name || 'Unknown',
+            username: n.sender?.username ? `@${n.sender.username}` : '',
+            avatar: n.sender?.photoURL || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+        },
+        content: n.message,
+        time: n.createdAt ? formatTime(new Date(n.createdAt)) : '',
+        read: n.isRead,
+        // Preserve specific fields if needed
+        relatedId: n.relatedId,
+        actionStatus: n.actionStatus  // Add this field
+    }));
+
+    const newNotifications = mappedNotifications.filter(n => !n.read);
+    const earlierNotifications = mappedNotifications.filter(n => n.read);
+
+    const handleMarkAllRead = () => {
+        markAllAsRead();
+    };
 
     return (
         <div className="absolute top-full right-0 mt-2 w-96 max-h-[85vh] flex flex-col 
@@ -60,47 +43,57 @@ const NotificationDropdown = ({ onClose }) => {
         >
             <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
                 <h2 className="font-bold text-lg">Notifications</h2>
-                <button className="text-xs font-semibold text-primary hover:underline cursor-pointer">
+                <button
+                    onClick={handleMarkAllRead}
+                    className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                >
                     Mark all as read
                 </button>
             </div>
 
             <div className="overflow-y-auto rn-scrollbar flex-1 p-2">
-                <div className="space-y-4">
-                    {/* New Notifications Section */}
-                    {newNotifications.length > 0 && (
-                        <div>
-                            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-2">New</h2>
-                            <div className="space-y-1">
-                                {newNotifications.map((notif) => (
-                                    <NotificationItem
-                                        key={notif.id}
-                                        notif={notif}
-                                        getIcon={getIcon}
-                                        getIconBg={getIconBg}
-                                    />
-                                ))}
+                {mappedNotifications.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 text-sm">
+                        No notifications yet
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {/* New Notifications Section */}
+                        {newNotifications.length > 0 && (
+                            <div>
+                                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-2">New</h2>
+                                <div className="space-y-1">
+                                    {newNotifications.map((notif) => (
+                                        <NotificationItem
+                                            key={notif.id}
+                                            notif={notif}
+                                            getIcon={getIcon}
+                                            getIconBg={getIconBg}
+                                            onRead={() => markAsRead(notif.id)}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Earlier Notifications Section */}
-                    {earlierNotifications.length > 0 && (
-                        <div>
-                            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-4">Earlier</h2>
-                            <div className="space-y-1">
-                                {earlierNotifications.map((notif) => (
-                                    <NotificationItem
-                                        key={notif.id}
-                                        notif={notif}
-                                        getIcon={getIcon}
-                                        getIconBg={getIconBg}
-                                    />
-                                ))}
+                        {/* Earlier Notifications Section */}
+                        {earlierNotifications.length > 0 && (
+                            <div>
+                                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-4">Earlier</h2>
+                                <div className="space-y-1">
+                                    {earlierNotifications.map((notif) => (
+                                        <NotificationItem
+                                            key={notif.id}
+                                            notif={notif}
+                                            getIcon={getIcon}
+                                            getIconBg={getIconBg}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <Link to="/home/notifications" onClick={onClose}>

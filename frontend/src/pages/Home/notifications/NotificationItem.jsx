@@ -1,6 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router';
 
+// Helper to parse **bold** text
+const renderContent = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(\*\*.*?\*\*)/g); // Split by **...**
+    return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i} className="font-semibold text-gray-900 dark:text-gray-100">{part.slice(2, -2)}</strong>;
+        }
+        return part;
+    });
+};
+
 const NotificationItem = ({ notif, getIconBg, getIcon }) => (
     <div
         className={`relative p-4 rounded-xl transition-all duration-200 
@@ -23,12 +35,12 @@ const NotificationItem = ({ notif, getIconBg, getIcon }) => (
             {/* Content */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">
-                    <div className="text-sm">
+                    <div className="text-sm line-clamp-3">
                         <span className="font-bold text-gray-900 dark:text-gray-100 mr-1">
                             {notif.actor.name}
                         </span>
                         <span className="text-gray-600 dark:text-gray-400">
-                            {notif.content}
+                            {renderContent(notif.content)}
                         </span>
                         {notif.target && (
                             <span className="text-gray-900 dark:text-gray-200 font-medium ml-1">
@@ -43,24 +55,44 @@ const NotificationItem = ({ notif, getIconBg, getIcon }) => (
 
                 {/* Type Specific Content */}
 
-                {notif.type === 'request' && (
-                    <div className="flex items-center gap-3 mt-3">
-                        <button
-                            className="btn btn-sm h-9 px-5 rounded-full 
-            bg-primary text-white border-none hover:bg-primary-focus"
-                        >
-                            Accept
-                        </button>
-                        <button
-                            className="btn btn-sm h-9 px-5 rounded-full 
-            bg-transparent 
-            border border-gray-300 dark:border-gray-600
-            hover:bg-gray-100 dark:hover:bg-gray-800
-            text-gray-700 dark:text-gray-300
-            shadow-none"
-                        >
-                            Decline
-                        </button>
+                {(notif.type === 'request' || notif.type === 'proposal_request') && (
+                    <div className="mt-3">
+                        {(!notif.actionStatus || notif.actionStatus === 'pending') ? (
+                            <div className="flex items-center gap-3">
+                                <button
+                                    className="btn btn-sm h-9 px-5 rounded-full 
+                    bg-primary text-white border-none hover:bg-primary-focus"
+                                >
+                                    Accept
+                                </button>
+                                <button
+                                    className="btn btn-sm h-9 px-5 rounded-full 
+                    bg-transparent 
+                    border border-gray-300 dark:border-gray-600
+                    hover:bg-gray-100 dark:hover:bg-gray-800
+                    text-gray-700 dark:text-gray-300
+                    shadow-none"
+                                >
+                                    Decline
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={`text-sm font-medium ${notif.actionStatus === 'accepted' ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                                {notif.actionStatus === 'accepted' ? 'Request Accepted' : 'Request Declined'}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {notif.type === 'proposal_accepted' && (
+                    <div className="mt-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                        Request Accepted!
+                    </div>
+                )}
+
+                {notif.type === 'proposal_declined' && (
+                    <div className="mt-2 text-sm text-red-500 font-medium">
+                        Request Declined.
                     </div>
                 )}
 

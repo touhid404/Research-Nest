@@ -6,6 +6,9 @@ import {
     respondToMeetingService,
     deleteMeetingService,
 } from "../services/meetings.service.js";
+import Notification from "../../../models/notification.model.js";
+import User from "../../../models/user.model.js";
+import Workspace from "../../../models/workspace.model.js";
 
 // ============== MEETING CONTROLLERS ==============
 
@@ -51,6 +54,33 @@ export const createMeeting = async (req, res) => {
         const io = req.app.get("io");
         if (io) {
             io.to(`workspace:${result.workspaceId}`).emit("meeting:created", result.data);
+        }
+
+        // --- Notification Logic: Meeting Scheduled/Started ---
+        const workspace = await Workspace.findById(workspaceId);
+        if (workspace) {
+            // Notify all workspace members (excluding creator)
+            const memberUids = (workspace.members || []).map(m => m.uid);
+            const allMemberUids = new Set([...memberUids, ...(workspace.admins || []), workspace.ownerUid]);
+            allMemberUids.delete(uid); // Remove creator
+
+            const recipients = await User.find({ uid: { $in: Array.from(allMemberUids) } });
+            const senderUser = await User.findOne({ uid });
+
+            const type = isInstant ? 'meeting_started' : 'meeting_scheduled';
+            const action = isInstant ? 'started' : 'scheduled';
+
+            for (const recipient of recipients) {
+                await Notification.create({
+                    recipient: recipient._id,
+                    sender: senderUser._id,
+                    type: type,
+                    message: `${action} a meeting in "**${workspace.name}**"`,
+                    relatedId: result.data._id,
+                    relatedModel: 'Meeting',
+                    isRead: false
+                });
+            }
         }
 
         res.status(201).json({ success: true, data: result.data });

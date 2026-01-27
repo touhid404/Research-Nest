@@ -1,92 +1,47 @@
-import React from 'react';
-import { Link } from 'react-router';
+import React, { useEffect } from 'react';
 import NotificationItem from './NotificationItem.jsx';
 import { getIcon, getIconBg } from './NotificationHelpers.jsx';
 import RightSidebar from '../../../components/sidebar/RightSidebar.jsx';
+import useNotifications from '../../../hooks/useNotifications';
+import { formatTime } from '../../../utils/formatTime';
 
 const Notifications = () => {
-    const notifications = [
-        {
-            id: 1,
-            type: 'request',
-            actor: {
-                name: "Dr. Sarah Mitchell",
-                username: "@s_mitchell",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "sent you a connection request",
-            time: "2h ago",
-            read: false,
-        },
-        {
-            id: 2,
-            type: 'post_share',
-            actor: {
-                name: "James Anderson",
-                username: "@j_anderson",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "shared a post with you",
-            time: "4h ago",
-            read: false,
-            postSnippet: {
-                title: "The Future of Quantum Computing in 2025",
-                preview: "New breakthroughs in qubit stability might change everything we know about..."
-            }
-        },
-        {
-            id: 3,
-            type: 'workspace_invite',
-            actor: {
-                name: "Research-Nest Team",
-                username: "@rn_official",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "invited you to join the 'Global Sustainability' workspace",
-            time: "1d ago",
-            read: true,
-        },
-        {
-            id: 4,
-            type: 'like',
-            actor: {
-                name: "Emily Chen",
-                username: "@e_chen",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "liked your research proposal",
-            time: "1d ago",
-            read: true,
-            target: "On the efficacy of..."
-        },
-        {
-            id: 5,
-            type: 'comment',
-            actor: {
-                name: "Michael Brown",
-                username: "@m_brown",
-                avatar: "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-            },
-            content: "commented: 'This is a fascinating approach, have you considered...'",
-            time: "2d ago",
-            read: true,
-        }
-    ];
+    const { notifications, markAllAsRead, markAsRead } = useNotifications();
 
-    const newNotifications = notifications.filter(n => !n.read);
-    const earlierNotifications = notifications.filter(n => n.read);
+    // Map backend data to UI format
+    const mappedNotifications = notifications.map(n => ({
+        id: n._id,
+        type: n.type,
+        actor: {
+            name: n.sender?.name || 'Unknown',
+            username: n.sender?.username ? `@${n.sender.username}` : '',
+            avatar: n.sender?.photoURL || "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+        },
+        content: n.message,
+        time: n.createdAt ? formatTime(new Date(n.createdAt)) : '',
+        read: n.isRead,
+        relatedId: n.relatedId,
+        actionStatus: n.actionStatus
+    }));
+
+    const newNotifications = mappedNotifications.filter(n => !n.read);
+    const earlierNotifications = mappedNotifications.filter(n => n.read);
+
+    // Optional: Auto-mark as read when visiting the full page?
+    // User only asked to "update the notifications routes page should be updated with the same notification that have shown on the popup".
+    // I won't auto-mark read here unless requested, but the "Mark all as read" button should work.
 
     return (
-
-
-
         <div className="flex h-full">
             {/* Posts Section */}
             <div className="flex-1 border-r border-gray-100 dark:border-gray-800 overflow-y-auto rn-scrollbar pr-2">
                 <div className="p-4">
                     <div className="flex items-center justify-between mb-6 px-2">
                         <h1 className="text-2xl font-bold">Notifications</h1>
-                        <button className="cursor-pointer text-sm text-primary font-medium hover:underline">
+                        <button
+                            onClick={() => markAllAsRead()}
+                            className="cursor-pointer text-sm text-primary font-medium hover:underline"
+                        >
                             Mark all as read
                         </button>
                     </div>
@@ -103,6 +58,7 @@ const Notifications = () => {
                                             notif={notif}
                                             getIcon={getIcon}
                                             getIconBg={getIconBg}
+                                            onRead={() => markAsRead(notif.id)}
                                         />
                                     ))}
                                 </div>
@@ -126,7 +82,7 @@ const Notifications = () => {
                             </div>
                         )}
 
-                        {notifications.length === 0 && (
+                        {mappedNotifications.length === 0 && (
                             <div className="text-center py-20 text-gray-500">
                                 No notifications yet
                             </div>
@@ -140,7 +96,6 @@ const Notifications = () => {
                 <RightSidebar />
             </div>
         </div>
-
     );
 };
 

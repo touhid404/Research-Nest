@@ -2,6 +2,7 @@ import ProposalApplication from "../../models/proposalApplication.model.js";
 import ProposalPost from "../../models/proposalPost.model.js";
 import User from "../../models/user.model.js";
 import Conversation from "../../models/conversation.model.js";
+import Notification from "../../models/notification.model.js";
 import { createWorkspaceService } from "../workspace/services/workspace.service.js"; // Import workspace service
 // Send a collaboration request
 export const sendRequest = async (req, res) => {
@@ -53,9 +54,21 @@ export const sendRequest = async (req, res) => {
             description,
         });
 
-
         await newRequest.save();
 
+        // --- Notification Logic ---
+        const receiver = await User.findOne({ uid: post.ownerUid });
+        if (receiver) {
+            await Notification.create({
+                recipient: receiver._id,
+                sender: sender._id,
+                type: 'proposal_request',
+                message: `sent a collaboration request for "**${post.title}**"`,
+                relatedId: post._id, // Linking to the Post
+                relatedModel: 'ProposalPost',
+                actionStatus: 'pending'
+            });
+        }
 
         res.status(201).json(newRequest);
     } catch (error) {
@@ -179,6 +192,56 @@ export const updateRequestStatus = async (req, res) => {
         request.status = status;
         await request.save();
 
+        // --- Notification Logic ---
+        const applicant = await User.findOne({ uid: request.senderId });
+        const receiverUser = await User.findOne({ uid: currentUserUid });
+
+        if (applicant && receiverUser) {
+            if (status === 'accepted') {
+                // 1. Notify Applicant
+                await Notification.create({
+                    recipient: applicant._id,
+                    sender: receiverUser._id,
+                    type: 'proposal_accepted',
+                    message: `accepted your request for "**${(await ProposalPost.findById(request.proposalPostId)).title}**"`,
+                    relatedId: request.proposalPostId,
+                    relatedModel: 'ProposalPost'
+                });
+
+                // 2. Update Receiver's Notification to 'accepted'
+                await Notification.findOneAndUpdate(
+                    {
+                        recipient: receiverUser._id,
+                        sender: applicant._id,
+                        type: 'proposal_request',
+                        relatedId: request.proposalPostId
+                    },
+                    { actionStatus: 'accepted' }
+                );
+            } else if (status === 'rejected') {
+                // 1. Notify Applicant
+                await Notification.create({
+                    recipient: applicant._id,
+                    sender: receiverUser._id,
+                    type: 'proposal_declined',
+                    message: `declined your request for "**${(await ProposalPost.findById(request.proposalPostId)).title}**"`,
+                    relatedId: request.proposalPostId,
+                    relatedModel: 'ProposalPost'
+                });
+
+                // 2. Update Receiver's Notification to 'declined'
+                await Notification.findOneAndUpdate(
+                    {
+                        recipient: receiverUser._id,
+                        sender: applicant._id,
+                        type: 'proposal_request',
+                        relatedId: request.proposalPostId
+                    },
+                    { actionStatus: 'declined' }
+                );
+            }
+        }
+
 
         res.status(200).json(request);
     } catch (error) {
@@ -258,6 +321,29 @@ export const formGroup = async (req, res) => {
                 proposalPostId: proposalPostId,
                 conversationId: newConversation._id,
             });
+
+            // --- Notification Logic: Workspace Invite ---
+            if (workspace) {
+                // Notify all participants (except the creator/current user)
+                const invites = participants.filter(uid => uid !== currentUserUid);
+
+                // We need to map UIDs to _ids for the Notification model
+                const usersToNotify = await User.find({ uid: { $in: invites } });
+                const senderUser = await User.findOne({ uid: currentUserUid });
+
+                for (const user of usersToNotify) {
+                    await Notification.create({
+                        recipient: user._id,
+                        sender: senderUser._id,
+                        type: 'workspace_invite',
+                        message: `invited you to the workspace "**${groupName}**"`,
+                        relatedId: workspace._id,
+                        relatedModel: 'Workspace',
+                        isRead: false
+                    });
+                }
+            }
+
         } catch (wsError) {
             console.error("Failed to automatically create workspace for formed group:", wsError);
             // Proceed without failing the whole operation, or maybe fail? 

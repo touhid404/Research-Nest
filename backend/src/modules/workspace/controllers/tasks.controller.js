@@ -5,6 +5,9 @@ import {
     updateTaskService,
     deleteTaskService,
 } from "../services/tasks.service.js";
+import Notification from "../../../models/notification.model.js";
+import User from "../../../models/user.model.js";
+import Workspace from "../../../models/workspace.model.js";
 
 // ============== TASK CONTROLLERS ==============
 
@@ -37,6 +40,33 @@ export const createTask = async (req, res) => {
         const io = req.app.get("io");
         if (io) {
             io.to(`workspace:${result.workspaceId}`).emit("task:created", result.data);
+        }
+
+        // --- Notification Logic: Task Assigned ---
+        if (assignedTo && assignedTo.length > 0) {
+            const workspace = await Workspace.findById(workspaceId);
+            if (workspace) {
+                // assignedTo is array of uids
+                // Filter out the creator if they assigned themselves
+                const targetUids = assignedTo.filter(id => id !== uid);
+
+                if (targetUids.length > 0) {
+                    const senderUser = await User.findOne({ uid });
+                    const recipients = await User.find({ uid: { $in: targetUids } });
+
+                    for (const recipient of recipients) {
+                        await Notification.create({
+                            recipient: recipient._id,
+                            sender: senderUser._id,
+                            type: 'task_assigned',
+                            message: `assigned you a new task in workspace "**${workspace.name}**"`,
+                            relatedId: result.data._id, // Task ID
+                            relatedModel: 'Task', // Assuming Task model name, though schema isn't strictly defined for 'relatedModel' yet, using string is fine
+                            isRead: false
+                        });
+                    }
+                }
+            }
         }
 
         res.status(201).json({ success: true, data: result.data });

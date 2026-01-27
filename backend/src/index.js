@@ -14,6 +14,7 @@ import { paperRoutes } from "./modules/papers/paper.routes.js";
 import { workspaceRoutes } from "./modules/workspace/workspace.routes.js";
 import "./cron/pingSelf.js";
 import { aiRoutes } from "./modules/ai-services/ai.routes.js";
+import notificationRoutes from "./modules/notifications/notification.routes.js";
 
 
 const app = express();
@@ -80,6 +81,9 @@ app.use('/api/messages', messageRoutes);
 
 // AI Routes
 app.use('/api/ai', aiRoutes);
+
+// Notification Routes
+app.use('/api/notifications', notificationRoutes);
 
 
 
