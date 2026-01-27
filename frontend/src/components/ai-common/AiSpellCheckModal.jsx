@@ -18,48 +18,81 @@ const AiSpellCheckModal = ({
     const content = (
         <AnimatePresence>
             {isOpen && (
-                <div className="absolute bottom-full mb-3 left-0 z-30 px-2 sm:px-0">
+                <div className="absolute bottom-full mb-3 left-0 z-30 w-full sm:w-[450px]">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                        className="relative w-full w-[200px] rounded-2xl bg-white/95 dark:bg-slate-900/95 shadow-2xl border border-indigo-100 dark:border-indigo-500/30 flex flex-col p-3 border-b-2 border-b-indigo-500 backdrop-blur-xl group"
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        className="relative rounded-xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {isLoading ? (
-                            <div className="flex items-center gap-2 py-1 px-2">
-                                <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold animate-pulse uppercase tracking-wider">Refining...</p>
+                            <div className="p-4 flex items-center gap-3">
+                                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Checking...</p>
                             </div>
                         ) : (
-                            <div className="flex items-start gap-3">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 mb-1.5">
-                                        <HiSparkles className="text-indigo-500 dark:text-indigo-400 text-xs animate-pulse" />
-                                        <span className="text-[9px] font-black text-indigo-600/70 dark:text-indigo-400/70 uppercase tracking-widest">AI Suggestion</span>
-                                    </div>
-                                    <p className="text-xs text-slate-800 dark:text-slate-100 font-medium leading-relaxed">
-                                        {correctedText || originalText}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-1 self-start">
+                            <>
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50 dark:border-slate-800/50">
+                                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Use the right word</span>
                                     <button
                                         onClick={onClose}
-                                        className="p-1 text-slate-400 hover:text-red-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
-                                        title="Dismiss"
+                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                                     >
-                                        <BiX size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => onApply(correctedText)}
-                                        disabled={isLoading || !correctedText || correctedText === originalText}
-                                        className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-lg shadow-indigo-500/20 transition-all active:scale-90 disabled:opacity-50"
-                                        title="Apply Changes"
-                                    >
-                                        <BiCheck size={18} />
+                                        <BiX size={20} />
                                     </button>
                                 </div>
-                            </div>
+
+                                <div className="p-4 bg-white dark:bg-slate-900">
+                                    <div className="text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 flex flex-wrap gap-x-1.5 items-baseline">
+                                        {(() => {
+                                            if (!corrections || corrections.length === 0) return correctedText || originalText;
+
+                                            let result = [];
+                                            let lastIndex = 0;
+                                            const text = originalText;
+
+                                            const sorted = [...corrections].sort((a, b) => text.indexOf(a.original) - text.indexOf(b.original));
+
+                                            sorted.forEach((corr, i) => {
+                                                const start = text.indexOf(corr.original, lastIndex);
+                                                if (start !== -1) {
+                                                    // Text before
+                                                    if (start > lastIndex) {
+                                                        result.push(<span key={`pre-${i}`}>{text.substring(lastIndex, start)}</span>);
+                                                    }
+                                                    // The diff
+                                                    result.push(
+                                                        <span key={`diff-${i}`} className="inline-flex gap-1.5 items-baseline">
+                                                            <span className="text-red-600 line-through decoration-red-600/60 font-medium">
+                                                                {corr.original}
+                                                            </span>
+                                                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                                                                {corr.corrected}
+                                                            </span>
+                                                        </span>
+                                                    );
+                                                    lastIndex = start + corr.original.length;
+                                                }
+                                            });
+                                            // Remaining text
+                                            if (lastIndex < text.length) {
+                                                result.push(<span key="post">{text.substring(lastIndex)}</span>);
+                                            }
+                                            return result;
+                                        })()}
+                                    </div>
+
+                                    <div className="mt-4 flex justify-end">
+                                        <button
+                                            onClick={() => onApply(correctedText)}
+                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
+                                        >
+                                            Correct it
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </motion.div>
                 </div>
