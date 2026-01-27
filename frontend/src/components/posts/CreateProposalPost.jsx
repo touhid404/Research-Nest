@@ -169,19 +169,10 @@ const CreateProposalPost = () => {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                         Create Research Proposal
                     </h1>
-                    <button
-                        type="button"
+                    <AiEnhanceButton
                         onClick={handleEnhance}
-                        disabled={enhanceMutation.isPending}
-                        className="flex items-center cursor-pointer gap-1.5 text-xs font-semibold py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-                    >
-                        {enhanceMutation.isPending ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                            <HiSparkles className="text-sm group-hover:rotate-12 transition-transform" />
-                        )}
-                        Enhance with AI
-                    </button>
+                        isLoading={enhanceMutation.isPending}
+                    />
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">

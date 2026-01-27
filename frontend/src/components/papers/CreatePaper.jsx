@@ -278,19 +278,10 @@ const CreatePaper = () => {
             <div className="w-full max-w-7xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Publish Research Paper</h2>
-                    <button
-                        type="button"
+                    <AiEnhanceButton
                         onClick={handleEnhance}
-                        disabled={enhanceMutation.isPending}
-                        className="flex items-center gap-2 text-sm font-bold py-2.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 group self-start sm:self-auto"
-                    >
-                        {enhanceMutation.isPending ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                            <HiSparkles className="text-lg group-hover:rotate-12 transition-transform" />
-                        )}
-                        Enhance with AI
-                    </button>
+                        isLoading={enhanceMutation.isPending}
+                    />
                 </div>
 
 
