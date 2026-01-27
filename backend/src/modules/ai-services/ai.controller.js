@@ -81,12 +81,43 @@ export const summarizeMeeting = async (req, res) => {
             data: result
         });
 
+
     } catch (error) {
         console.error("Summarization Error:", error);
         res.status(500).json({
             success: false,
             message: "Failed to generate summary.",
             error: error.message
+        });
+    }
+};
+
+export const parsePdfFile = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded."
+            });
+        }
+
+        const pdfBuffer = req.file.buffer;
+
+        // Dynamically import to avoid circular dependency issues if any, though not expected here
+        const { parsePdf } = await import("./services/pdfParser.js");
+
+        const result = await parsePdf(pdfBuffer);
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error("PDF Parse Controller Error:", error);
+        res.status(500).json({
+            success: false,
+            message: `Failed to parse PDF: ${error.message}`,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

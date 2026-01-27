@@ -12,5 +12,14 @@ export const aiApi = {
     summarizeMeeting: async (payload) => {
         const response = await api.post("/ai/meeting-summary", payload);
         return response.data;
+    },
+    parsePdf: async (formData) => {
+        // Must send formData with 'file' key
+        const response = await api.post("/ai/parse-pdf", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        return response.data.data;
     }
 };

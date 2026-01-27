@@ -7,6 +7,7 @@ import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import { useNavigate } from "react-router";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
+import { useParsePdf } from "../../hooks/useParsePdf";
 import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
 import AiEnhanceButton from "../ai-common/AiEnhanceButton";
 
@@ -39,6 +40,7 @@ const CreatePaper = () => {
     // AI state
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const enhanceMutation = useEnhanceDescription();
+    const parsePdfMutation = useParsePdf();
 
 
     // Fetch workspaces
@@ -182,6 +184,33 @@ const CreatePaper = () => {
         const file = e.target.files[0];
         if (file) {
             setFormData({ ...formData, paperFile: file });
+
+            // Auto-scan PDF
+            if (file.type === "application/pdf") {
+                toast.loading("Scanning PDF for metadata...", { id: "pdf-scan" });
+                parsePdfMutation.mutate(file, {
+                    onSuccess: (data) => {
+                        toast.dismiss("pdf-scan");
+                        toast.success("PDF Scanned! Metadata auto-filled.");
+                        setFormData(prev => ({
+                            ...prev,
+                            title: data.title || prev.title,
+                            abstract: data.abstract || prev.abstract,
+                            researchDomain: data.researchDomain || prev.researchDomain,
+                            publicationDate: data.publicationDate || prev.publicationDate,
+                            publicationName: data.publicationName || prev.publicationName,
+                            doi: data.doi || prev.doi,
+                            coAuthors: data.coAuthors || prev.coAuthors,
+                            tags: data.tags || prev.tags,
+                            paperFile: file // Ensure file persists
+                        }));
+                    },
+                    onError: () => {
+                        toast.dismiss("pdf-scan");
+                        toast.error("Failed to extract data from PDF.");
+                    }
+                });
+            }
         }
     };
 
@@ -425,8 +454,14 @@ const CreatePaper = () => {
                                 </label>
                                 {!formData.paperFile ? (
                                     <label className="flex items-center justify-center gap-3 px-4 py-2 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 cursor-pointer hover:bg-gray-200 transition h-[42px]">
-                                        <BiUpload size={20} className="text-gray-600 dark:text-gray-300" />
-                                        <span className="text-gray-700 dark:text-gray-300 text-sm">Select PDF</span>
+                                        {parsePdfMutation.isPending ? (
+                                            <span className="text-gray-700 dark:text-gray-300 text-sm animate-pulse">Scanning...</span>
+                                        ) : (
+                                            <>
+                                                <BiUpload size={20} className="text-gray-600 dark:text-gray-300" />
+                                                <span className="text-gray-700 dark:text-gray-300 text-sm">Select PDF</span>
+                                            </>
+                                        )}
                                         <input
                                             type="file"
                                             accept=".pdf"
