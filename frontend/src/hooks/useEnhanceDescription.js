@@ -4,8 +4,8 @@ import toast from "react-hot-toast";
 
 export const useEnhanceDescription = () => {
     return useMutation({
-        mutationFn: async ({ description, context, tone }) => {
-            return await aiApi.enhanceDescription({ description, context, tone });
+        mutationFn: async ({ title, researchTopic, description, context, tone }) => {
+            return await aiApi.enhanceDescription({ title, researchTopic, description, context, tone });
         },
         onError: (error) => {
             console.error("Enhance Description Error:", error);

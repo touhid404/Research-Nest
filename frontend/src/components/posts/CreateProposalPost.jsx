@@ -8,6 +8,7 @@ import { proposalApi } from "../../lib/proposalApi";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
 import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
 import AiEnhanceButton from "../ai-common/AiEnhanceButton";
+import { HiSparkles } from "react-icons/hi";
 
 const CreateProposalPost = () => {
     const { user } = useAuth();
@@ -26,28 +27,39 @@ const CreateProposalPost = () => {
     const enhanceMutation = useEnhanceDescription();
 
     const handleEnhance = () => {
-        if (!formData.description || formData.description.length < 20) {
-            toast.error("Description must be at least 20 characters long to enhance.");
+        // AI can now suggest if fields are missing, but we still need some starting point
+        const hasTitle = formData.title.trim().length > 3;
+        const hasTopic = formData.researchTopic.trim().length > 3;
+        const hasDesc = formData.description.trim().length > 10;
+
+        if (!hasTitle && !hasTopic && !hasDesc) {
+            toast.error("Please provide at least a title, topic, or a short description to start the enhancement process.");
             return;
         }
 
         enhanceMutation.mutate(
             {
+                title: formData.title,
+                researchTopic: formData.researchTopic,
                 description: formData.description,
                 context: "proposal",
                 tone: "academic"
             },
             {
-                onSuccess: (data) => {
+                onSuccess: () => {
                     setIsAiModalOpen(true);
                 }
             }
         );
     };
 
-    const applyAiEnhancement = (newDescription) => {
-        setFormData(prev => ({ ...prev, description: newDescription }));
+    const applyAiEnhancement = (changes) => {
+        setFormData(prev => ({
+            ...prev,
+            ...changes
+        }));
         setIsAiModalOpen(false);
+        toast.success("Academic refinements applied!");
     };
 
     const createPostMutation = useMutation({
@@ -153,9 +165,24 @@ const CreateProposalPost = () => {
         <div className="p-4 flex justify-center">
             <div className="w-full">
                 {/* Header */}
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                    Create Research Proposal
-                </h1>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        Create Research Proposal
+                    </h1>
+                    <button
+                        type="button"
+                        onClick={handleEnhance}
+                        disabled={enhanceMutation.isPending}
+                        className="flex items-center cursor-pointer gap-1.5 text-xs font-semibold py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                        {enhanceMutation.isPending ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                            <HiSparkles className="text-sm group-hover:rotate-12 transition-transform" />
+                        )}
+                        Enhance with AI
+                    </button>
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Row 1: Title + Research Topic */}
@@ -197,12 +224,6 @@ const CreateProposalPost = () => {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Description
                             </label>
-                            <AiEnhanceButton
-                                onClick={handleEnhance}
-                                disabled={!formData.description || formData.description.length < 20 || enhanceMutation.isPending}
-                                isLoading={enhanceMutation.isPending}
-                                text="Enhance Description"
-                            />
                         </div>
                         <textarea
                             name="description"
@@ -304,7 +325,11 @@ const CreateProposalPost = () => {
                 <AiDescriptionEnhancerModal
                     isOpen={isAiModalOpen}
                     onClose={() => setIsAiModalOpen(false)}
-                    originalText={formData.description}
+                    originalData={{
+                        title: formData.title,
+                        researchTopic: formData.researchTopic,
+                        description: formData.description
+                    }}
                     enhancedData={enhanceMutation.data}
                     isLoading={enhanceMutation.isPending}
                     onApply={applyAiEnhancement}

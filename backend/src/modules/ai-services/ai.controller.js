@@ -32,16 +32,15 @@ export const spellCorrect = async (req, res) => {
 
 export const enhanceDescription = async (req, res) => {
     try {
-        const { description, context, tone } = req.body;
+        const { title, researchTopic, description, context, tone } = req.body;
 
-        if (!description) {
-            return res.status(400).json({
-                success: false,
-                message: "Description is required."
-            });
-        }
-
-        const result = await enhanceDescriptionService({ description, context, tone });
+        const result = await enhanceDescriptionService({
+            title,
+            researchTopic,
+            description,
+            context,
+            tone
+        });
 
         res.status(200).json({
             success: true,
@@ -51,7 +50,7 @@ export const enhanceDescription = async (req, res) => {
         console.error("Enhance Description Error:", error);
         res.status(500).json({
             success: false,
-            message: error.message || "Failed to enhance description.",
+            message: error.message || "Failed to enhance content.",
         });
     }
 };

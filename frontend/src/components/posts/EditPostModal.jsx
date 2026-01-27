@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
 import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
 import AiEnhanceButton from "../ai-common/AiEnhanceButton";
+import { HiSparkles } from "react-icons/hi";
 
 
 const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
@@ -38,13 +39,19 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
     }, [post]);
 
     const handleEnhance = () => {
-        if (!formData.description || formData.description.length < 20) {
-            toast.error("Description must be at least 20 characters long to enhance.");
+        const hasTitle = formData.title?.trim().length > 3;
+        const hasTopic = formData.researchTopic?.trim().length > 3;
+        const hasDesc = formData.description?.trim().length > 10;
+
+        if (!hasTitle && !hasTopic && !hasDesc) {
+            toast.error("Please provide at least a title, topic, or a short description to start the enhancement process.");
             return;
         }
 
         enhanceMutation.mutate(
             {
+                title: formData.title,
+                researchTopic: formData.researchTopic,
                 description: formData.description,
                 context: "proposal-update",
                 tone: "academic"
@@ -57,9 +64,10 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
         );
     };
 
-    const applyAiEnhancement = (newDescription) => {
-        setFormData(prev => ({ ...prev, description: newDescription }));
+    const applyAiEnhancement = (changes) => {
+        setFormData(prev => ({ ...prev, ...changes }));
         setIsAiModalOpen(false);
+        toast.success("Academic refinements applied!");
     };
 
     const handleSubmit = async (e) => {
@@ -143,8 +151,24 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
                         className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-slate-800 flex flex-col max-h-[90vh]"
                     >
                         {/* Header */}
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Proposal Post</h2>
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 sticky top-0 z-10">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Proposal Post</h2>
+
+                                <button
+                                    type="button"
+                                    onClick={handleEnhance}
+                                    disabled={enhanceMutation.isPending}
+                                    className="flex items-center cursor-pointer gap-1.5 text-xs font-semibold py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                                >
+                                    {enhanceMutation.isPending ? (
+                                        <span className="loading loading-spinner loading-xs"></span>
+                                    ) : (
+                                        <HiSparkles className="text-sm group-hover:rotate-12 transition-transform" />
+                                    )}
+                                    Enhance with AI
+                                </button>
+                            </div>
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl text-gray-400 dark:text-gray-500 transition-colors"
@@ -183,12 +207,6 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between ml-1 mb-0.5">
                                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</label>
-                                        <AiEnhanceButton
-                                            onClick={handleEnhance}
-                                            disabled={!formData.description || formData.description.length < 20 || enhanceMutation.isPending}
-                                            isLoading={enhanceMutation.isPending}
-                                            text="AI Enhance"
-                                        />
                                     </div>
                                     <textarea
                                         name="description"
@@ -307,7 +325,11 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
             <AiDescriptionEnhancerModal
                 isOpen={isAiModalOpen}
                 onClose={() => setIsAiModalOpen(false)}
-                originalText={formData.description}
+                originalData={{
+                    title: formData.title,
+                    researchTopic: formData.researchTopic,
+                    description: formData.description
+                }}
                 enhancedData={enhanceMutation.data}
                 isLoading={enhanceMutation.isPending}
                 onApply={applyAiEnhancement}

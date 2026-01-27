@@ -99,13 +99,19 @@ const CreatePaper = () => {
     }, [selectedWorkspaceFile]);
 
     const handleEnhance = () => {
-        if (!formData.abstract || formData.abstract.length < 20) {
-            toast.error("Abstract must be at least 20 characters long to enhance.");
+        const hasTitle = formData.title?.trim().length > 3;
+        const hasDomain = formData.researchDomain?.trim().length > 3;
+        const hasAbstract = formData.abstract?.trim().length > 10;
+
+        if (!hasTitle && !hasDomain && !hasAbstract) {
+            toast.error("Please provide at least a title, domain, or a short abstract to start the enhancement process.");
             return;
         }
 
         enhanceMutation.mutate(
             {
+                title: formData.title,
+                researchTopic: formData.researchDomain,
                 description: formData.abstract,
                 context: "paper-abstract",
                 tone: "academic"
@@ -118,9 +124,15 @@ const CreatePaper = () => {
         );
     };
 
-    const applyAiEnhancement = (newAbstract) => {
-        setFormData(prev => ({ ...prev, abstract: newAbstract }));
+    const applyAiEnhancement = (changes) => {
+        setFormData(prev => ({
+            ...prev,
+            title: changes.title || prev.title,
+            researchDomain: changes.researchTopic || prev.researchDomain,
+            abstract: changes.description || prev.abstract
+        }));
         setIsAiModalOpen(false);
+        toast.success("Academic refinements applied!");
     };
 
 
@@ -264,8 +276,21 @@ const CreatePaper = () => {
     return (
         <div className="p-4 md:p-8 h-full">
             <div className="w-full max-w-7xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Publish Research Paper</h2>
+                    <button
+                        type="button"
+                        onClick={handleEnhance}
+                        disabled={enhanceMutation.isPending}
+                        className="flex items-center gap-2 text-sm font-bold py-2.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 group self-start sm:self-auto"
+                    >
+                        {enhanceMutation.isPending ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                            <HiSparkles className="text-lg group-hover:rotate-12 transition-transform" />
+                        )}
+                        Enhance with AI
+                    </button>
                 </div>
 
 
@@ -539,12 +564,7 @@ const CreatePaper = () => {
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Abstract / Description
                             </label>
-                            <AiEnhanceButton
-                                onClick={handleEnhance}
-                                disabled={!formData.abstract || formData.abstract.length < 20 || enhanceMutation.isPending}
-                                isLoading={enhanceMutation.isPending}
-                                text="AI Enhance Abstract"
-                            />
+
                         </div>
                         <textarea
                             name="abstract"
@@ -597,7 +617,11 @@ const CreatePaper = () => {
             <AiDescriptionEnhancerModal
                 isOpen={isAiModalOpen}
                 onClose={() => setIsAiModalOpen(false)}
-                originalText={formData.abstract}
+                originalData={{
+                    title: formData.title,
+                    researchTopic: formData.researchDomain,
+                    description: formData.abstract
+                }}
                 enhancedData={enhanceMutation.data}
                 isLoading={enhanceMutation.isPending}
                 onApply={applyAiEnhancement}
