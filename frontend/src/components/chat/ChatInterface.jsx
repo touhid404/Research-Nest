@@ -6,7 +6,7 @@ import useChatStore from "../../store/useChatStore";
 import useAuth from "../../hooks/useAuth";
 import ConversationInfoModal from "./ConversationInfoModal";
 import ConversationLoader from "../loader/ConversationLoader";
-import AiSpellCheckModal from "../common/AiSpellCheckModal";
+import AiSpellCheckModal from "../ai-common/AiSpellCheckModal";
 import { aiApi } from "../../lib/aiApi";
 
 const ChatInterface = () => {
