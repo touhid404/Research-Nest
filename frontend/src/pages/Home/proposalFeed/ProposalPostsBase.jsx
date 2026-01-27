@@ -1,5 +1,6 @@
 import { Outlet, NavLink, Link, useLocation } from "react-router";
 import RightSidebar from "../../../components/sidebar/RightSidebar";
+import FeedSearch from "../../../components/posts/FeedSearch";
 
 
 const ProposalPostsBase = () => {
@@ -19,14 +20,14 @@ const ProposalPostsBase = () => {
 
         {/* Header with Tabs and Action */}
         <div className="sticky top-0 bg-transparent backdrop-blur-md z-40 px-4">
-          <div className="flex justify-between items-end">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 py-2 min-h-[60px]">
             {/* Navigation Tabs */}
-            <div className="flex gap-8">
+            <div className="flex gap-6 order-2 md:order-1 self-start md:self-auto">
               <NavLink
                 to="explore"
                 className={({ isActive }) =>
-                  `pb-3 pt-4 text-sm font-medium transition-colors border-b-2  ${isActive
-                    ? "border-black dark:border-white text-black dark:text-white"
+                  `py-2 text-sm font-semibold transition-all border-b-2 ${isActive
+                    ? "border-primary text-primary"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   }`
                 }
@@ -36,8 +37,8 @@ const ProposalPostsBase = () => {
               <NavLink
                 to="myposts"
                 className={({ isActive }) =>
-                  `pb-3 pt-4 text-sm font-medium transition-colors border-b-2  ${isActive
-                    ? "border-black dark:border-white text-black dark:text-white"
+                  `py-2 text-sm font-semibold transition-all border-b-2 ${isActive
+                    ? "border-primary text-primary"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                   }`
                 }
@@ -46,15 +47,20 @@ const ProposalPostsBase = () => {
               </NavLink>
             </div>
 
+            {/* Search Bar & Create Button */}
+            <div className="flex items-center gap-3 order-1 md:order-2 w-full md:w-auto md:ml-auto">
+              {!isCreatePage && <FeedSearch />}
 
-            {!isCreatePage && (
-              <Link
-                to="create-post"
-                className="bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-4 py-1.5 rounded-full hover:opacity-80 transition-all shadow-lg active:scale-95 cursor-pointer mb-2"
-              >
-                + <span className="hidden md:inline-block">Create Post</span>
-              </Link>
-            )}
+              {!isCreatePage && (
+                <Link
+                  to="create-post"
+                  className="bg-black dark:bg-white text-white dark:text-black text-[13px] font-bold px-5 py-2 rounded-full hover:opacity-90 dark:hover:opacity-80 transition-all shadow-md active:scale-95 shrink-0"
+                >
+                  <span className="md:hidden">+</span>
+                  <span className="hidden md:inline">+ Create Post</span>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
