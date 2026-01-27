@@ -3,13 +3,12 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth";
 import { BiUpload, BiX, BiCheck, BiFile, BiBuilding, BiUserPlus } from "react-icons/bi";
+import { FaMagic } from "react-icons/fa";
 import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import { useNavigate } from "react-router";
 import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
 import { useParsePdf } from "../../hooks/useParsePdf";
-import AiDescriptionEnhancerModal from "../ai-common/AiDescriptionEnhancerModal";
-import AiEnhanceButton from "../ai-common/AiEnhanceButton";
 
 
 const CreatePaper = () => {
@@ -100,42 +99,7 @@ const CreatePaper = () => {
         }
     }, [selectedWorkspaceFile]);
 
-    const handleEnhance = () => {
-        const hasTitle = formData.title?.trim().length > 3;
-        const hasDomain = formData.researchDomain?.trim().length > 3;
-        const hasAbstract = formData.abstract?.trim().length > 10;
 
-        if (!hasTitle && !hasDomain && !hasAbstract) {
-            toast.error("Please provide at least a title, domain, or a short abstract to start the enhancement process.");
-            return;
-        }
-
-        enhanceMutation.mutate(
-            {
-                title: formData.title,
-                researchTopic: formData.researchDomain,
-                description: formData.abstract,
-                context: "paper-abstract",
-                tone: "academic"
-            },
-            {
-                onSuccess: () => {
-                    setIsAiModalOpen(true);
-                }
-            }
-        );
-    };
-
-    const applyAiEnhancement = (changes) => {
-        setFormData(prev => ({
-            ...prev,
-            title: changes.title || prev.title,
-            researchDomain: changes.researchTopic || prev.researchDomain,
-            abstract: changes.description || prev.abstract
-        }));
-        setIsAiModalOpen(false);
-        toast.success("Academic refinements applied!");
-    };
 
 
     const createPaperMutation = useMutation({
@@ -184,34 +148,64 @@ const CreatePaper = () => {
         const file = e.target.files[0];
         if (file) {
             setFormData({ ...formData, paperFile: file });
+        }
+    };
 
-            // Auto-scan PDF
-            if (file.type === "application/pdf") {
-                toast.loading("Scanning PDF for metadata...", { id: "pdf-scan" });
-                parsePdfMutation.mutate(file, {
-                    onSuccess: (data) => {
-                        toast.dismiss("pdf-scan");
-                        toast.success("PDF Scanned! Metadata auto-filled.");
-                        setFormData(prev => ({
-                            ...prev,
-                            title: data.title || prev.title,
-                            abstract: data.abstract || prev.abstract,
-                            researchDomain: data.researchDomain || prev.researchDomain,
-                            publicationDate: data.publicationDate || prev.publicationDate,
-                            publicationName: data.publicationName || prev.publicationName,
-                            doi: data.doi || prev.doi,
-                            coAuthors: data.coAuthors || prev.coAuthors,
-                            tags: data.tags || prev.tags,
-                            paperFile: file // Ensure file persists
-                        }));
-                    },
-                    onError: () => {
-                        toast.dismiss("pdf-scan");
-                        toast.error("Failed to extract data from PDF.");
-                    }
-                });
+
+    const handleAiScan = async () => {
+        let fileToScan = null;
+
+        if (uploadMode === 'manual') {
+            fileToScan = formData.paperFile;
+        } else if (selectedWorkspaceFile) {
+            const fileUrl = selectedWorkspaceFile.fileData?.fileUrl;
+            if (!fileUrl) {
+                toast.error("No file URL found for this workspace document.");
+                return;
+            }
+
+            try {
+                toast.loading("Fetching file for scanning...", { id: "pdf-scan" });
+                const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${window.location.origin}${fileUrl}`;
+                const response = await fetch(fullUrl);
+                if (!response.ok) throw new Error("Failed to fetch");
+                const blob = await response.blob();
+                fileToScan = new File([blob], selectedWorkspaceFile.title || "document.pdf", { type: "application/pdf" });
+            } catch (error) {
+                toast.dismiss("pdf-scan");
+                toast.error("Failed to fetch file from workspace.");
+                return;
             }
         }
+
+        if (!fileToScan || fileToScan.type !== "application/pdf") {
+            toast.error("Please provide a valid PDF file for scanning.");
+            return;
+        }
+
+        toast.loading("Scanning PDF for metadata...", { id: "pdf-scan" });
+        parsePdfMutation.mutate(fileToScan, {
+            onSuccess: (data) => {
+                toast.dismiss("pdf-scan");
+                toast.success("PDF Scanned! Metadata auto-filled.");
+                setFormData(prev => ({
+                    ...prev,
+                    title: data.title || prev.title,
+                    abstract: data.abstract || prev.abstract,
+                    researchDomain: data.researchDomain || prev.researchDomain,
+                    publicationDate: data.publicationDate || prev.publicationDate,
+                    publicationName: data.publicationName || prev.publicationName,
+                    doi: data.doi || prev.doi,
+                    coAuthors: data.coAuthors || prev.coAuthors,
+                    tags: data.tags || prev.tags,
+                }));
+            },
+            onError: (error) => {
+                toast.dismiss("pdf-scan");
+                console.error("Scan Error:", error);
+                toast.error("Failed to extract data from PDF.");
+            }
+        });
     };
 
 
@@ -307,10 +301,7 @@ const CreatePaper = () => {
             <div className="w-full max-w-7xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Publish Research Paper</h2>
-                    <AiEnhanceButton
-                        onClick={handleEnhance}
-                        isLoading={enhanceMutation.isPending}
-                    />
+
                 </div>
 
 
@@ -381,22 +372,46 @@ const CreatePaper = () => {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Select File
                                     </label>
-                                    <select
-                                        value={selectedWorkspaceFile?._id || ""}
-                                        onChange={(e) => {
-                                            const file = availableFiles.find(f => f._id === e.target.value);
-                                            setSelectedWorkspaceFile(file);
-                                        }}
-                                        disabled={!selectedWorkspaceId}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
-                                    >
-                                        <option value="">Select a Document</option>
-                                        {availableFiles.map(doc => (
-                                            <option key={doc._id} value={doc._id}>
-                                                {doc.title}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <select
+                                            value={selectedWorkspaceFile?._id || ""}
+                                            onChange={(e) => {
+                                                const file = availableFiles.find(f => f._id === e.target.value);
+                                                setSelectedWorkspaceFile(file);
+                                            }}
+                                            disabled={!selectedWorkspaceId}
+                                            className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
+                                        >
+                                            <option value="">Select a Document</option>
+                                            {availableFiles.map(doc => (
+                                                <option key={doc._id} value={doc._id}>
+                                                    {doc.title}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {selectedWorkspaceFile && (
+                                            <div className="magical-border-flow h-fit">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAiScan}
+                                                    disabled={parsePdfMutation.isPending}
+                                                    className="flex items-center justify-center gap-2 px-6 py-2 bg-transparent backdrop-blur-sm text-black dark:text-white rounded-[0.5rem] text-sm font-bold transition-all active:scale-95 disabled:opacity-50 whitespace-nowrap group w-full border border-blue-500/10 hover:border-blue-500/30"
+                                                >
+                                                    {parsePdfMutation.isPending ? (
+                                                        <span className="animate-pulse flex items-center gap-2">
+                                                            <FaMagic className="animate-spin text-cyan-400 dark:text-cyan-600" />
+                                                            <span>Scanning...</span>
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <FaMagic className="group-hover:rotate-12 transition-transform text-cyan-400 dark:text-cyan-600" />
+                                                            <span>AI Scan and Fill</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -470,13 +485,37 @@ const CreatePaper = () => {
                                         />
                                     </label>
                                 ) : (
-                                    <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30 rounded-lg px-3 py-2 h-[42px]">
-                                        <span className="truncate text-sm text-green-700 dark:text-green-400 max-w-[150px]">
-                                            {formData.paperFile.name}
-                                        </span>
-                                        <button type="button" onClick={removeFile} className="text-red-500 hover:text-red-700">
-                                            <BiX size={18} />
-                                        </button>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/30 rounded-lg px-3 py-2 h-[42px]">
+                                            <span className="truncate text-sm text-green-700 dark:text-green-400 max-w-[150px]">
+                                                {formData.paperFile.name}
+                                            </span>
+                                            <button type="button" onClick={removeFile} className="text-red-500 hover:text-red-700">
+                                                <BiX size={18} />
+                                            </button>
+                                        </div>
+                                        {formData.paperFile?.type === "application/pdf" && (
+                                            <div className="magical-border-flow h-fit shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAiScan}
+                                                    disabled={parsePdfMutation.isPending}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-transparent backdrop-blur-sm text-black dark:text-white rounded-[0.5rem] text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap group border border-blue-500/10 hover:border-blue-500/30"
+                                                >
+                                                    {parsePdfMutation.isPending ? (
+                                                        <span className="animate-pulse flex items-center gap-2">
+                                                            <FaMagic className="animate-spin text-cyan-400 dark:text-cyan-600" />
+                                                            <span>Scanning...</span>
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <FaMagic className="group-hover:rotate-12 transition-transform text-cyan-400 dark:text-cyan-600" />
+                                                            <span>AI Scan and Fill</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -640,18 +679,6 @@ const CreatePaper = () => {
 
                 </form>
             </div>
-            <AiDescriptionEnhancerModal
-                isOpen={isAiModalOpen}
-                onClose={() => setIsAiModalOpen(false)}
-                originalData={{
-                    title: formData.title,
-                    researchTopic: formData.researchDomain,
-                    description: formData.abstract
-                }}
-                enhancedData={enhanceMutation.data}
-                isLoading={enhanceMutation.isPending}
-                onApply={applyAiEnhancement}
-            />
         </div>
     );
 };
