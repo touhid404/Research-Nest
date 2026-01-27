@@ -44,6 +44,7 @@ const AiSpellCheckModal = ({
                                 </div>
                                 <div className="flex items-center gap-1 self-start">
                                     <button
+                                        type="button"
                                         onClick={onClose}
                                         className="p-1 text-slate-400 hover:text-red-400 transition-colors rounded-md hover:bg-slate-50 dark:hover:bg-slate-800"
                                         title="Dismiss"
@@ -51,6 +52,7 @@ const AiSpellCheckModal = ({
                                         <BiX size={16} />
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => onApply(correctedText)}
                                         disabled={isLoading || !correctedText || correctedText === originalText}
                                         className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-lg shadow-indigo-500/20 transition-all active:scale-90 disabled:opacity-50"
