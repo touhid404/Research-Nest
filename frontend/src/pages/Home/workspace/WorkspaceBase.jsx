@@ -129,7 +129,7 @@ const WorkspaceBase = () => {
 
             {/* Header - Transparent with backdrop blur like ProposalPostsBase */}
             {!isDocumentEditPage && (
-                <div className="workspace-header sticky top-0 bg-transparent backdrop-blur-md z-[60] sm:z-[500] px-4">
+                <div className="workspace-header sticky top-0 bg-transparent backdrop-blur-md z-40 px-4">
                     <div className="flex items-center justify-between">
                         {/* Left: Workspace Selector */}
                         {workspaces.length > 0 && (

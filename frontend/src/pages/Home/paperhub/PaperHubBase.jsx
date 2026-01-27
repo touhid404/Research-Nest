@@ -28,7 +28,7 @@ const PaperHub = () => {
 
 
                 {/* Header with Tabs */}
-                <div className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 px-4">
+                <div className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-40 px-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 pb-0">
                         <div className="flex gap-8">
                             <NavLink

@@ -11,7 +11,7 @@ const RequestBase = () => {
 
 
         {/* Sticky Header with Tabs */}
-        <div className="sticky top-0 bg-transparent backdrop-blur-md z-20 px-4">
+        <div className="sticky top-0 bg-transparent backdrop-blur-md z-40 px-4">
           <div className="flex justify-between items-end">
             <div className="flex gap-8">
               <NavLink

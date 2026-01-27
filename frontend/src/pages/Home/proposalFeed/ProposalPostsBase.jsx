@@ -3,7 +3,7 @@ import RightSidebar from "../../../components/sidebar/RightSidebar";
 
 
 const ProposalPostsBase = () => {
-   const location = useLocation();
+  const location = useLocation();
 
 
   const isCreatePage = location.pathname.includes("create-post");
@@ -18,7 +18,7 @@ const ProposalPostsBase = () => {
 
 
         {/* Header with Tabs and Action */}
-        <div className="sticky top-0 bg-transparent backdrop-blur-md z-1000 px-4">
+        <div className="sticky top-0 bg-transparent backdrop-blur-md z-40 px-4">
           <div className="flex justify-between items-end">
             {/* Navigation Tabs */}
             <div className="flex gap-8">
