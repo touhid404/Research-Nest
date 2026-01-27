@@ -34,63 +34,57 @@ const AiSpellCheckModal = ({
                         ) : (
                             <>
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50 dark:border-slate-800/50">
-                                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Use the right word</span>
-                                    <button
-                                        onClick={onClose}
-                                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                                    >
-                                        <BiX size={20} />
-                                    </button>
-                                </div>
-
-                                <div className="p-4 bg-white dark:bg-slate-900">
-                                    <div className="text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 flex flex-wrap gap-x-1.5 items-baseline">
-                                        {(() => {
-                                            if (!corrections || corrections.length === 0) return correctedText || originalText;
-
-                                            let result = [];
-                                            let lastIndex = 0;
-                                            const text = originalText;
-
-                                            const sorted = [...corrections].sort((a, b) => text.indexOf(a.original) - text.indexOf(b.original));
-
-                                            sorted.forEach((corr, i) => {
-                                                const start = text.indexOf(corr.original, lastIndex);
-                                                if (start !== -1) {
-                                                    // Text before
-                                                    if (start > lastIndex) {
-                                                        result.push(<span key={`pre-${i}`}>{text.substring(lastIndex, start)}</span>);
-                                                    }
-                                                    // The diff
-                                                    result.push(
-                                                        <span key={`diff-${i}`} className="inline-flex gap-1.5 items-baseline">
-                                                            <span className="text-red-600 line-through decoration-red-600/60 font-medium">
-                                                                {corr.original}
-                                                            </span>
-                                                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">
-                                                                {corr.corrected}
-                                                            </span>
-                                                        </span>
-                                                    );
-                                                    lastIndex = start + corr.original.length;
-                                                }
-                                            });
-                                            // Remaining text
-                                            if (lastIndex < text.length) {
-                                                result.push(<span key="post">{text.substring(lastIndex)}</span>);
-                                            }
-                                            return result;
-                                        })()}
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                                            <HiSparkles size={16} />
+                                        </div>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            Spelling Suggestions
+                                        </span>
                                     </div>
-
-                                    <div className="mt-4 flex justify-end">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={onClose}
+                                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                                        >
+                                            <BiX size={20} />
+                                        </button>
                                         <button
                                             onClick={() => onApply(correctedText)}
-                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
+                                            disabled={isLoading || !correctedText || correctedText === originalText}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                            title="Apply changes"
                                         >
-                                            Correct it
+                                            <BiCheck size={16} />
+                                            Apply
                                         </button>
                                     </div>
+                                </div>
+
+                                <div className="p-4 max-h-60 overflow-y-auto custom-scrollbar">
+                                    <div className="space-y-3">
+                                        {corrections.map((correction, idx) => (
+                                            <div key={idx} className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                                <span className="text-sm text-red-500 line-through decoration-red-400/50 px-1.5 py-0.5 rounded bg-red-50/50 dark:bg-red-900/10">
+                                                    {correction.original}
+                                                </span>
+                                                <span className="text-slate-400 text-xs">→</span>
+                                                <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium px-1.5 py-0.5 rounded bg-emerald-50/50 dark:bg-emerald-900/10">
+                                                    {correction.corrected}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {correctedText && corrections.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Preview</p>
+                                            <div className="text-sm text-slate-600 dark:text-slate-300 italic leading-relaxed bg-slate-50/30 dark:bg-slate-800/20 p-2 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                                                "{correctedText}"
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}

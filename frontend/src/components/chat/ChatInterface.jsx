@@ -384,7 +384,7 @@ const ChatInterface = () => {
                             className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-4 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
                         />
 
-                        {messageText.length > 5 && (
+                        {messageText.length > 1 && (
                             <button
                                 type="button"
                                 onClick={checkSpelling}

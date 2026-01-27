@@ -303,45 +303,36 @@ html {
     color: #7c3aed;
 }
 
-/* --- TipTap v3 Collaboration Caret Styling --- */
-
-/* The main cursor element (vertical line) */
-.collaboration-cursor__caret {
+/* --- TipTap Collaboration Caret Styling --- */
+.collaboration-carets__caret {
     position: relative;
     margin-left: -1px;
     margin-right: -1px;
-    border-left: 2px solid;
-    /* Color is set inline by Tiptap */
+    border-left: 2px solid #0d0d0d;
+    border-left-color: inherit;
+    /* Inherits specific user color */
     border-right: 0;
     word-break: normal;
     pointer-events: none;
-    z-index: 20;
-    display: inline;
-    /* Ensure it stays inline with text */
 }
 
-/* The label (user name) above the cursor */
-.collaboration-cursor__label {
+.collaboration-carets__label {
     position: absolute;
     top: -1.4em;
     left: -2px;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 600;
     line-height: normal;
-    font-family: system-ui, -apple-system, sans-serif;
     user-select: none;
-    color: #fff;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px 4px 4px 0;
+    color: white;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px 3px 3px 0;
     white-space: nowrap;
-    /* Background color is set inline by Tiptap */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 30;
-    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    z-index: 10;
 }
 
 /* Collaborative selection highlight */
-.ProseMirror-widget.collaboration-cursor__caret::after {
+.ProseMirror-widget.collaboration-carets__caret::after {
     content: "";
     position: absolute;
     top: 0;
