@@ -15,6 +15,7 @@ import { workspaceRoutes } from "./modules/workspace/workspace.routes.js";
 import "./cron/pingSelf.js";
 import { aiRoutes } from "./modules/ai-services/ai.routes.js";
 import notificationRoutes from "./modules/notifications/notification.routes.js";
+import searchRoutes from "./modules/search/search.routes.js";
 
 
 const app = express();
@@ -84,6 +85,9 @@ app.use('/api/ai', aiRoutes);
 
 // Notification Routes
 app.use('/api/notifications', notificationRoutes);
+
+// Search Routes
+app.use('/api/search', searchRoutes);
 
 
 

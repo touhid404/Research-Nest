@@ -1,6 +1,5 @@
 import { Outlet, NavLink, Link, useLocation } from "react-router";
 import RightSidebar from "../../../components/sidebar/RightSidebar";
-import FeedSearch from "../../../components/posts/FeedSearch";
 
 
 const ProposalPostsBase = () => {
@@ -47,9 +46,7 @@ const ProposalPostsBase = () => {
               </NavLink>
             </div>
 
-            {/* Search Bar & Create Button */}
             <div className="flex items-center gap-3 order-1 md:order-2 w-full md:w-auto md:ml-auto">
-              {!isCreatePage && <FeedSearch />}
 
               {!isCreatePage && (
                 <Link
