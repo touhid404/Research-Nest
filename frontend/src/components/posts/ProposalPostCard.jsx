@@ -129,7 +129,7 @@ const ProposalPostCard = ({ post }) => {
                                 </div>
                             </div>
                             <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
-                            <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border border-slate-100 dark:border-slate-700">
+                            <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border border-slate-100 dark:border-slate-700 truncate max-w-[400px]">
                                 {researchTopic}
                             </span>
 
@@ -165,7 +165,7 @@ const ProposalPostCard = ({ post }) => {
             </div>
 
             <div className="mb-2.5 sm:mb-3">
-                <h2 className="text-[17px] sm:text-lg font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2 leading-tight">
+                <h2 className="text-[17px] sm:text-lg  font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2 leading-tight">
                     {title}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-[14px] sm:text-[15px] leading-relaxed line-clamp-3">
