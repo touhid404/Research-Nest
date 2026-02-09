@@ -28,8 +28,14 @@ export const getAllProposalPostsInDB = async (options = {}) => {
         query["ownerUid"] = { $ne: options.excludeUid };
     }
 
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const posts = await ProposalPost.find(query)
         .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
         .lean();
 
     // Get all owner UIDs

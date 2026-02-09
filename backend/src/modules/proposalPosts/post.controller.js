@@ -87,9 +87,9 @@ export const createProposalPost = async (req, res) => {
 
 export const getAllProposalPosts = async (req, res) => {
     try {
-        const { excludeUid } = req.query;
+        const { excludeUid, page, limit } = req.query;
         const viewerUid = req.headers["x-user-id"];
-        const posts = await getAllProposalPostsInDB({ excludeUid, viewerUid });
+        const posts = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit });
 
         return res.status(200).json({
             success: true,

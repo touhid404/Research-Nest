@@ -6,7 +6,7 @@ const TARGET_USER_UIDS = [
     "wYdJ8DJCnWWBCWQJYiptLv5yWD13"
 ];
 
-const TOTAL_POSTS_TO_CREATE = 20;
+const TOTAL_POSTS_TO_CREATE = 50;
 
 // ==========================================
 // SEED DATA
@@ -31,7 +31,37 @@ const SAMPLE_TITLES = [
     "Microfinance Impact Assessment in Southeast Asia",
     "Urban Traffic Congestion Prediction Models",
     "Wearable Health Monitors for Elderly Care",
-    "Machine Translation for Low-Resource Languages"
+    "Machine Translation for Low-Resource Languages",
+    "Neural Networks for Early Cancer Detection",
+    "Decentralized Finance Platforms for Emerging Markets",
+    "Ocean Plastic Cleanup Using Autonomous Drones",
+    "Brain-Computer Interfaces for Paralysis Treatment",
+    "Climate-Resilient Crop Development Through CRISPR",
+    "Virtual Reality Therapy for PTSD Patients",
+    "Hydrogen Fuel Cell Infrastructure Planning",
+    "Artificial Photosynthesis for Carbon Capture",
+    "Acoustic Monitoring for Wildlife Conservation",
+    "Edge AI for Real-Time Video Analytics",
+    "Microbiome Analysis for Personalized Nutrition",
+    "Quantum Cryptography for Secure Communications",
+    "3D Bioprinting for Organ Transplantation",
+    "Smart Contracts for Intellectual Property Rights",
+    "Satellite-Based Precision Agriculture Systems",
+    "Natural Language Processing for Mental Health Support",
+    "Transparent Solar Panels for Building Integration",
+    "Adaptive Learning Algorithms for Special Education",
+    "Drone Delivery Systems for Medical Emergencies",
+    "Neuromorphic Computing for Energy-Efficient AI",
+    "Bacteriophage Therapy Against Antibiotic Resistance",
+    "Digital Twin Technology for Urban Planning",
+    "Exoskeleton Design for Industrial Workers",
+    "Fog Computing for Latency-Critical Applications",
+    "Gene Therapy for Rare Genetic Disorders",
+    "Haptic Feedback Systems for Remote Surgery",
+    "Indoor Air Quality Monitoring with IoT Sensors",
+    "Jellyfish-Inspired Soft Robotics",
+    "Kinetic Energy Harvesting from Urban Infrastructure",
+    "Light Field Displays for 3D Visualization"
 ];
 
 const RESEARCH_TOPICS = [
@@ -54,7 +84,37 @@ const RESEARCH_TOPICS = [
     "Economics",
     "Urban Planning",
     "Health Informatics",
-    "Natural Language Processing"
+    "Natural Language Processing",
+    "Neuroscience",
+    "Fintech",
+    "Marine Biology",
+    "Biomedical Engineering",
+    "Synthetic Biology",
+    "Virtual Reality",
+    "Renewable Energy",
+    "Computer Vision",
+    "Wildlife Conservation",
+    "Embedded Systems",
+    "Microbiology",
+    "Cryptography",
+    "Tissue Engineering",
+    "Legal Technology",
+    "Remote Sensing",
+    "Computational Linguistics",
+    "Photovoltaics",
+    "Special Education",
+    "Aerospace Engineering",
+    "Cognitive Computing",
+    "Bacteriology",
+    "Geospatial Analysis",
+    "Rehabilitation Engineering",
+    "Distributed Computing",
+    "Genetics",
+    "Telemedicine",
+    "Air Quality",
+    "Soft Robotics",
+    "Energy Harvesting",
+    "Display Technology"
 ];
 
 const INTERESTS_POOL = [
@@ -83,15 +143,31 @@ const getRandomSubarray = (arr, size) => {
     return shuffled.slice(0, size);
 };
 
-const generateRandomPost = (uids) => {
+// Description templates for variety
+const DESCRIPTION_TEMPLATES = [
+    (title, topic) => `This research proposal focuses on ${title.toLowerCase()}. We aim to explore innovative approaches in ${topic}. Our team is seeking collaborators with expertise in this domain to contribute to groundbreaking research.`,
+    (title, topic) => `We are investigating ${title.toLowerCase()} through the lens of ${topic}. This project combines theoretical frameworks with practical applications. Join us in pushing the boundaries of current knowledge.`,
+    (title, topic) => `Our proposal addresses the critical need for ${title.toLowerCase()}. Within the field of ${topic}, this research has the potential to create significant impact. We welcome experts passionate about solving complex challenges.`,
+    (title, topic) => `Seeking research partners for ${title.toLowerCase()}. This interdisciplinary project leverages cutting-edge ${topic} methodologies. Together, we can develop solutions that matter.`,
+    (title, topic) => `This initiative explores ${title.toLowerCase()} as a transformative approach in ${topic}. We prioritize collaboration, innovation, and evidence-based outcomes. Looking for committed researchers to join our team.`,
+    (title, topic) => `Join us in advancing ${title.toLowerCase()}. Our research spans multiple aspects of ${topic}, offering opportunities for publication and real-world application. Ideal for those seeking impactful research experiences.`,
+    (title, topic) => `We propose a comprehensive study on ${title.toLowerCase()}. Grounded in ${topic}, this work addresses gaps in existing literature while fostering practical solutions. Collaboration is key to our success.`,
+    (title, topic) => `This project tackles ${title.toLowerCase()} using novel ${topic} frameworks. We're building a diverse team to conduct rigorous research with potential for significant breakthroughs.`,
+];
+
+const generateRandomPost = (uids, index) => {
     const ownerUid = getRandomItem(uids);
     const title = getRandomItem(SAMPLE_TITLES);
     const researchTopic = getRandomItem(RESEARCH_TOPICS);
 
+    // Select a random description template
+    const descriptionTemplate = getRandomItem(DESCRIPTION_TEMPLATES);
+    const description = descriptionTemplate(title, researchTopic);
+
     return {
         ownerUid: ownerUid,
         title: title,
-        description: `This is a research proposal focused on ${title}. We aim to investigate the core challenges and potential solutions within the domain of ${researchTopic}. The project will involve comprehensive data analysis, prototype development, and field testing. We are looking for collaborators who are passionate about this field and can contribute their expertise.`,
+        description: description,
         researchTopic: researchTopic,
         interests: getRandomSubarray(INTERESTS_POOL, 3), // 3 random interests
         attachments: [], // Empty for seed
@@ -117,7 +193,7 @@ const seedProposals = async () => {
 
         const postsToInsert = [];
         for (let i = 0; i < TOTAL_POSTS_TO_CREATE; i++) {
-            postsToInsert.push(generateRandomPost(TARGET_USER_UIDS));
+            postsToInsert.push(generateRandomPost(TARGET_USER_UIDS, i));
         }
 
         const result = await ProposalPost.insertMany(postsToInsert);
