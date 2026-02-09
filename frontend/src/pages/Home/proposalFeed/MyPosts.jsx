@@ -3,7 +3,7 @@ import { proposalApi } from "../../../lib/proposalApi";
 import { BiLoaderAlt } from "react-icons/bi";
 import ProposalPostCard from "../../../components/posts/ProposalPostCard";
 import useAuth from "../../../hooks/useAuth";
-import PostLoader from "../../../components/loader/postLoader";
+import PostLoader from "../../../components/loader/PostLoader";
 
 const MyPosts = () => {
   const { user } = useAuth();

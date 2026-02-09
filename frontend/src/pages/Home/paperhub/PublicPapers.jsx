@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { paperApi } from "../../../lib/paperApi";
 import PaperCard from "../../../components/papers/PaperCard";
 import useAuth from "../../../hooks/useAuth";
-import PostLoader from "../../../components/loader/postLoader";
+import PostLoader from "../../../components/loader/PostLoader";
 import { useSearchParams } from "react-router";
 
 

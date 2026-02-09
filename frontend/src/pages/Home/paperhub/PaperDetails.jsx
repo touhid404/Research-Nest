@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { paperApi } from '../../../lib/paperApi';
 import { BiArrowBack, BiDownload, BiLinkExternal } from "react-icons/bi";
-import PostLoader from '../../../components/loader/postLoader';
+import PostLoader from '../../../components/loader/PostLoader';
 
 
 

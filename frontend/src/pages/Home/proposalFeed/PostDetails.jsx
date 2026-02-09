@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { proposalApi } from "../../../lib/proposalApi";
 import { BiChevronLeft } from "react-icons/bi";
 import ProposalPostCard from "../../../components/posts/ProposalPostCard";
-import PostLoader from "../../../components/loader/postLoader";
+import PostLoader from "../../../components/loader/PostLoader";
 import ErrorMessage from "../../../components/errors/ErrorMessage";
 
 const PostDetails = () => {
