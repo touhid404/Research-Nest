@@ -11,4 +11,5 @@ export const config = {
   streamVideoApiKey: process.env.STREAM_API_KEY,
   streamVideoSecret: process.env.STREAM_API_SECRET,
   nodeEnv: process.env.NODE_ENV || "development",
+  pingUrl: process.env.PING_URL 
 };
