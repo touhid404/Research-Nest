@@ -83,6 +83,11 @@ const userSchema = new mongoose.Schema(
             github: { type: String, default: "" },
             other: [{ name: String, url: String }],
         },
+        selectedWorkspace: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Workspace",
+            default: null,
+        },
     },
     {
         timestamps: true,

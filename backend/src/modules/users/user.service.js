@@ -22,6 +22,7 @@ export const updateUserInDB = async (uid, updateData) => {
         "links",
         "experience",
         "education",
+        "selectedWorkspace",
     ];
 
     const filteredData = {};

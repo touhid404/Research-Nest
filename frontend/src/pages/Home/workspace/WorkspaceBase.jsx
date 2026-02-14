@@ -14,6 +14,7 @@ import useAuth from "../../../hooks/useAuth";
 import useWorkspaceStore from "../../../store/useWorkspaceStore";
 import { useState, useRef, useEffect as useEffectRef } from "react";
 import WorkspaceLoader from "../../../components/loader/WorkspaceLoader";
+import { userApi } from "../../../lib/userApi";
 const WorkspaceBase = () => {
     const navigate = useNavigate();
     const { workspaceId } = useParams();
@@ -31,6 +32,8 @@ const WorkspaceBase = () => {
     } = useWorkspaceStore();
 
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+    const [userSelectedWorkspaceId, setUserSelectedWorkspaceId] = useState(null);
+    const [hasFetchedUserPreference, setHasFetchedUserPreference] = useState(false);
     const selectorRef = useRef(null);
 
     // Close selector when clicking outside
@@ -49,6 +52,25 @@ const WorkspaceBase = () => {
         fetchWorkspaces();
     }, []);
 
+    // Fetch user's selected workspace preference from database
+    useEffect(() => {
+        const fetchUserPreference = async () => {
+            if (user?.uid && !hasFetchedUserPreference) {
+                try {
+                    const dbUser = await userApi.getUserByUid(user.uid);
+                    if (dbUser?.data?.selectedWorkspace) {
+                        setUserSelectedWorkspaceId(dbUser.data.selectedWorkspace);
+                    }
+                    setHasFetchedUserPreference(true);
+                } catch (error) {
+                    console.error("Failed to fetch user preference:", error);
+                    setHasFetchedUserPreference(true);
+                }
+            }
+        };
+        fetchUserPreference();
+    }, [user?.uid, hasFetchedUserPreference]);
+
     // Fetch selected workspace when ID changes
     useEffect(() => {
         if (workspaceId && workspaceId !== selectedWorkspace?._id) {
@@ -56,13 +78,18 @@ const WorkspaceBase = () => {
         }
     }, [workspaceId]);
 
-    // Auto-select first workspace if none selected
+    // Auto-select workspace: use user's selectedWorkspace or fall back to first
     useEffect(() => {
-        if (!workspaceId && workspaces.length > 0) {
-            const firstWorkspace = workspaces[0];
-            navigate(`/home/workspace/${firstWorkspace._id}/overview`, { replace: true });
+        if (!workspaceId && workspaces.length > 0 && hasFetchedUserPreference) {
+            // Check if user has a previously selected workspace
+            const savedWorkspace = userSelectedWorkspaceId 
+                ? workspaces.find(w => w._id === userSelectedWorkspaceId)
+                : null;
+            
+            const targetWorkspace = savedWorkspace || workspaces[0];
+            navigate(`/home/workspace/${targetWorkspace._id}/overview`, { replace: true });
         }
-    }, [workspaces.length, workspaceId, navigate]);
+    }, [workspaces.length, workspaceId, navigate, userSelectedWorkspaceId, hasFetchedUserPreference]);
 
     // Subscribe to workspace socket events
     useEffect(() => {
@@ -76,10 +103,20 @@ const WorkspaceBase = () => {
         }
     }, [socket, selectedWorkspace?._id]);
 
-    const handleWorkspaceSelect = (workspace) => {
+    const handleWorkspaceSelect = async (workspace) => {
         setSelectedWorkspace(workspace);
+        setUserSelectedWorkspaceId(workspace._id); // Update local state immediately
         setIsSelectorOpen(false);
         navigate(`/home/workspace/${workspace._id}/overview`);
+        
+        // Save selected workspace to user profile
+        if (user?.uid) {
+            try {
+                await userApi.updateUser(user.uid, { selectedWorkspace: workspace._id });
+            } catch (error) {
+                console.error("Failed to save selected workspace:", error);
+            }
+        }
     };
 
     const tabs = [

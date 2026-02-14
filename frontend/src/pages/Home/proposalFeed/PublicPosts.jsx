@@ -27,14 +27,16 @@ const PublicPosts = () => {
       const data = await proposalApi.getAllProposalPosts(user?.uid, pageParam, LIMIT);
       return data;
     },
-    getNextPageParam: (lastPage, allPages) => {
-      // Safety check: ensure lastPage and lastPage.data exist
-      if (!lastPage || !lastPage.data || !Array.isArray(lastPage.data)) {
+    getNextPageParam: (lastPage) => {
+      // Safety check: ensure lastPage and lastPage.data exist and is an array
+      if (!lastPage?.data || !Array.isArray(lastPage.data)) {
         return undefined;
       }
-      return lastPage.data.length === LIMIT ? allPages.length + 1 : undefined;
+      // If we got a full page, there might be more
+      return lastPage.data.length === LIMIT ? (lastPage.currentPage || 1) + 1 : undefined;
     },
     initialPageParam: 1,
+    staleTime: 1000 * 60, // 1 minute
   });
 
   const lastPostElementRef = useCallback(
