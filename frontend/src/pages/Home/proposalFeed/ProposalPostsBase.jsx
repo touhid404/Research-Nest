@@ -19,9 +19,9 @@ const ProposalPostsBase = () => {
 
         {/* Header with Tabs and Action */}
         <div className="sticky top-0 bg-transparent backdrop-blur-md z-40 px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 py-2 min-h-[60px]">
+          <div className="flex flex-row justify-between items-center gap-4 py-2 min-h-[60px]">
             {/* Navigation Tabs */}
-            <div className="flex gap-6 order-2 md:order-1 self-start md:self-auto">
+            <div className="flex gap-6">
               <NavLink
                 to="explore"
                 className={({ isActive }) =>
@@ -46,7 +46,7 @@ const ProposalPostsBase = () => {
               </NavLink>
             </div>
 
-            <div className="flex items-center gap-3 order-1 md:order-2 w-full md:w-auto md:ml-auto">
+            <div className="flex items-center gap-3 ml-auto">
 
               {!isCreatePage && (
                 <Link
