@@ -7,7 +7,8 @@
     "dev": "nodemon src/index.js",
     "build": "echo 'No build step required for raw Node.js' && exit 0",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "seed:proposals": "node seed/seedProposals.js"
+    "seed:proposals": "node seed/seedProposals.js",
+    "seed:reviews": "node seed/seedReviews.js"
   },
   "keywords": [],
   "author": "",

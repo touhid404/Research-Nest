@@ -1,84 +1,137 @@
+import { useState, useEffect } from "react";
 import { FaStar } from "react-icons/fa";
+import Marquee from "react-fast-marquee";
+import { reviewApi } from "../../../lib/reviewApi";
 
-const ReviewCard = ({ name, role, quote, image, stars }) => (
+const ReviewCard = ({ userName, userRole, comment, userPhoto, rating }) => (
     <div className="w-[350px] h-[220px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-xl relative mx-3 flex flex-col shadow-sm">
         <div className="flex justify-between items-start mb-4">
             <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
-                    <FaStar key={i} className={`text-xs ${i < stars ? 'text-amber-400' : 'text-slate-200'}`} />
+                    <FaStar key={i} className={`text-xs ${i < rating ? 'text-amber-400' : 'text-slate-200'}`} />
                 ))}
             </div>
         </div>
 
-        <p className="text-slate-700 dark:text-slate-300 mb-6 text-sm leading-relaxed flex-grow">
-            "{quote}"
+        <p className="text-slate-700 dark:text-slate-300 mb-6 text-sm leading-relaxed grow line-clamp-4">
+            "{comment}"
         </p>
 
         <div className="flex items-center gap-3 pt-4 border-t border-slate-50 dark:border-slate-800">
-            <img src={image} alt={name} className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+            <img src={userPhoto} alt={userName} className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
             <div>
-                <h4 className="font-bold text-slate-900 dark:text-white text-xs">{name}</h4>
-                <p className="text-[10px] text-slate-500 font-medium">{role}</p>
+                <h4 className="font-bold text-slate-900 dark:text-white text-xs">{userName}</h4>
+                <p className="text-[10px] text-slate-500 font-medium">{userRole}</p>
             </div>
         </div>
     </div>
 );
 
+const ReviewCardSkeleton = () => (
+    <div className="w-[350px] h-[220px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-xl relative mx-3 flex flex-col shadow-sm animate-pulse">
+        <div className="flex gap-0.5 mb-4">
+            {[...Array(5)].map((_, i) => (
+                <div key={i} className="w-3 h-3 rounded bg-slate-200 dark:bg-slate-700" />
+            ))}
+        </div>
+
+        <div className="space-y-2 grow">
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-5/6" />
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-4/6" />
+        </div>
+
+        <div className="flex items-center gap-3 pt-4 border-t border-slate-50 dark:border-slate-800">
+            <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700" />
+            <div className="space-y-1.5">
+                <div className="h-2.5 bg-slate-200 dark:bg-slate-700 rounded w-20" />
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+            </div>
+        </div>
+    </div>
+);
+
+// Fallback static reviews in case API fails or returns empty
+const FALLBACK_REVIEWS = [
+    {
+        userName: "Dr. Sarah Chen",
+        userRole: "Researcher",
+        comment: "Research Nest has completely transformed how our lab collaborates. The proposal tools are a game-changer.",
+        userPhoto: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+        rating: 5,
+    },
+    {
+        userName: "James Wilson",
+        userRole: "Student",
+        comment: "Finding collaborators was always a struggle until I joined this platform. I found my dream team in a week!",
+        userPhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150",
+        rating: 5,
+    },
+    {
+        userName: "Emily Davis",
+        userRole: "Researcher",
+        comment: "The automated summaries and AI insights save me hours every day. Highly recommended for any academic.",
+        userPhoto: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150",
+        rating: 4,
+    },
+    {
+        userName: "Michael Chang",
+        userRole: "Industry",
+        comment: "Seamless integration of tools and community. It's the GitHub for researchers we've been waiting for.",
+        userPhoto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150",
+        rating: 5,
+    },
+    {
+        userName: "Dr. Alisha Gupta",
+        userRole: "Professor",
+        comment: "The collaboration features are intuitive and powerful. Perfect for cross-border research projects.",
+        userPhoto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+        rating: 5,
+    },
+    {
+        userName: "Robert Fox",
+        userRole: "Student",
+        comment: "I love the clean interface and how easy it is to manage references and docs in one place.",
+        userPhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
+        rating: 4,
+    },
+    {
+        userName: "Lisa Wong",
+        userRole: "Professor",
+        comment: "A must-have tool for modern academia. It bridges the gap between communication and project management.",
+        userPhoto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150",
+        rating: 5,
+    }
+];
+
 const ReviewSection = () => {
-    const reviews = [
-        {
-            name: "Dr. Sarah Chen",
-            role: "AI Researcher @ MIT",
-            quote: "Research Nest has completely transformed how our lab collaborates. The proposal tools are a game-changer.",
-            image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
-            stars: 5,
-        },
-        {
-            name: "James Wilson",
-            role: "PhD Candidate @ Stanford",
-            quote: "Finding collaborators was always a struggle until I joined this platform. I found my dream team in a week!",
-            image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150",
-            stars: 5,
-        },
-        {
-            name: "Emily Davis",
-            role: "Grant Writer @ FutureLabs",
-            quote: "The automated summaries and AI insights save me hours every day. Highly recommended for any academic.",
-            image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150",
-            stars: 4,
-        },
-        {
-            name: "Michael Chang",
-            role: "Data Scientist",
-            quote: "Seamless integration of tools and community. It's the GitHub for researchers we've been waiting for.",
-            image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150",
-            stars: 5,
-        },
-        {
-            name: "Dr. Alisha Gupta",
-            role: "Biotech Lead",
-            quote: "The collaboration features are intuitive and powerful. Perfect for cross-border research projects.",
-            image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
-            stars: 5,
-        },
-        {
-            name: "Robert Fox",
-            role: "Research Assistant",
-            quote: "I love the clean interface and how easy it is to manage references and docs in one place.",
-            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150",
-            stars: 4,
-        },
-        {
-            name: "Lisa Wong",
-            role: "Professor @ Oxford",
-            quote: "A must-have tool for modern academia. It bridges the gap between communication and project management.",
-            image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150",
-            stars: 5,
-        }
-    ];
+    const [reviews, setReviews] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchReviews = async () => {
+            try {
+                const response = await reviewApi.getReviews(50);
+                if (response.data && response.data.length > 0) {
+                    setReviews(response.data);
+                } else {
+                    setReviews(FALLBACK_REVIEWS);
+                }
+            } catch (error) {
+                console.error("Error fetching reviews:", error);
+                setReviews(FALLBACK_REVIEWS);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchReviews();
+    }, []);
 
     const firstRow = reviews.slice(0, Math.ceil(reviews.length / 2));
     const secondRow = reviews.slice(Math.ceil(reviews.length / 2));
+
+    // Skeleton placeholders
+    const skeletonCount = 4;
 
     return (
         <section id="reviews" className="mx-4 py-24 overflow-hidden relative">
@@ -89,28 +142,41 @@ const ReviewSection = () => {
 
             <div className="relative w-full space-y-8">
                 {/* Gradient Masks */}
-                <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
+                <div className="absolute left-0 top-0 bottom-0 w-32 bg-linear-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-32 bg-linear-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 pointer-events-none" />
 
-                {/* Row 1: Left Scroll */}
-                <div
-                    className="flex w-max animate-marquee hover:[animation-play-state:paused]"
-                    style={{ animationDuration: '60s' }}
-                >
-                    {[...firstRow, ...firstRow, ...firstRow, ...firstRow].map((review, i) => (
-                        <ReviewCard key={i*3} {...review} />
-                    ))}
-                </div>
+                {isLoading ? (
+                    <>
+                        {/* Skeleton Row 1 */}
+                        <div className="flex w-max">
+                            {[...Array(skeletonCount)].map((_, i) => (
+                                <ReviewCardSkeleton key={`skeleton-1-${i}`} />
+                            ))}
+                        </div>
+                        {/* Skeleton Row 2 */}
+                        <div className="flex w-max">
+                            {[...Array(skeletonCount)].map((_, i) => (
+                                <ReviewCardSkeleton key={`skeleton-2-${i}`} />
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Row 1: Left Scroll */}
+                        <Marquee speed={30} pauseOnHover gradient={false}>
+                            {firstRow.map((review, i) => (
+                                <ReviewCard key={`row1-${i}`} {...review} />
+                            ))}
+                        </Marquee>
 
-                {/* Row 2: Right Scroll (Reverse) */}
-                <div
-                    className="flex w-max animate-marquee hover:[animation-play-state:paused]"
-                    style={{ animationDuration: '60s', animationDirection: 'reverse' }}
-                >
-                    {[...secondRow, ...secondRow, ...secondRow, ...secondRow].map((review, i) => (
-                        <ReviewCard key={i*2} {...review} />
-                    ))}
-                </div>
+                        {/* Row 2: Right Scroll (Reverse) */}
+                        <Marquee speed={30} pauseOnHover gradient={false} direction="right">
+                            {secondRow.map((review, i) => (
+                                <ReviewCard key={`row2-${i}`} {...review} />
+                            ))}
+                        </Marquee>
+                    </>
+                )}
             </div>
         </section>
     );
