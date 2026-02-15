@@ -1,9 +1,9 @@
-import { axiosInstance } from "./axios";
+import { axiosInstance, axiosPublic } from "./axios";
 
 export const reviewApi = {
     // Get all approved reviews (public)
     getReviews: async (limit = 50) => {
-        const response = await axiosInstance.get(`/reviews?limit=${limit}`);
+        const response = await axiosPublic.get(`/reviews?limit=${limit}`);
         return response.data;
     },
 

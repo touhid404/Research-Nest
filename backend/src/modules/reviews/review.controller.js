@@ -20,7 +20,7 @@ export const getReviews = async (req, res) => {
 // Get current user's review
 export const getMyReview = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         if (!uid) {
             return res.status(400).json({ success: false, message: "User ID required" });
         }
@@ -36,7 +36,7 @@ export const getMyReview = async (req, res) => {
 // Create or update review
 export const submitReview = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         if (!uid) {
             return res.status(400).json({ success: false, message: "User ID required" });
         }
@@ -63,7 +63,7 @@ export const submitReview = async (req, res) => {
 // Delete review
 export const removeReview = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         if (!uid) {
             return res.status(400).json({ success: false, message: "User ID required" });
         }

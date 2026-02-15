@@ -16,3 +16,4 @@ Thumbs.db
 
 # Hide the backend public folder
 backend/public
+testing-case/venv/

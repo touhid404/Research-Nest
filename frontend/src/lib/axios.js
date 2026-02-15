@@ -1,26 +1,30 @@
 import axios from "axios";
+import { auth } from "../firebase/firebase.init";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-export const axiosInstance = axios.create({
-  // baseURL: "http://localhost:5000/api",
+// Public axios instance (no auth required) - for register, google login, public reviews
+export const axiosPublic = axios.create({
   baseURL: `${BACKEND_URL}/api`,
   withCredentials: true,
 });
 
-// Add request interceptor to include user ID
+// Private axios instance (auth required) - for all authenticated requests
+export const axiosInstance = axios.create({
+  baseURL: `${BACKEND_URL}/api`,
+  withCredentials: true,
+});
+
 axiosInstance.interceptors.request.use(
-  (config) => {
-    // Get user ID from localStorage
-    const uid = localStorage.getItem("uid");
-
-    if (uid) {
-      config.headers["x-user-id"] = uid;
+  async (config) => {
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );

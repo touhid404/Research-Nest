@@ -14,7 +14,7 @@ const getUsersByUids = async (uids) => {
 // Get all conversations for a user
 export const getConversations = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
 
         if (!uid) {
             return res.status(400).json({
@@ -111,7 +111,7 @@ export const getConversations = async (req, res) => {
 // Get or create conversation with another user
 export const getOrCreateConversation = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { otherUserId } = req.body;
 
         if (!uid) {
@@ -192,7 +192,7 @@ export const getOrCreateConversation = async (req, res) => {
 // Get messages for a conversation
 export const getMessages = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { conversationId } = req.params;
         const { limit = 50, before } = req.query;
 
@@ -264,7 +264,7 @@ export const getMessages = async (req, res) => {
 // Send a message
 export const sendMessage = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { conversationId, text, attachment } = req.body;
 
         if (!uid) {
@@ -366,7 +366,7 @@ export const sendMessage = async (req, res) => {
 // Delete a message
 export const deleteMessage = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { messageId } = req.params;
 
         if (!uid) {
@@ -411,7 +411,7 @@ export const deleteMessage = async (req, res) => {
 
 export const createGroupConversation = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { participantIds, groupName, createWorkspace } = req.body;
 
         if (!uid) {
@@ -499,7 +499,7 @@ export const createGroupConversation = async (req, res) => {
 // Delete a conversation
 export const deleteConversation = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { conversationId } = req.params;
 
         if (!uid) {
@@ -569,7 +569,7 @@ export const deleteConversation = async (req, res) => {
 
 export const leaveGroup = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { conversationId } = req.params;
 
         if (!uid) return res.status(400).json({ message: "User ID is required" });
@@ -625,7 +625,7 @@ export const leaveGroup = async (req, res) => {
 
 export const removeMember = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { conversationId } = req.params;
         const { memberId } = req.body;
 
@@ -678,7 +678,7 @@ export const removeMember = async (req, res) => {
 // Mark messages as read
 export const markAsRead = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { conversationId } = req.params;
 
         if (!uid) {

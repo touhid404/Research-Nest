@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { summarizeMeeting, spellCorrect, enhanceDescription, parsePdfFile } from "./ai.controller.js";
+import authCheck from "../../middleware/authCheck.js";
 
 export const aiRoutes = express.Router();
 
@@ -12,13 +13,13 @@ const upload = multer({
 });
 
 // POST /api/ai/meeting-summary
-aiRoutes.post("/meeting-summary", summarizeMeeting);
+aiRoutes.post("/meeting-summary", authCheck(), summarizeMeeting);
 
 // POST /api/ai/spell-correct
-aiRoutes.post("/spell-correct", spellCorrect);
+aiRoutes.post("/spell-correct", authCheck(), spellCorrect);
 
 // POST /api/ai/enhance-description
-aiRoutes.post("/enhance-description", enhanceDescription);
+aiRoutes.post("/enhance-description", authCheck(), enhanceDescription);
 
 // POST /api/ai/parse-pdf
-aiRoutes.post("/parse-pdf", upload.single("file"), parsePdfFile);
+aiRoutes.post("/parse-pdf", authCheck(), upload.single("file"), parsePdfFile);

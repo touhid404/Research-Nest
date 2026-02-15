@@ -7,16 +7,17 @@ import {
     formGroup,
     cancelRequest
 } from "./proposalApplication.controller.js";
+import authCheck from "../../middleware/authCheck.js";
 
 
 const router = express.Router();
 
-router.post("/", sendRequest);
-router.get("/received", getMyReceivedRequests);
-router.get("/sent", getMySentRequests);
-router.patch("/:id/status", updateRequestStatus);
-router.post("/form-group", formGroup);
-router.delete("/:id", cancelRequest);
+router.post("/", authCheck(), sendRequest);
+router.get("/received", authCheck(), getMyReceivedRequests);
+router.get("/sent", authCheck(), getMySentRequests);
+router.patch("/:id/status", authCheck(), updateRequestStatus);
+router.post("/form-group", authCheck(), formGroup);
+router.delete("/:id", authCheck(), cancelRequest);
 
 
 export default router;

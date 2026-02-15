@@ -13,7 +13,7 @@ import Workspace from "../../../models/workspace.model.js";
 
 export const createTask = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { workspaceId, title, description, assignedTo, dueDate, startDate, priority, labels } = req.body;
 
         if (!uid) {
@@ -78,7 +78,7 @@ export const createTask = async (req, res) => {
 
 export const getTasks = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { workspaceId } = req.params;
         const { status, assignedTo, startDate, endDate, limit, upcoming } = req.query;
 
@@ -104,7 +104,7 @@ export const getTasks = async (req, res) => {
 
 export const getMyTasks = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { startDate, endDate, status } = req.query;
 
         if (!uid) {
@@ -122,7 +122,7 @@ export const getMyTasks = async (req, res) => {
 
 export const updateTask = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await updateTaskService(id, uid, req.body);
@@ -146,7 +146,7 @@ export const updateTask = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await deleteTaskService(id, uid);

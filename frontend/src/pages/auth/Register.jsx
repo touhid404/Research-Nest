@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
@@ -14,11 +15,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
-import { axiosInstance } from "../../lib/axios";
+import { axiosPublic } from "../../lib/axios";
 import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
 
 const Register = () => {
-  const { createUser, updateUserProfile, signInWithGoogle } = useAuth();
+  const { createUser, updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -99,7 +100,7 @@ const Register = () => {
         photoURL: randomAvatar,
       };
 
-      const response = await axiosInstance.post("/auth/signup", userDataToSend);
+      const response = await axiosPublic.post("/auth/signup", userDataToSend);
 
       if (response.status === 201) {
         toast.success("Successfully Registered!");

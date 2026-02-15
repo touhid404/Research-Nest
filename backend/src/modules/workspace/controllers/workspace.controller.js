@@ -12,7 +12,7 @@ import {
 
 export const createWorkspace = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { name, description, memberUids, proposalPostId, conversationId } = req.body;
 
         if (!uid) {
@@ -41,7 +41,7 @@ export const createWorkspace = async (req, res) => {
 
 export const getWorkspaces = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
 
         if (!uid) {
             return res.status(400).json({ success: false, message: "User ID required" });
@@ -57,7 +57,7 @@ export const getWorkspaces = async (req, res) => {
 
 export const getWorkspaceById = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         if (!uid) {
@@ -79,7 +79,7 @@ export const getWorkspaceById = async (req, res) => {
 
 export const updateWorkspace = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await updateWorkspaceService(id, uid, req.body);
@@ -97,7 +97,7 @@ export const updateWorkspace = async (req, res) => {
 
 export const addMember = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
         const { memberUid, role = "member" } = req.body;
 
@@ -116,7 +116,7 @@ export const addMember = async (req, res) => {
 
 export const removeMember = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
         const { memberUid } = req.body;
 

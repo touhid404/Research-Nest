@@ -15,7 +15,7 @@ export const uploadDocument = [
     documentUpload.single("file"),
     async (req, res) => {
         try {
-            const uid = req.headers["x-user-id"];
+            const uid = req.user.uid;
             const { workspaceId, parentId } = req.body;
             const file = req.file;
 
@@ -61,7 +61,7 @@ export const uploadDocument = [
 
 export const createDocument = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { workspaceId, title, type, parentId } = req.body;
 
         if (!uid) {
@@ -95,7 +95,7 @@ export const createDocument = async (req, res) => {
 
 export const getDocuments = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { workspaceId } = req.params;
 
         const result = await getDocumentsService(uid, workspaceId);
@@ -113,7 +113,7 @@ export const getDocuments = async (req, res) => {
 
 export const getDocumentById = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await getDocumentByIdService(id, uid);
@@ -131,7 +131,7 @@ export const getDocumentById = async (req, res) => {
 
 export const updateDocument = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await updateDocumentService(id, uid, req.body);
@@ -155,7 +155,7 @@ export const updateDocument = async (req, res) => {
 
 export const saveDocumentContent = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
         const { content, plainText } = req.body;
 
@@ -174,7 +174,7 @@ export const saveDocumentContent = async (req, res) => {
 
 export const deleteDocument = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await deleteDocumentService(id, uid);

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
-import { axiosInstance } from "../../lib/axios";
+import { axiosPublic } from "../../lib/axios";
 
 const GoogleSignInButton = ({ label = "Sign in with Google", className = "", loading: externalLoading, setLoading: externalSetLoading }) => {
     const { signInWithGoogle } = useAuth();
@@ -23,7 +23,7 @@ const GoogleSignInButton = ({ label = "Sign in with Google", className = "", loa
                 photoURL: res.user.photoURL,
             };
 
-            const response = await axiosInstance.post(
+            const response = await axiosPublic.post(
                 "/auth/google-login",
                 userDataToSend
             );

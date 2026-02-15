@@ -14,7 +14,7 @@ import Workspace from "../../../models/workspace.model.js";
 
 export const createMeeting = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const {
             workspaceId, title, description, startTime, endTime,
             participants, type, isRecurring, recurrencePattern, externalLink,
@@ -92,7 +92,7 @@ export const createMeeting = async (req, res) => {
 
 export const getMeetings = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { workspaceId } = req.params;
         const { startDate, endDate, status, limit, upcoming } = req.query;
 
@@ -117,7 +117,7 @@ export const getMeetings = async (req, res) => {
 
 export const getMyMeetings = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { startDate, endDate } = req.query;
 
         if (!uid) {
@@ -135,7 +135,7 @@ export const getMyMeetings = async (req, res) => {
 
 export const updateMeeting = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await updateMeetingService(id, uid, req.body);
@@ -159,7 +159,7 @@ export const updateMeeting = async (req, res) => {
 
 export const respondToMeeting = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
         const { status } = req.body;
 
@@ -178,7 +178,7 @@ export const respondToMeeting = async (req, res) => {
 
 export const deleteMeeting = async (req, res) => {
     try {
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
         const { id } = req.params;
 
         const result = await deleteMeetingService(id, uid);

@@ -8,7 +8,7 @@ import { createWorkspaceService } from "../workspace/services/workspace.service.
 export const sendRequest = async (req, res) => {
     try {
         const { proposalPostId, description } = req.body;
-        const uid = req.headers["x-user-id"];
+        const uid = req.user.uid;
 
 
         if (!uid) {
@@ -81,7 +81,7 @@ export const sendRequest = async (req, res) => {
 // Get requests received by the current user
 export const getMyReceivedRequests = async (req, res) => {
     try {
-        const currentUserUid = req.headers["x-user-id"];
+        const currentUserUid = req.user.uid;
         if (!currentUserUid) return res.status(401).json({ message: "Unauthorized" });
 
 
@@ -136,7 +136,7 @@ export const getMyReceivedRequests = async (req, res) => {
 // Get requests sent by the current user
 export const getMySentRequests = async (req, res) => {
     try {
-        const currentUserUid = req.headers["x-user-id"];
+        const currentUserUid = req.user.uid;
         if (!currentUserUid) return res.status(401).json({ message: "Unauthorized" });
 
         const requests = await ProposalApplication.find({ senderId: currentUserUid })
@@ -166,7 +166,7 @@ export const updateRequestStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const currentUserUid = req.headers["x-user-id"];
+        const currentUserUid = req.user.uid;
         if (!currentUserUid) return res.status(401).json({ message: "Unauthorized" });
 
 
@@ -259,7 +259,7 @@ export const updateRequestStatus = async (req, res) => {
 export const formGroup = async (req, res) => {
     try {
         const { proposalPostId, groupName } = req.body;
-        const currentUserUid = req.headers["x-user-id"];
+        const currentUserUid = req.user.uid;
 
 
         if (!currentUserUid) return res.status(401).json({ message: "Unauthorized" });
@@ -381,7 +381,7 @@ export const formGroup = async (req, res) => {
 export const cancelRequest = async (req, res) => {
     try {
         const { id } = req.params;
-        const currentUserUid = req.headers["x-user-id"];
+        const currentUserUid = req.user.uid;
 
 
         if (!currentUserUid) return res.status(401).json({ message: "Unauthorized" });

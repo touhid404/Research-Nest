@@ -4,7 +4,7 @@ import User from '../../models/user.model.js';
 // Get all notifications for the current user
 export const getUserNotifications = async (req, res) => {
     try {
-        const uid = req.headers['x-user-id'];
+        const uid = req.user.uid;
         if (!uid) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -28,7 +28,7 @@ export const getUserNotifications = async (req, res) => {
 // Mark a notification as read
 export const markAsRead = async (req, res) => {
     try {
-        const uid = req.headers['x-user-id'];
+        const uid = req.user.uid;
         if (!uid) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -59,7 +59,7 @@ export const markAsRead = async (req, res) => {
 // Mark all as read
 export const markAllAsRead = async (req, res) => {
     try {
-        const uid = req.headers['x-user-id'];
+        const uid = req.user.uid;
         if (!uid) {
             return res.status(401).json({ message: 'Unauthorized' });
         }

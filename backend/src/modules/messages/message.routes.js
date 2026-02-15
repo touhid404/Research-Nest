@@ -11,27 +11,26 @@ import {
     leaveGroup,
     removeMember,
 } from "./message.controller.js";
+import authCheck from "../../middleware/authCheck.js";
 
 
 const router = express.Router();
 
 
 // Conversation routes
-// Conversation routes
-// Conversation routes
-router.get("/conversations", getConversations);
-router.post("/conversations", getOrCreateConversation);
-router.post("/conversations/group", createGroupConversation);
-router.delete("/conversations/:conversationId", deleteConversation);
+router.get("/conversations", authCheck(), getConversations);
+router.post("/conversations", authCheck(), getOrCreateConversation);
+router.post("/conversations/group", authCheck(), createGroupConversation);
+router.delete("/conversations/:conversationId", authCheck(), deleteConversation);
 
 // Group management routes
-router.put("/conversations/:conversationId/leave", leaveGroup);
-router.put("/conversations/:conversationId/kick", removeMember);
+router.put("/conversations/:conversationId/leave", authCheck(), leaveGroup);
+router.put("/conversations/:conversationId/kick", authCheck(), removeMember);
 
 // Message routes
-router.get("/conversations/:conversationId/messages", getMessages);
-router.post("/messages", sendMessage);
-router.delete("/messages/:messageId", deleteMessage);
-router.put("/conversations/:conversationId/read", markAsRead);
+router.get("/conversations/:conversationId/messages", authCheck(), getMessages);
+router.post("/messages", authCheck(), sendMessage);
+router.delete("/messages/:messageId", authCheck(), deleteMessage);
+router.put("/conversations/:conversationId/read", authCheck(), markAsRead);
 
 export { router as messageRoutes };
