@@ -44,7 +44,7 @@ const APP_ROUTES = [
     { path: "/home/my-profile/posts", label: "My Profile Posts", category: "Profile", icon: <IoPersonOutline /> },
 ];
 
-const DynamicSearch = () => {
+const DynamicSearch = ({ autoFocus = false }) => {
     const [query, setQuery] = useState("");
 
     // Results state
@@ -58,6 +58,14 @@ const DynamicSearch = () => {
     const navigate = useNavigate();
     const containerRef = useRef(null);
     const inputRef = useRef(null);
+
+    // Auto focus on mount if prop is true
+    useEffect(() => {
+        if (autoFocus && inputRef.current) {
+            inputRef.current.focus();
+            setIsOpen(true);
+        }
+    }, [autoFocus]);
     const resultRefs = useRef([]);
 
     // Debounce timer ref

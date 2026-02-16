@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { proposalApi } from "../../lib/proposalApi";
@@ -127,7 +128,7 @@ const ProposalPostCard = ({ post }) => {
                                 </div>
                             </div>
                             <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
-                            <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border border-slate-100 dark:border-slate-700 truncate max-w-[400px]">
+                            <span className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider border border-slate-100 dark:border-slate-700 truncate  max-w-[140px] md:max-w-[200px] lg:max-w-[400px]">
                                 {researchTopic}
                             </span>
 
@@ -143,9 +144,30 @@ const ProposalPostCard = ({ post }) => {
                                     }
                                 };
                                 return (
-                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border transition-colors duration-200 ${getStatusStyle(status)}`}>
-                                        {status}
-                                    </span>
+                                                                        <span
+                                                                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border transition-colors duration-200 flex items-center
+                                                                                ${status?.toLowerCase() === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : ''}
+                                                                                ${status?.toLowerCase() === 'hidden' ? 'bg-slate-100 text-slate-600 border-slate-200' : ''}
+                                                                                ${status?.toLowerCase() === 'group_formed' ? 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100' : ''}
+                                                                            `}
+                                                                            title={status}
+                                                                        >
+                                                                            <span className="sm:hidden">
+                                                                                {(() => {
+                                                                                    switch (status?.toLowerCase()) {
+                                                                                        case 'published':
+                                                                                            return 'P';
+                                                                                        case 'hidden':
+                                                                                            return 'H';
+                                                                                        case 'group_formed':
+                                                                                            return 'G';
+                                                                                        default:
+                                                                                            return status?.charAt(0)?.toUpperCase() || '';
+                                                                                    }
+                                                                                })()}
+                                                                            </span>
+                                                                            <span className="hidden sm:inline">{status}</span>
+                                                                        </span>
                                 );
                             })()}
                         </div>
@@ -204,7 +226,7 @@ const ProposalPostCard = ({ post }) => {
             )}
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 relative z-20">
-                <div className="flex flex-wrap gap-2">
+                <div className="hidden md:flex flex-wrap gap-2">
                     {interests?.slice(0, 3).map((interest, index) => (
                         <span
                             key={index}

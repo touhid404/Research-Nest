@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaBell, FaSearch } from "react-icons/fa";
+import { FaBell, FaSearch, FaTimes } from "react-icons/fa";
 import { useTheme } from "../../provider/ThemeProvider";
 import { MoonIcon, SunIcon } from "../../assets/rawIcon/Rawicon";
 import ResearchNestLogo from "../logo/ResearchNestLogo";
@@ -12,6 +12,7 @@ const Navbar = () => {
     const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
     const notificationRef = useRef(null);
     const { totalNotifications } = useNotifications();
 
@@ -33,12 +34,12 @@ const Navbar = () => {
         <div className="
       bg-white dark:bg-slate-950
       border-b border-gray-100 dark:border-slate-900
-      sticky top-0 z-[1000]
+      sticky top-0 z-1000
     ">
-            <div className="flex items-center justify-between lg:mx-3 px-4 py-1 z-[100]">
+            <div className="flex items-center justify-between lg:mx-3 px-4 py-1 z-100">
 
-                {/* Left: Logo */}
-                <div className="flex items-center gap-3">
+                {/* Left: Logo - Hide when mobile search is open */}
+                <div className={`flex items-center gap-3 ${isMobileSearchOpen ? 'hidden' : ''}`}>
                     <ResearchNestLogo />
                 </div>
 
@@ -47,11 +48,28 @@ const Navbar = () => {
                     <DynamicSearch />
                 </div>
 
-                {/* Right: Icons */}
-                <div className="flex items-center gap-2">
+                {/* Mobile Search - Full width when open */}
+                {isMobileSearchOpen && (
+                    <div className="flex-1 flex items-center gap-2 lg:hidden">
+                        <div className="flex-1">
+                            <DynamicSearch autoFocus />
+                        </div>
+                        <button
+                            onClick={() => setIsMobileSearchOpen(false)}
+                            className="p-2.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors shrink-0"
+                            aria-label="Close search"
+                        >
+                            <FaTimes size={18} className="text-gray-500" />
+                        </button>
+                    </div>
+                )}
+
+                {/* Right: Icons - Hide when mobile search is open */}
+                <div className={`flex items-center gap-2 ${isMobileSearchOpen ? 'hidden' : ''}`}>
 
                     {/* Search Icon (Mobile Only) */}
                     <button
+                        onClick={() => setIsMobileSearchOpen(true)}
                         className="lg:hidden p-2.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
                         aria-label="Search"
                     >
