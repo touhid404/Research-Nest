@@ -87,9 +87,6 @@ const RightSidebar = () => {
             <h2 className="font-bold text-slate-900 dark:text-slate-100 text-[16px] tracking-tight">
               Top Researchers
             </h2>
-            <button className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 uppercase tracking-widest hover:underline decoration-2 underline-offset-4 transition-all">
-              See All
-            </button>
           </div>
 
           <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar flex flex-col gap-4">
@@ -108,7 +105,6 @@ const RightSidebar = () => {
                         alt={resUser.name}
                         className="w-10 h-10 rounded-full overflow-hidden ml-1 object-cover ring-2 ring-slate-100 dark:ring-slate-800 shadow-sm transition-all group-hover/user:scale-105 group-hover/user:ring-blue-500/30"
                       />
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full shadow-sm"></div>
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="font-bold text-[13.5px] text-slate-800 dark:text-slate-200 group-hover/user:text-blue-600 dark:group-hover/user:text-blue-400 transition-colors truncate">
@@ -120,7 +116,11 @@ const RightSidebar = () => {
                     </div>
                   </div>
 
-                  <button className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 group/btn shadow-sm active:scale-95 shrink-0 ml-2">
+                  <button 
+                    onClick={() => navigate(`/home/messages/${resUser.uid}`)}
+                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 group/btn shadow-sm active:scale-95 shrink-0 ml-2"
+                    title={`Message ${resUser.name}`}
+                  >
                     <FiMessageCircle className="w-4 h-4 transition-transform group-hover/btn:scale-110" />
                   </button>
                 </div>

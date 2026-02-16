@@ -4,54 +4,66 @@ import Marquee from "react-fast-marquee";
 import { reviewApi } from "../../../lib/reviewApi";
 
 const ReviewCard = ({ userName, userRole, comment, userPhoto, rating }) => (
-    <div className="w-[350px] h-[220px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-xl relative mx-3 flex flex-col shadow-sm">
-        <div className="flex justify-between items-start mb-4">
-            <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                    <FaStar key={i} className={`text-xs ${i < rating ? 'text-amber-400' : 'text-slate-200'}`} />
-                ))}
-            </div>
+    <div className="w-[380px] min-h-60 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 p-6 rounded-2xl relative mx-3 flex flex-col shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+        {/* Quote icon */}
+        <div className="absolute top-4 right-4 text-violet-200 dark:text-violet-900/50">
+            <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+            </svg>
         </div>
 
-        <p className="text-slate-700 dark:text-slate-300 mb-6 text-sm leading-relaxed grow line-clamp-4">
+        {/* Stars */}
+        <div className="flex gap-1 mb-4">
+            {[...Array(5)].map((_, i) => (
+                <FaStar key={i} className={`text-sm ${i < rating ? 'text-amber-400' : 'text-slate-200 dark:text-slate-700'}`} />
+            ))}
+        </div>
+
+        {/* Comment - no line clamp, full text visible */}
+        <p className="text-slate-600 dark:text-slate-300 mb-auto text-[15px] leading-relaxed font-medium italic">
             "{comment}"
         </p>
 
-        <div className="flex items-center gap-3 pt-4 border-t border-slate-50 dark:border-slate-800">
-            <img src={userPhoto} alt={userName} className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+        {/* User info */}
+        <div className="flex items-center gap-3 pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
+            <img 
+                src={userPhoto} 
+                alt={userName} 
+                className="w-11 h-11 rounded-full object-cover ring-2 ring-violet-100 dark:ring-violet-900/50 shadow-sm" 
+            />
             <div>
-                <h4 className="font-bold text-slate-900 dark:text-white text-xs">{userName}</h4>
-                <p className="text-[10px] text-slate-500 font-medium">{userRole}</p>
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm">{userName}</h4>
+                <p className="text-xs text-violet-600 dark:text-violet-400 font-semibold">{userRole}</p>
             </div>
         </div>
     </div>
 );
 
 const ReviewCardSkeleton = () => (
-    <div className="w-[350px] h-[220px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-xl relative mx-3 flex flex-col shadow-sm animate-pulse">
-        <div className="flex gap-0.5 mb-4">
+    <div className="w-[380px] min-h-60 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 p-6 rounded-2xl relative mx-3 flex flex-col shadow-md animate-pulse">
+        <div className="flex gap-1 mb-4">
             {[...Array(5)].map((_, i) => (
-                <div key={i} className="w-3 h-3 rounded bg-slate-200 dark:bg-slate-700" />
+                <div key={i} className="w-4 h-4 rounded bg-slate-200 dark:bg-slate-700" />
             ))}
         </div>
 
-        <div className="space-y-2 grow">
-            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full" />
-            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-5/6" />
-            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-4/6" />
+        <div className="space-y-3 grow">
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-11/12" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-4/5" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/5" />
         </div>
 
-        <div className="flex items-center gap-3 pt-4 border-t border-slate-50 dark:border-slate-800">
-            <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700" />
-            <div className="space-y-1.5">
-                <div className="h-2.5 bg-slate-200 dark:bg-slate-700 rounded w-20" />
-                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+        <div className="flex items-center gap-3 pt-5 mt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="w-11 h-11 rounded-full bg-slate-200 dark:bg-slate-700" />
+            <div className="space-y-2">
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-24" />
+                <div className="h-2.5 bg-slate-200 dark:bg-slate-700 rounded w-16" />
             </div>
         </div>
     </div>
 );
 
-// Fallback static reviews in case API fails or returns empty
 const FALLBACK_REVIEWS = [
     {
         userName: "Dr. Sarah Chen",
