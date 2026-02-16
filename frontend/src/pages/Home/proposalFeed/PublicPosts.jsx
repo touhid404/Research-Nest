@@ -6,6 +6,7 @@ import useAuth from "../../../hooks/useAuth";
 import PostLoader from "../../../components/loader/PostLoader";
 import ErrorMessage from "../../../components/errors/ErrorMessage";
 import Pagination from "../../../components/common/Pagination";
+import { HiX } from "react-icons/hi";
 
 const LIMIT = 8;
 
@@ -13,8 +14,9 @@ const PublicPosts = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Get page from URL params, default to 1
+  // Get page and topic from URL params
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const currentTopic = searchParams.get("topic") || "";
 
   const {
     data,
@@ -22,9 +24,9 @@ const PublicPosts = () => {
     status,
     isPending,
   } = useQuery({
-    queryKey: ["proposalPosts", user?.uid, currentPage],
+    queryKey: ["proposalPosts", user?.uid, currentPage, currentTopic],
     queryFn: async () => {
-      const response = await proposalApi.getAllProposalPosts(user?.uid, currentPage, LIMIT);
+      const response = await proposalApi.getAllProposalPosts(user?.uid, currentPage, LIMIT, currentTopic);
       return response;
     },
     staleTime: 1000 * 60, // 1 minute
@@ -33,8 +35,14 @@ const PublicPosts = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage < 1) return;
-    setSearchParams({ page: newPage.toString() });
+    const params = { page: newPage.toString() };
+    if (currentTopic) params.topic = currentTopic;
+    setSearchParams(params);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const clearTopicFilter = () => {
+    setSearchParams({ page: "1" });
   };
 
   if (isPending) {
@@ -51,9 +59,31 @@ const PublicPosts = () => {
   return (
     <div className="min-h-screen pb-10">
       <div className="p-4 pt-2">
+        {/* Topic Filter Badge */}
+        {currentTopic && (
+          <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+            <span className="text-sm text-blue-700 dark:text-blue-300">
+              Filtering by topic:
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
+              #{currentTopic}
+              <button
+                onClick={clearTopicFilter}
+                className="p-0.5 hover:bg-blue-700 rounded-full transition-colors"
+                aria-label="Clear filter"
+              >
+                <HiX className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          </div>
+        )}
+
         {posts.length === 0 ? (
           <div className="text-center text-gray-500 mt-10">
-            No proposals found. Be the first to post!
+            {currentTopic 
+              ? `No proposals found for topic "${currentTopic}".`
+              : "No proposals found. Be the first to post!"
+            }
           </div>
         ) : (
           <>

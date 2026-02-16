@@ -8,10 +8,13 @@ export const proposalApi = {
     },
 
     // Get all proposal posts
-    getAllProposalPosts: async (excludeUid, page, limit) => {
+    getAllProposalPosts: async (excludeUid, page, limit, topic) => {
         let url = `/posts?page=${page}&limit=${limit}`;
         if (excludeUid) {
             url += `&excludeUid=${excludeUid}`;
+        }
+        if (topic) {
+            url += `&topic=${encodeURIComponent(topic)}`;
         }
         const response = await axiosInstance.get(url);
         return response.data;
@@ -38,6 +41,12 @@ export const proposalApi = {
     // Delete a proposal post
     deleteProposalPost: async (id) => {
         const response = await axiosInstance.delete(`/posts/${id}`);
+        return response.data;
+    },
+
+    // Get trending topics
+    getTrendingTopics: async (limit = 5) => {
+        const response = await axiosInstance.get(`/posts/trending-topics?limit=${limit}`);
         return response.data;
     },
 };

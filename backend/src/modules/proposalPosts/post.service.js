@@ -28,6 +28,11 @@ export const getAllProposalPostsInDB = async (options = {}) => {
         query["ownerUid"] = { $ne: options.excludeUid };
     }
 
+    // Filter by topic/interest if provided
+    if (options.topic) {
+        query["interests"] = { $regex: new RegExp(options.topic, 'i') };
+    }
+
     const page = parseInt(options.page) || 1;
     const limit = parseInt(options.limit) || 10;
     const skip = (page - 1) * limit;
@@ -80,6 +85,26 @@ export const getAllProposalPostsInDB = async (options = {}) => {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1
     };
+};
+
+// Get trending topics from all posts
+export const getTrendingTopicsInDB = async (limit = 5) => {
+    const result = await ProposalPost.aggregate([
+        { $match: { status: "published" } },
+        { $unwind: "$interests" },
+        { 
+            $group: { 
+                _id: { $toLower: { $trim: { input: "$interests" } } },
+                count: { $sum: 1 }
+            } 
+        },
+        { $match: { _id: { $ne: "" } } },
+        { $sort: { count: -1 } },
+        { $limit: limit },
+        { $project: { _id: 0, name: "$_id", count: 1 } }
+    ]);
+    
+    return result;
 };
 
 

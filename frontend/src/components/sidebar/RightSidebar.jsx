@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import { userApi } from "../../lib/userApi";
 import { proposalApi } from "../../lib/proposalApi";
 import useAuth from "../../hooks/useAuth";
@@ -10,6 +11,7 @@ import { TrendingSkeleton, ResearchersSkeleton } from "../loader/RightSidebarLoa
 
 const RightSidebar = () => {
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch Users
   const { data: userData, isLoading: usersLoading } = useQuery({
@@ -17,10 +19,11 @@ const RightSidebar = () => {
     queryFn: () => userApi.getAllUsers(),
   });
 
-  // Fetch Proposal Posts for Trending Topics
-  const { data: postsData, isLoading: postsLoading } = useQuery({
-    queryKey: ["proposalPosts"],
-    queryFn: () => proposalApi.getAllProposalPosts(),
+  // Fetch Trending Topics
+  const { data: trendingData, isLoading: topicsLoading } = useQuery({
+    queryKey: ["trendingTopics"],
+    queryFn: () => proposalApi.getTrendingTopics(5),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Recommend Researchers
@@ -32,26 +35,7 @@ const RightSidebar = () => {
       .slice(0, 5);
   }, [userData, currentUser]);
 
-  // Calculate Trending Topics
-  const trendingTopics = useMemo(() => {
-    if (!postsData?.data) return [];
-    const interestCounts = {};
-    postsData.data.forEach(post => {
-      if (post.interests && Array.isArray(post.interests)) {
-        post.interests.forEach(interest => {
-          const normalized = interest.trim().toLowerCase();
-          if (normalized) {
-            interestCounts[normalized] = (interestCounts[normalized] || 0) + 1;
-          }
-        });
-      }
-    });
-
-    return Object.entries(interestCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-  }, [postsData]);
+  const trendingTopics = trendingData?.data || [];
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full overflow-hidden w-full">
@@ -69,11 +53,15 @@ const RightSidebar = () => {
           </div>
 
           <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar flex flex-col gap-5">
-            {postsLoading ? (
+            {topicsLoading ? (
               <TrendingSkeleton />
             ) : trendingTopics.length > 0 ? (
               trendingTopics.map((topic, idx) => (
-                <div key={idx} className="group/item cursor-pointer flex items-center justify-between hover:translate-x-1 transition-all duration-200 shrink-0 gap-3">
+                <div 
+                  key={idx} 
+                  onClick={() => navigate(`/home/posts/explore?topic=${encodeURIComponent(topic.name)}`)}
+                  className="group/item cursor-pointer flex items-center justify-between hover:translate-x-1 transition-all duration-200 shrink-0 gap-3"
+                >
                   <div className="flex items-center justify-between flex-1 min-w-0">
                     <span className="text-[14px] font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 leading-tight truncate mr-3">
                       #{topic.name}
@@ -110,7 +98,10 @@ const RightSidebar = () => {
             ) : recommendedResearchers.length > 0 ? (
               recommendedResearchers.map((resUser) => (
                 <div key={resUser.uid} className="flex items-center justify-between group/user shrink-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div 
+                    onClick={() => navigate(`/home/profile/${resUser.uid}`)}
+                    className="flex items-center gap-3 min-w-0 cursor-pointer"
+                  >
                     <div className="relative shrink-0">
                       <img
                         src={resUser.photoURL || `https://ui-avatars.com/api/?name=${resUser.name}&background=6366f1&color=fff&bold=true`}

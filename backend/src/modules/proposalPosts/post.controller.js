@@ -1,4 +1,4 @@
-import { createProposalPostInDB, getAllProposalPostsByUserInDB, getAllProposalPostsInDB, getProposalPostByIdInDB, updateProposalPostInDB, deleteProposalPostInDB } from "./post.service.js";
+import { createProposalPostInDB, getAllProposalPostsByUserInDB, getAllProposalPostsInDB, getProposalPostByIdInDB, updateProposalPostInDB, deleteProposalPostInDB, getTrendingTopicsInDB } from "./post.service.js";
 import User from "../../models/user.model.js";
 import fs from "fs";
 import path from "path";
@@ -87,9 +87,9 @@ export const createProposalPost = async (req, res) => {
 
 export const getAllProposalPosts = async (req, res) => {
     try {
-        const { excludeUid, page, limit } = req.query;
+        const { excludeUid, page, limit, topic } = req.query;
         const viewerUid = req.user.uid;
-        const result = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit });
+        const result = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit, topic });
 
         return res.status(200).json({
             success: true,
@@ -110,6 +110,24 @@ export const getAllProposalPosts = async (req, res) => {
         });
     }
 };
+
+export const getTrendingTopics = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 5;
+        const topics = await getTrendingTopicsInDB(limit);
+
+        return res.status(200).json({
+            success: true,
+            data: topics,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 export const getAllProposalPostsByUser = async (req, res) => {
     try {
         const { uid } = req.params;
