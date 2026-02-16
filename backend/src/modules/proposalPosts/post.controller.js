@@ -89,12 +89,19 @@ export const getAllProposalPosts = async (req, res) => {
     try {
         const { excludeUid, page, limit } = req.query;
         const viewerUid = req.user.uid;
-        const posts = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit });
+        const result = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit });
 
         return res.status(200).json({
             success: true,
-            count: posts.length,
-            data: posts,
+            data: result.posts,
+            meta: {
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                totalCount: result.totalCount,
+                perPage: parseInt(limit) || 10,
+                hasNextPage: result.hasNextPage,
+                hasPrevPage: result.hasPrevPage,
+            },
         });
     } catch (error) {
         return res.status(500).json({

@@ -32,6 +32,10 @@ export const getAllProposalPostsInDB = async (options = {}) => {
     const limit = parseInt(options.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Get total count for pagination
+    const totalCount = await ProposalPost.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
     const posts = await ProposalPost.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -62,11 +66,20 @@ export const getAllProposalPostsInDB = async (options = {}) => {
     }
 
     // Attach user and application status to each post
-    return posts.map(post => ({
+    const postsWithUser = posts.map(post => ({
         ...post,
         user: userMap[post.ownerUid] || null,
         hasApplied: viewerApplications.has(post._id.toString())
     }));
+
+    return {
+        posts: postsWithUser,
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+    };
 };
 
 

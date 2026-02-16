@@ -1,57 +1,41 @@
-import React, { useRef, useCallback } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
 import { proposalApi } from "../../../lib/proposalApi";
-import { BiLoaderAlt } from "react-icons/bi";
 import ProposalPostCard from "../../../components/posts/ProposalPostCard";
 import useAuth from "../../../hooks/useAuth";
 import PostLoader from "../../../components/loader/PostLoader";
 import ErrorMessage from "../../../components/errors/ErrorMessage";
+import Pagination from "../../../components/common/Pagination";
 
 const LIMIT = 8;
 
 const PublicPosts = () => {
   const { user } = useAuth();
-  const observer = useRef();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Get page from URL params, default to 1
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
   const {
     data,
     error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     status,
     isPending,
-  } = useInfiniteQuery({
-    queryKey: ["proposalPosts", user?.uid], // Include uid in queryKey to refetch on auth change
-    queryFn: async ({ pageParam = 1 }) => {
-      const data = await proposalApi.getAllProposalPosts(user?.uid, pageParam, LIMIT);
-      return data;
+  } = useQuery({
+    queryKey: ["proposalPosts", user?.uid, currentPage],
+    queryFn: async () => {
+      const response = await proposalApi.getAllProposalPosts(user?.uid, currentPage, LIMIT);
+      return response;
     },
-    getNextPageParam: (lastPage) => {
-      // Safety check: ensure lastPage and lastPage.data exist and is an array
-      if (!lastPage?.data || !Array.isArray(lastPage.data)) {
-        return undefined;
-      }
-      // If we got a full page, there might be more
-      return lastPage.data.length === LIMIT ? (lastPage.currentPage || 1) + 1 : undefined;
-    },
-    initialPageParam: 1,
     staleTime: 1000 * 60, // 1 minute
+    keepPreviousData: true, // Keep showing previous data while fetching new page
   });
 
-  const lastPostElementRef = useCallback(
-    (node) => {
-      if (isFetchingNextPage) return;
-      if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextPage) {
-          fetchNextPage();
-        }
-      });
-      if (node) observer.current.observe(node);
-    },
-    [isFetchingNextPage, fetchNextPage, hasNextPage]
-  );
+  const handlePageChange = (newPage) => {
+    if (newPage < 1) return;
+    setSearchParams({ page: newPage.toString() });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (isPending) {
     return <PostLoader count={5} />;
@@ -61,7 +45,8 @@ const PublicPosts = () => {
     return <ErrorMessage error={error.message} />;
   }
 
-  const posts = data?.pages.flatMap((page) => page.data) || [];
+  const posts = data?.data || [];
+  const meta = data?.meta || null;
 
   return (
     <div className="min-h-screen pb-10">
@@ -71,20 +56,18 @@ const PublicPosts = () => {
             No proposals found. Be the first to post!
           </div>
         ) : (
-          posts.map((post, index) => {
-            if (posts.length === index + 1) {
-              return (
-                <div ref={lastPostElementRef} key={index}>
-                  <ProposalPostCard post={post} />
-                </div>
-              );
-            }
-            return <ProposalPostCard key={index} post={post} />;
-          })
-        )}
+          <>
+            {posts.map((post, index) => (
+              <ProposalPostCard key={post._id || index} post={post} />
+            ))}
 
-        {isFetchingNextPage && (
-          <PostLoader count={1} />
+            <Pagination
+              meta={meta}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
+              perPage={LIMIT}
+            />
+          </>
         )}
       </div>
     </div>
