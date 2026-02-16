@@ -299,9 +299,19 @@ export const getMatchingPostsInDB = async (options = {}) => {
   };
 };
 
-export const getAllProposalPostsByUserInDB = async (uid, viewerUid = null) => {
-  const posts = await ProposalPost.find({ ownerUid: uid })
+export const getAllProposalPostsByUserInDB = async (uid, viewerUid = null, options = {}) => {
+  const page = parseInt(options.page) || 1;
+  const limit = parseInt(options.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const query = { ownerUid: uid };
+  const totalCount = await ProposalPost.countDocuments(query);
+  const totalPages = Math.ceil(totalCount / limit);
+
+  const posts = await ProposalPost.find(query)
     .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .lean();
 
   const user = await User.findOne({ uid }).select(
@@ -318,11 +328,20 @@ export const getAllProposalPostsByUserInDB = async (uid, viewerUid = null) => {
     viewerApplications = new Set(apps.map((a) => a.proposalPostId.toString()));
   }
 
-  return posts.map((post) => ({
+  const postsWithUser = posts.map((post) => ({
     ...post,
     user: user || null,
     hasApplied: viewerApplications.has(post._id.toString()),
   }));
+
+  return {
+    posts: postsWithUser,
+    currentPage: page,
+    totalPages,
+    totalCount,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
+  };
 };
 
 export const getProposalPostByIdInDB = async (id, viewerUid = null) => {

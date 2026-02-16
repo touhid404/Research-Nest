@@ -44,12 +44,10 @@ const ProposalPostCard = ({ post }) => {
             toast.error(error.message || "Failed to update post");
         }
     });
-
     const invalidatePosts = () => {
         queryClient.invalidateQueries({ queryKey: ["proposalPosts"] });
-        if (currentUser?.uid) {
-            queryClient.invalidateQueries({ queryKey: ["proposalPosts", currentUser.uid] });
-        }
+        queryClient.invalidateQueries({ queryKey: ["myProposalPosts"] });
+        queryClient.invalidateQueries({ queryKey: ["forYouPosts"] });
     };
 
     const handleCopyLink = () => {

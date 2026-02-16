@@ -29,7 +29,8 @@ const PublicPosts = () => {
       const response = await proposalApi.getAllProposalPosts(user?.uid, currentPage, LIMIT, currentTopic);
       return response;
     },
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 1000 * 15, // 15 seconds - shorter for fresher data
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
     keepPreviousData: true, // Keep showing previous data while fetching new page
   });
 

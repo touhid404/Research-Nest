@@ -164,6 +164,7 @@ export const getMatchingPosts = async (req, res) => {
 export const getAllProposalPostsByUser = async (req, res) => {
     try {
         const { uid } = req.params;
+        const { page, limit } = req.query;
         const viewerUid = req.user.uid;
         if (!uid) {
             return res.status(400).json({
@@ -171,12 +172,19 @@ export const getAllProposalPostsByUser = async (req, res) => {
                 message: "uid is required",
             });
         }
-        const posts = await getAllProposalPostsByUserInDB(uid, viewerUid);
+        const result = await getAllProposalPostsByUserInDB(uid, viewerUid, { page, limit });
 
         return res.status(200).json({
             success: true,
-            count: posts.length,
-            data: posts,
+            data: result.posts,
+            meta: {
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                totalCount: result.totalCount,
+                perPage: parseInt(limit) || 10,
+                hasNextPage: result.hasNextPage,
+                hasPrevPage: result.hasPrevPage,
+            },
         });
     } catch (error) {
         return res.status(500).json({

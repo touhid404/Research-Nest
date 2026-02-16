@@ -108,7 +108,8 @@ const ForYouPosts = () => {
       const response = await proposalApi.getForYouPosts(currentPage, LIMIT);
       return response;
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 15, // 15 seconds - shorter for fresher data
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 
   const handlePageChange = (newPage) => {

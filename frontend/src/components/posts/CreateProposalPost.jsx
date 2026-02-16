@@ -88,8 +88,10 @@ const CreateProposalPost = () => {
             return data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["proposalPosts"], exact: true });
-            if (user?.uid) queryClient.invalidateQueries({ queryKey: ["proposalPosts", user.uid] });
+            // Invalidate all proposal posts queries
+            queryClient.invalidateQueries({ queryKey: ["proposalPosts"] });
+            queryClient.invalidateQueries({ queryKey: ["myProposalPosts"] });
+            queryClient.invalidateQueries({ queryKey: ["forYouPosts"] });
 
             toast.success("Proposal created successfully!");
 

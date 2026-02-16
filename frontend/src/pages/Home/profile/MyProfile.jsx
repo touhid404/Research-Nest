@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -6,15 +7,13 @@ import {
 import useAuth from '../../../hooks/useAuth';
 import { userApi } from '../../../lib/userApi';
 import toast from 'react-hot-toast';
-import { Outlet, NavLink, useLocation, useNavigate } from 'react-router';
+import { Outlet, NavLink } from 'react-router';
 import ProfileLoader from '../../../components/loader/ProfileLoader';
 
 const MyProfile = () => {
     const { user } = useAuth();
     const [profileData, setProfileData] = useState(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-    const location = useLocation();
-    const navigate = useNavigate();
 
     // Edit Profile Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -129,8 +128,6 @@ const MyProfile = () => {
 
     const tabs = [
         { id: 'overview', label: 'Overview', path: 'overview' },
-        { id: 'posts', label: 'My Posts', path: 'posts' },
-        { id: 'workspace', label: 'Workspaces', path: 'workspace' },
     ];
 
     if (isLoadingProfile) {

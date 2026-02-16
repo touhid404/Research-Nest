@@ -21,8 +21,8 @@ export const proposalApi = {
     },
 
     // Get all proposal posts by a specific user
-    getAllProposalPostsByUser: async (uid) => {
-        const response = await axiosInstance.get(`/posts/user/${uid}`);
+    getAllProposalPostsByUser: async (uid, page = 1, limit = 8) => {
+        const response = await axiosInstance.get(`/posts/user/${uid}?page=${page}&limit=${limit}`);
         return response.data;
     },
 
