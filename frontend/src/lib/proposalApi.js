@@ -8,13 +8,16 @@ export const proposalApi = {
     },
 
     // Get all proposal posts
-    getAllProposalPosts: async (excludeUid, page, limit, topic) => {
+    getAllProposalPosts: async (excludeUid, page, limit, topic, sortBy) => {
         let url = `/posts?page=${page}&limit=${limit}`;
         if (excludeUid) {
             url += `&excludeUid=${excludeUid}`;
         }
         if (topic) {
             url += `&topic=${encodeURIComponent(topic)}`;
+        }
+        if (sortBy) {
+            url += `&sortBy=${sortBy}`;
         }
         const response = await axiosInstance.get(url);
         return response.data;

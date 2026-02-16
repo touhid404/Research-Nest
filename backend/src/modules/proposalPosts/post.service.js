@@ -36,8 +36,16 @@ export const getAllProposalPostsInDB = async (options = {}) => {
   const totalCount = await ProposalPost.countDocuments(query);
   const totalPages = Math.ceil(totalCount / limit);
 
+  // Determine sort order based on sortBy option
+  let sortOrder = { createdAt: -1 }; // Default: latest first
+  if (options.sortBy === 'oldest') {
+    sortOrder = { createdAt: 1 };
+  } else if (options.sortBy === 'popular') {
+    sortOrder = { applicationCount: -1, createdAt: -1 };
+  }
+
   const posts = await ProposalPost.find(query)
-    .sort({ createdAt: -1 })
+    .sort(sortOrder)
     .skip(skip)
     .limit(limit)
     .lean();

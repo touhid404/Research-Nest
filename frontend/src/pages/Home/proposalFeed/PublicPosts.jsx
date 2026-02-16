@@ -14,9 +14,10 @@ const PublicPosts = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Get page and topic from URL params
+  // Get page, topic, and sortBy from URL params
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
   const currentTopic = searchParams.get("topic") || "";
+  const currentSortBy = searchParams.get("sortBy") || "latest";
 
   const {
     data,
@@ -24,9 +25,9 @@ const PublicPosts = () => {
     status,
     isPending,
   } = useQuery({
-    queryKey: ["proposalPosts", user?.uid, currentPage, currentTopic],
+    queryKey: ["proposalPosts", user?.uid, currentPage, currentTopic, currentSortBy],
     queryFn: async () => {
-      const response = await proposalApi.getAllProposalPosts(user?.uid, currentPage, LIMIT, currentTopic);
+      const response = await proposalApi.getAllProposalPosts(user?.uid, currentPage, LIMIT, currentTopic, currentSortBy);
       return response;
     },
     staleTime: 1000 * 15, // 15 seconds - shorter for fresher data
@@ -36,14 +37,17 @@ const PublicPosts = () => {
 
   const handlePageChange = (newPage) => {
     if (newPage < 1) return;
-    const params = { page: newPage.toString() };
-    if (currentTopic) params.topic = currentTopic;
+    const params = new URLSearchParams(searchParams);
+    params.set("page", newPage.toString());
     setSearchParams(params);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const clearTopicFilter = () => {
-    setSearchParams({ page: "1" });
+    const params = new URLSearchParams(searchParams);
+    params.delete("topic");
+    params.set("page", "1");
+    setSearchParams(params);
   };
 
   if (isPending) {

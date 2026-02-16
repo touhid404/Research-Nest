@@ -87,9 +87,9 @@ export const createProposalPost = async (req, res) => {
 
 export const getAllProposalPosts = async (req, res) => {
     try {
-        const { excludeUid, page, limit, topic } = req.query;
+        const { excludeUid, page, limit, topic, sortBy } = req.query;
         const viewerUid = req.user.uid;
-        const result = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit, topic });
+        const result = await getAllProposalPostsInDB({ excludeUid, viewerUid, page, limit, topic, sortBy });
 
         return res.status(200).json({
             success: true,
