@@ -1,4 +1,4 @@
-import { createProposalPostInDB, getAllProposalPostsByUserInDB, getAllProposalPostsInDB, getProposalPostByIdInDB, updateProposalPostInDB, deleteProposalPostInDB, getTrendingTopicsInDB } from "./post.service.js";
+import { createProposalPostInDB, getAllProposalPostsByUserInDB, getAllProposalPostsInDB, getProposalPostByIdInDB, updateProposalPostInDB, deleteProposalPostInDB, getTrendingTopicsInDB, getMatchingPostsInDB } from "./post.service.js";
 import User from "../../models/user.model.js";
 import fs from "fs";
 import path from "path";
@@ -128,6 +128,39 @@ export const getTrendingTopics = async (req, res) => {
     }
 };
 
+export const getMatchingPosts = async (req, res) => {
+    try {
+        const { page, limit } = req.query;
+        const userUid = req.user.uid;
+        
+        const result = await getMatchingPostsInDB({
+            userUid,
+            page: parseInt(page) || 1,
+            limit: parseInt(limit) || 10
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: result.posts,
+            meta: {
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                totalCount: result.totalCount,
+                perPage: parseInt(limit) || 10,
+                hasNextPage: result.hasNextPage,
+                hasPrevPage: result.hasPrevPage,
+            },
+            profileIncomplete: result.profileIncomplete || false,
+            missingFields: result.missingFields || null,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 export const getAllProposalPostsByUser = async (req, res) => {
     try {
         const { uid } = req.params;
@@ -196,7 +229,6 @@ export const updateProposalPost = async (req, res) => {
             return res.status(403).json({ success: false, message: "Unauthorized to update this post" });
         }
 
-        // Explicitly pick allowed fields to avoid issues with extra Data in req.body
         const updateData = {};
         const allowedFields = ["title", "description", "researchTopic", "interests", "status"];
 

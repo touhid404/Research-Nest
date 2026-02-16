@@ -34,6 +34,17 @@ const ProposalPostsBase = () => {
                 Explore
               </NavLink>
               <NavLink
+                to="for-you"
+                className={({ isActive }) =>
+                  `py-2 text-sm font-semibold transition-all border-b-2 flex items-center gap-1.5 ${isActive
+                    ? "border-primary text-primary"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`
+                }
+              >
+                For You
+              </NavLink>
+              <NavLink
                 to="myposts"
                 className={({ isActive }) =>
                   `py-2 text-sm font-semibold transition-all border-b-2 ${isActive

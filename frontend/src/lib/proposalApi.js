@@ -49,4 +49,10 @@ export const proposalApi = {
         const response = await axiosInstance.get(`/posts/trending-topics?limit=${limit}`);
         return response.data;
     },
+
+    // Get matching/for you posts
+    getForYouPosts: async (page = 1, limit = 8) => {
+        const response = await axiosInstance.get(`/posts/for-you?page=${page}&limit=${limit}`);
+        return response.data;
+    },
 };

@@ -18,6 +18,7 @@ import Register from "../pages/auth/Register";
 import ForgetPassword from "../pages/auth/ForgetPassword";
 import PrivateRoute from "../privateRoutes/privateRoutes";
 import PublicPosts from "../pages/Home/proposalFeed/PublicPosts";
+import ForYouPosts from "../pages/Home/proposalFeed/ForYouPosts";
 import CreateProposalPost from "../components/posts/CreateProposalPost";
 import WorkspaceBase from "../pages/Home/workspace/WorkspaceBase";
 import WorkspaceOverviewPage from "../pages/Home/workspace/WorkspaceOverviewPage";
@@ -84,6 +85,10 @@ export const router = createBrowserRouter([
                     {
                         path: "explore",
                         element: <PublicPosts />,
+                    },
+                    {
+                        path: "for-you",
+                        element: <ForYouPosts />,
                     },
                     {
                         path: "myposts",
