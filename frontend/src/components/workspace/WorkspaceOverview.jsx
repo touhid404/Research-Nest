@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
     IoCheckmarkCircleOutline,
     IoTimeOutline,
@@ -131,11 +131,6 @@ const WorkspaceOverview = ({ workspace }) => {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
-    const thisWeekCompleted = tasks.filter((t) => {
-        if (t.status !== "completed" || !t.updatedAt) return false;
-        const updated = new Date(t.updatedAt);
-        return updated >= weekStart && updated < weekEnd;
-    }).length;
 
     const formatDate = (date) => {
         const d = new Date(date);
@@ -182,7 +177,6 @@ const WorkspaceOverview = ({ workspace }) => {
         <div className="h-full overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
             <div className="p-4 lg:p-6 space-y-4  mx-auto">
 
-                {/* Header with Quick Stats */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         
@@ -192,9 +186,7 @@ const WorkspaceOverview = ({ workspace }) => {
                     </div>
                 </div>
 
-                {/* Analytics Cards - Minimal Style */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Completion Rate */}
                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Completion</span>

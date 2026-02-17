@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +13,6 @@ import {
 } from "react-icons/io5";
 import toast from "react-hot-toast";
 import useWorkspaceStore from "../../../store/useWorkspaceStore";
-import useAuth from "../../../hooks/useAuth";
 
 const CreateTaskModal = ({ isOpen, onClose, workspace, initialDate }) => {
     const { createTask } = useWorkspaceStore();
@@ -28,7 +28,6 @@ const CreateTaskModal = ({ isOpen, onClose, workspace, initialDate }) => {
     const [selectedAssignees, setSelectedAssignees] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
             const today = initialDate || new Date();

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
@@ -285,10 +287,7 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
     const isScheduler = meeting.scheduledBy === user?.uid;
     const isLive = meeting.status === "live";
     const isCompleted = meeting.status === "completed";
-    const acceptedCount = meeting.participants?.filter((p) => p.status === "accepted").length || 0;
-    const totalCount = meeting.participants?.length || 0;
 
-    // Get scheduler info - prioritize current user data if they're the scheduler, then try scheduledByUser, fallback to participantDetails
     const schedulerInfo = isScheduler
         ? { name: user?.displayName || user?.name, photoURL: user?.photoURL }
         : (meeting.scheduledByUser ||
@@ -412,11 +411,7 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                         </div>
                     )}
 
-                    {/* Participants count */}
-                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/50 px-2.5 py-1.5 rounded-lg">
-                        <IoPeopleOutline className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-gray-700 dark:text-gray-300">{acceptedCount}/{totalCount} joined</span>
-                    </div>
+
 
 
                 </div>
