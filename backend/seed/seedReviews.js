@@ -1,16 +1,20 @@
 import { connectDB } from "../src/config/db.js";
 import Review from "../src/models/review.model.js";
 
-// Replace with actual user UIDs from your database
 const TARGET_USER_UIDS = [
     "OUvE3QkdVlakvFd7nVHNT5QDnrP2",
-    "VrQEdGdvtyc2tWAKAKu8lpPXmSi1",
-    "M1FlVDaqXOYSF1j1qAnua5VKnBD3"
+    "lJ2p9370uDN6uEofMruhZVTiCok1",
+    "idQE1d1I0pgbDOCqY0jt5ZUlCo42",
+    "9w2CfiGSLSaMVYFhrHJzUZppy6W2",
+    "mrsBH5lTVPX97C3Zcd4p0kDbRsM2",
+    "FnNGbpp5NQWFbgDBEidkWSjOMdQ2",
+    "VJjyrBSk57aO0U1nvshMLqwf52J2",
+    "61RWyo8OHGgLOiFHw63Iqlds4Kz1",
+    "qdaG5kYRmPgEigoUNVOvl0wv9J02"
 ];
 
 const TOTAL_REVIEWS = 60;
 
-// Sample review comments
 const SAMPLE_COMMENTS = [
     "Research Nest has completely transformed how our lab collaborates. The proposal tools are a game-changer.",
     "Finding collaborators was always a struggle until I joined this platform. I found my dream team in a week!",

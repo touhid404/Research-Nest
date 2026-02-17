@@ -85,7 +85,7 @@ const Register = () => {
     try {
       const res = await createUser(formData.email, formData.password);
 
-      const randomAvatar = `https://api.dicebear.com/7.x/personas/svg?seed=${res.user.email}`;
+      const randomAvatar = `https://api.dicebear.com/7.x/micah/svg?seed=${res.user.email}`;
 
       await updateUserProfile({
         displayName: formData.name,

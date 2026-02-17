@@ -1,5 +1,5 @@
 from selenium import webdriver
-from selenium.webdriver.edge.service import Service
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -35,21 +35,22 @@ def logout(driver, wait):
         print(f"Logout failed: {e}")
         raise e
 
+
 # Options to keep browser open
-options = webdriver.EdgeOptions()
+options = webdriver.ChromeOptions()
 options.add_experimental_option("detach", True)
 
-# Edge Driver
+# Chrome Driver
 service_obj = Service()
-driver = webdriver.Edge(options=options, service=service_obj)
+driver = webdriver.Chrome(options=options, service=service_obj)
 
 try:
     wait = WebDriverWait(driver, 10)
     
     # --- CONSTANTS ---
     BASE_URL = "http://localhost:5173"
-    KARIM_EMAIL = "karim@gmail.com"
-    KARIM_PASS = "12345678"
+    KARIM_EMAIL = "tt@gmail.com"
+    KARIM_PASS = "tt112233"
     
     NEW_USER_NAME = f"TestUser_{random_string(4)}"
     NEW_USER_EMAIL = f"{random_string(6)}@test.com"

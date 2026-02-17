@@ -1,16 +1,20 @@
 import { connectDB } from "../src/config/db.js";
 import ProposalPost from "../src/models/proposalPost.model.js";
-// replace to actual user uids
 const TARGET_USER_UIDS = [
     "OUvE3QkdVlakvFd7nVHNT5QDnrP2",
-    "wYdJ8DJCnWWBCWQJYiptLv5yWD13"
+    "lJ2p9370uDN6uEofMruhZVTiCok1",
+    "idQE1d1I0pgbDOCqY0jt5ZUlCo42",
+    "9w2CfiGSLSaMVYFhrHJzUZppy6W2",
+    "mrsBH5lTVPX97C3Zcd4p0kDbRsM2",
+    "FnNGbpp5NQWFbgDBEidkWSjOMdQ2",
+    "VJjyrBSk57aO0U1nvshMLqwf52J2",
+    "61RWyo8OHGgLOiFHw63Iqlds4Kz1",
+    "qdaG5kYRmPgEigoUNVOvl0wv9J02"
 ];
 
-const TOTAL_POSTS_TO_CREATE = 50;
+const TOTAL_POSTS_TO_CREATE = 40;
 
-// ==========================================
-// SEED DATA
-// ==========================================
+
 const SAMPLE_TITLES = [
     "AI-Driven Diagnostic Tools for Rural Healthcare",
     "Blockchain-Based Supply Chain Transparency",
@@ -125,9 +129,7 @@ const INTERESTS_POOL = [
     "Linguistics", "Cloud Computing"
 ];
 
-// ==========================================
 // HELPER FUNCTIONS
-// ==========================================
 const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const getRandomSubarray = (arr, size) => {
@@ -155,14 +157,20 @@ const DESCRIPTION_TEMPLATES = [
     (title, topic) => `This project tackles ${title.toLowerCase()} using novel ${topic} frameworks. We're building a diverse team to conduct rigorous research with potential for significant breakthroughs.`,
 ];
 
+const getRandomDate = (start, end) => {
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+}
+
 const generateRandomPost = (uids, index) => {
     const ownerUid = getRandomItem(uids);
     const title = getRandomItem(SAMPLE_TITLES);
     const researchTopic = getRandomItem(RESEARCH_TOPICS);
 
-    // Select a random description template
     const descriptionTemplate = getRandomItem(DESCRIPTION_TEMPLATES);
     const description = descriptionTemplate(title, researchTopic);
+
+    // Generate a random date within the last 1 month (30 days)
+    const randomDate = getRandomDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date());
 
     return {
         ownerUid: ownerUid,
@@ -171,20 +179,20 @@ const generateRandomPost = (uids, index) => {
         researchTopic: researchTopic,
         interests: getRandomSubarray(INTERESTS_POOL, 3), // 3 random interests
         attachments: [], // Empty for seed
-        status: "published"
+        status: "published",
+        createdAt: randomDate,
+        updatedAt: randomDate
     };
 };
 
-// ==========================================
-// MAIN SCRIPT
-// ==========================================
+
 const seedProposals = async () => {
     try {
         console.log("Connecting to Database...");
         await connectDB();
 
         if (TARGET_USER_UIDS.length === 0 || TARGET_USER_UIDS[0].includes("REPLACE")) {
-            console.warn("⚠️  WARNING: No valid User UIDs provided in TARGET_USER_UIDS.");
+            console.warn(" WARNING: No valid User UIDs provided in TARGET_USER_UIDS.");
             console.warn("Please edit the script and add valid UIDs to the TARGET_USER_UIDS array.");
             process.exit(1);
         }
@@ -198,15 +206,13 @@ const seedProposals = async () => {
 
         const result = await ProposalPost.insertMany(postsToInsert);
 
-        console.log(`✅ Successfully seeded ${result.length} proposal posts!`);
-        console.log("Done.");
+        console.log(`Successfully seeded ${result.length} proposal posts!`);
         process.exit(0);
 
     } catch (error) {
-        console.error("❌ Seeding failed:", error);
+        console.error("Seeding failed:", error);
         process.exit(1);
     }
 };
 
-// Run the seed function
 seedProposals();

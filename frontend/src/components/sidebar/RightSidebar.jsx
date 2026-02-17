@@ -115,14 +115,6 @@ const RightSidebar = () => {
                       </span>
                     </div>
                   </div>
-
-                  <button 
-                    onClick={() => navigate(`/home/messages/${resUser.uid}`)}
-                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white transition-all duration-300 group/btn shadow-sm active:scale-95 shrink-0 ml-2"
-                    title={`Message ${resUser.name}`}
-                  >
-                    <FiMessageCircle className="w-4 h-4 transition-transform group-hover/btn:scale-110" />
-                  </button>
                 </div>
               ))
             ) : (
