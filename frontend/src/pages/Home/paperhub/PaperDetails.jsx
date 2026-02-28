@@ -1,12 +1,14 @@
 import { useParams, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { paperApi } from '../../../lib/paperApi';
-import { BiArrowBack, BiLinkExternal, BiCopy, BiCalendar, BiBookOpen } from "react-icons/bi";
+import { BiArrowBack, BiLinkExternal, BiCopy, BiCalendar, BiBookOpen, BiMessageDetail } from "react-icons/bi";
 import { AiOutlineFilePdf } from "react-icons/ai";
 import { MdOutlineSchool } from "react-icons/md";
 import { HiOutlineDocumentText } from "react-icons/hi";
 import PostLoader from '../../../components/loader/PostLoader';
 import toast from 'react-hot-toast';
+import useAuth from '../../../hooks/useAuth';
+import useChatStore from '../../../store/useChatStore';
 
 
 const MetaRow = ({ label, value }) => {
@@ -22,6 +24,9 @@ const MetaRow = ({ label, value }) => {
 const PaperDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
+    const { getOrCreateConversation, sendMessage, sendSocketMessage } = useChatStore();
+
     const { data, isPending, error } = useQuery({
         queryKey: ["paper", id],
         queryFn: async () => {
@@ -71,6 +76,38 @@ const PaperDetails = () => {
         if (paper.doi) {
             navigator.clipboard.writeText(paper.doi);
             toast.success("DOI copied to clipboard");
+        }
+    };
+
+    const handleRequestPaper = async () => {
+        if (!currentUser) {
+            toast.error("Please login to request papers");
+            return;
+        }
+
+        if (currentUser.uid === paper.user.uid) {
+            toast.error("This is your own paper!");
+            return;
+        }
+
+        const loadingToast = toast.loading("Sending request...");
+        try {
+            // 1. Get or create conversation with author
+            const conversation = await getOrCreateConversation(paper.user.uid);
+            
+            // 2. Format formal request message
+            const requestMsg = `Hello! I am interested in your paper '${paper.title}'. Would it be possible to share the full PDF for research purposes? Thank you!`;
+            
+            // 3. Send message
+            const newMessage = await sendMessage(conversation._id, requestMsg);
+            
+            // 4. Emit via socket if available
+            sendSocketMessage(conversation._id, newMessage);
+
+            toast.success("Request sent to author's inbox!", { id: loadingToast });
+        } catch (error) {
+            console.error("Error requesting paper:", error);
+            toast.error("Failed to send request", { id: loadingToast });
         }
     };
 
@@ -206,10 +243,10 @@ const PaperDetails = () => {
                     )}
 
                     {/* Access Paper Link */}
-                    {paper.paperLink && (
-                        <div className="border border-blue-100 dark:border-blue-800/40 bg-blue-50/60 dark:bg-blue-900/10 rounded-xl p-4">
-                            <h4 className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">Access Paper</h4>
-                            <div className="flex flex-wrap gap-3">
+                    <div className="border border-blue-100 dark:border-blue-800/40 bg-blue-50/60 dark:bg-blue-900/10 rounded-xl p-4">
+                        <h4 className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">Access Paper</h4>
+                        <div className="flex flex-wrap gap-3">
+                            {paper.paperLink && (
                                 <a
                                     href={paper.paperLink}
                                     target="_blank"
@@ -220,9 +257,18 @@ const PaperDetails = () => {
                                     Open Paper Link
                                     <span className="text-[10px] opacity-75 hidden sm:inline">↗ external</span>
                                 </a>
-                            </div>
+                            )}
+                            {!paper.paperFile?.url && (
+                                <button
+                                    onClick={handleRequestPaper}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold transition shadow-sm"
+                                >
+                                    <BiMessageDetail size={16} />
+                                    Request Full Paper
+                                </button>
+                            )}
                         </div>
-                    )}
+                    </div>
 
                     {/* Abstract */}
                     <div className="space-y-3">
@@ -264,12 +310,21 @@ const PaperDetails = () => {
                                     alt={paper.user.name}
                                     className="h-9 w-9 rounded-full object-cover border-2 border-blue-100 dark:border-blue-900"
                                 />
-                                <div>
-                                    <p className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-blue-600 transition">
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-blue-600 transition truncate">
                                         {paper.user.name}
                                     </p>
                                     <p className="text-[9px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Corresponding ✉</p>
                                 </div>
+                                {currentUser?.uid !== paper.user.uid && (
+                                    <button
+                                        onClick={handleRequestPaper}
+                                        className="p-2 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                                        title="Send message to author"
+                                    >
+                                        <BiMessageDetail size={18} />
+                                    </button>
+                                )}
                             </div>
                             {coAuthorsList.map((name, idx) => (
                                 <div key={idx} className="flex items-center gap-3 pl-1">
@@ -323,7 +378,12 @@ const PaperDetails = () => {
                                         <AiOutlineFilePdf size={13} /> PDF
                                     </a>
                                 ) : (
-                                    <span className="text-[11px] text-gray-300 dark:text-gray-600">No PDF</span>
+                                    <button
+                                        onClick={handleRequestPaper}
+                                        className="flex items-center gap-1.5 text-[11px] bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-800 px-3 py-1.5 rounded-lg font-bold hover:bg-violet-100 dark:hover:bg-violet-900/40 transition"
+                                    >
+                                        <BiMessageDetail size={13} /> Request PDF
+                                    </button>
                                 )}
                                 {paper.paperLink ? (
                                     <a href={paper.paperLink} target="_blank" rel="noreferrer"

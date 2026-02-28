@@ -40,11 +40,14 @@ export const parsePdf = async (pdfBuffer) => {
         // 2. Prepare AI Prompt
         const systemInstruction = `
 You are an expert academic librarian and bibliographic parser.
-Your task is to extract meadata from the beginning text of a research paper.
+Your first task is to determine if the provided text belongs to a research paper, academic report, thesis, or technical article.
+
 You must return the result in strictly valid JSON format.
 Do not include any explanation or markdown formatting (like \`\`\`json). Just the raw JSON object.
 
 Extract the following fields:
+- isResearchPaper: Boolean. Set to true if it is a research paper, article, report, or academic document. Set to false for irrelevant PDFs (like personal photos, invoices, generic letters, or random documents).
+- rejectionReason: String. If isResearchPaper is false, provide a short, user-friendly reason why the document was rejected. Otherwise, leave empty.
 - title: The full title of the paper.
 - abstract: The abstract or description of the paper.
 - publicationDate: The publication date if found (YYYY-MM-DD format), otherwise empty string.
@@ -89,6 +92,12 @@ Please extract the metadata as JSON.
             } else {
                 throw new Error("AI response was not valid JSON.");
             }
+        }
+
+        // 5. Validate and return
+        if (parsedData.isResearchPaper === false) {
+            const reason = parsedData.rejectionReason || "The document does not appear to be a research paper or academic report.";
+            throw new Error(`Validation Failed: ${reason}`);
         }
 
         return parsedData;

@@ -4,6 +4,7 @@ import Meeting from "../models/meeting.model.js";
 import Document from "../models/document.model.js";
 import { config } from "../config/config.js";
 import { getUsersByUids } from "../modules/workspace/services/workspace.service.js";
+import cron from "node-cron";
 
 // Helper to populate meeting details before socket emission
 const populateMeetingDetails = async (meeting) => {
@@ -263,10 +264,6 @@ export const initializeServer = (server) => {
             });
         });
 
-        // ============== VIDEO MEETING EVENTS ==============
-        // Note: WebRTC signaling is now handled by Stream Video SDK
-        // These events are kept for meeting status management only
-
         // Join meeting room (for status updates only)
         socket.on("meeting:join", ({ meetingId }) => {
             socket.join(`meeting:${meetingId}`);
@@ -336,8 +333,7 @@ export const initializeServer = (server) => {
         });
     });
 
-    // ============== AUTO-UPDATE MEETING STATUS ==============
-    // Single function to handle all meeting status transitions
+    //  AUTO-UPDATE MEETING STATUS 
     const updateMeetingStatuses = async () => {
         try {
             const now = new Date();
@@ -406,9 +402,9 @@ export const initializeServer = (server) => {
             console.error("Error updating meeting statuses:", error);
         }
     };
-
     updateMeetingStatuses();
-    setInterval(updateMeetingStatuses, 30 * 1000);
+    // Schedule cron job to run every 30 seconds
+    cron.schedule("*/30 * * * * *", updateMeetingStatuses);
 
     console.log("Socket.IO server initialized");
     return io;
