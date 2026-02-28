@@ -1,28 +1,20 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { paperApi } from "../../lib/paperApi";
-import { Link } from "react-router"; // Updated import
+import { useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
 import toast from "react-hot-toast";
 import ConfirmModal from "../common/ConfirmModal";
-import { BiLinkExternal, BiTrash, BiCalendar } from "react-icons/bi";
-import { AiOutlineFilePdf } from "react-icons/ai";
-
-
-
+import { BiTrash, BiCalendar } from "react-icons/bi";
+import { MdOutlineSchool } from "react-icons/md";
 
 const PaperCard = ({ paper }) => {
     const { user: currentUser } = useAuth();
-    const { user, title, abstract, researchDomain, tags, paperLink, paperFile, createdAt, _id } = paper;
-
-
-
+    const navigate = useNavigate();
+    const { user, title, abstract, researchDomain, tags, createdAt, _id } = paper;
 
     const queryClient = useQueryClient();
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-
-
 
     const deleteMutation = useMutation({
         mutationFn: (id) => paperApi.deletePaper(id),
@@ -33,148 +25,116 @@ const PaperCard = ({ paper }) => {
                 queryClient.invalidateQueries({ queryKey: ["papers", currentUser.uid] });
             }
         },
-        onError: (error) => {
-            toast.error(error.message || "Failed to delete paper");
+        onError: (err) => {
+            toast.error(err.message || "Failed to delete paper");
         }
     });
-
-
-
-
-    const handleDelete = () => setIsDeleteModalOpen(true);
-
-
-
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString("en-US", {
-            year: 'numeric', month: 'short', day: 'numeric'
-        });
-    };
-
-
-
-
-    const handleCardClick = (e) => {
-        // Prevent navigation if clicking on interactive elements
-        if (e.target.closest('button') || e.target.closest('a')) {
-            return;
-        }
-    };
-
 
     const coAuthorsList = paper.coAuthors
         ? (Array.isArray(paper.coAuthors) ? paper.coAuthors : paper.coAuthors.split(',').map(s => s.trim()))
         : [];
 
+    const allAuthors = [user?.name, ...coAuthorsList].filter(Boolean);
+
+    const publicationYear = paper.publicationDate
+        ? new Date(paper.publicationDate).getFullYear()
+        : new Date(createdAt).getFullYear();
+
+    const handleCardClick = () => {
+        navigate(`/home/paper-hub/paper/${_id}`);
+    };
+
+    const stopProp = (e) => e.stopPropagation();
 
     return (
-        <Link
-            to={`/home/paper-hub/paper/${paper._id}`}
-            className="block bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-6 mb-4 shadow-sm hover:shadow-md transition-all group relative cursor-pointer"
+        <div
+            onClick={handleCardClick}
+            className="border-b border-gray-100 dark:border-slate-800/60 py-4 md:py-5 px-3 md:px-6 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-all group relative cursor-pointer"
         >
-            {/* Header: Meta & Date */}
-            <div className="flex justify-between items-start mb-3">
-                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                    <span className="uppercase tracking-wider text-blue-600 dark:text-blue-400 font-semibold">
-                        {researchDomain}
+            {/* Top row: domain + year + delete */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap min-w-0">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800/40 shrink-0">
+                    <MdOutlineSchool size={10} />
+                    {researchDomain || "Research"}
+                </span>
+                {paper.paperType && (
+                    <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded uppercase tracking-tight shrink-0">
+                        {paper.paperType}
                     </span>
-                    <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
-                    <span>{formatDate(createdAt)}</span>
+                )}
+                {paper.publicationName && (
+                    <span className="text-[10px] md:text-[11px] text-gray-400 dark:text-gray-500 italic truncate max-w-[120px] sm:max-w-[200px]">
+                        {paper.publicationName}
+                    </span>
+                )}
+                <div className="ml-auto flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] md:text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                        <BiCalendar size={11} />
+                        {publicationYear}
+                    </span>
+
+                    {currentUser?.uid === user?.uid && (
+                        <button
+                            onClick={(e) => { stopProp(e); setIsDeleteModalOpen(true); }}
+                            className="p-1.5 text-gray-400 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition rounded sm:opacity-0 group-hover:opacity-100"
+                            title="Delete Paper"
+                        >
+                            <BiTrash size={15} />
+                        </button>
+                    )}
                 </div>
+            </div>
 
+            {/* Title */}
+            <h3 className="text-[14px] md:text-base font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 leading-snug mb-1.5 transition-colors line-clamp-2">
+                {title}
+            </h3>
 
-                {currentUser?.uid === user?.uid && (
-                    <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDelete();
-                        }}
-                        className="p-2 -mt-2 -mr-2 text-gray-400 hover:text-red-500 transition rounded-full hover:bg-red-50 dark:hover:bg-red-900/10 z-10 relative"
-                        title="Delete Paper"
-                    >
-                        <BiTrash size={18} />
-                    </button>
+            {/* Authors */}
+            <div className="flex items-center gap-1 mb-2 flex-wrap min-w-0">
+                {allAuthors.map((name, i) => (
+                    <span key={i} className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        {name}{i < allAuthors.length - 1 ? "," : ""}
+                    </span>
+                ))}
+                {paper.doi && (
+                    <div className="flex items-center">
+                        <span className="text-gray-300 dark:text-slate-700 mx-1 text-xs sm:inline hidden">·</span>
+                        <a
+                            href={`https://doi.org/${paper.doi}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={stopProp}
+                            className="text-[9px] md:text-[10px] text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 font-mono transition-colors truncate max-w-[150px] sm:max-w-none"
+                        >
+                            {paper.doi}
+                        </a>
+                    </div>
                 )}
             </div>
 
-
-            {/* Content */}
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {paper.title}
-            </h3>
-
-
-            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-4 line-clamp-2">
+            {/* Abstract snippet */}
+            <p className="text-[12px] md:text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 md:line-clamp-3 mb-3">
                 {abstract}
             </p>
 
-
-            {/* Authors */}
-            <div className="flex items-center gap-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
-                <div className="flex items-center gap-2">
-                    <img
-                        src={user?.photoURL || "https://ui-avatars.com/api/?name=User"}
-                        alt={user?.name}
-                        className="w-5 h-5 rounded-full object-cover"
-                    />
-                    <span className="font-semibold">{user?.name}</span>
-                </div>
-                {coAuthorsList.length > 0 && (
-                    <>
-                        <span className="text-gray-400">,</span>
-                        <span className="text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
-                            {coAuthorsList.join(", ")}
-                        </span>
-                    </>
-                )}
-            </div>
-
-
-            {/* Footer: Tags & Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-50 dark:border-slate-800">
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2">
+            {/* Footer: tags */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex flex-wrap gap-1.5">
                     {tags && tags.length > 0 && tags.slice(0, 3).map((tag, idx) => (
-                        <span key={idx} className="text-[10px] font-medium bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full">
-                            #{tag}
+                        <span
+                            key={idx}
+                            className="text-[9px] md:text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-slate-50 dark:bg-slate-800/50 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800/40"
+                        >
+                            #{tag.toLowerCase()}
                         </span>
                     ))}
                     {tags && tags.length > 3 && (
-                        <span className="text-[10px] font-medium text-gray-400 px-1">+{tags.length - 3} more</span>
-                    )}
-                </div>
-
-
-                {/* Quick Actions */}
-                <div className="flex items-center gap-3">
-                    {paperFile && (
-                        <a
-                            href={paperFile.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition"
-                        >
-                            <AiOutlineFilePdf size={16} />
-                            PDF
-                        </a>
-                    )}
-                    {paperLink && (
-                        <a
-                            href={paperLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition"
-                        >
-                            <BiLinkExternal size={14} />
-                            Link
-                        </a>
+                        <span className="text-[9px] text-gray-400">+{tags.length - 3}</span>
                     )}
                 </div>
             </div>
+
 
 
             <ConfirmModal
@@ -186,24 +146,8 @@ const PaperCard = ({ paper }) => {
                 confirmText="Yes, Delete"
                 isDanger={true}
             />
-        </Link>
+        </div>
     );
 };
 
-
-
-
 export default PaperCard;
-
-
-
-
-
-
-
-
-
-
-
-
-

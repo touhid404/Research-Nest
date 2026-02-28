@@ -11,21 +11,39 @@ export const paperApi = {
 
 
     // Get all papers
-    getAllPapers: async (excludeUid) => {
-        let url = "/papers";
+    getAllPapers: async (excludeUid, page = 1, limit = 10, filters = {}) => {
+        let url = `/papers?page=${page}&limit=${limit}`;
         if (excludeUid) {
-            url += `?excludeUid=${excludeUid}`;
+            url += `&excludeUid=${excludeUid}`;
         }
+        
+        // Add additional filters
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+                url += `&${key}=${encodeURIComponent(value)}`;
+            }
+        });
+
         const response = await axiosInstance.get(url);
         return response.data;
     },
 
 
     // Get all papers by a specific user
-    getAllPapersByUser: async (uid) => {
-        const response = await axiosInstance.get(`/papers/user/${uid}`);
+    getAllPapersByUser: async (uid, page = 1, limit = 10, filters = {}) => {
+        let url = `/papers/user/${uid}?page=${page}&limit=${limit}`;
+        
+        // Add additional filters
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+                url += `&${key}=${encodeURIComponent(value)}`;
+            }
+        });
+
+        const response = await axiosInstance.get(url);
         return response.data;
     },
+
 
 
     // Get a single paper by ID
@@ -38,6 +56,12 @@ export const paperApi = {
     // Delete a paper
     deletePaper: async (id) => {
         const response = await axiosInstance.delete(`/papers/${id}`);
+        return response.data;
+    },
+
+    // Get unique research domains
+    getResearchDomains: async () => {
+        const response = await axiosInstance.get("/papers/domains");
         return response.data;
     },
 };

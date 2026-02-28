@@ -7,7 +7,7 @@ import { FaMagic } from "react-icons/fa";
 import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
 import { useNavigate } from "react-router";
-import { useEnhanceDescription } from "../../hooks/useEnhanceDescription";
+
 import { useParsePdf } from "../../hooks/useParsePdf";
 
 
@@ -29,16 +29,16 @@ const CreatePaper = () => {
         researchDomain: "",
         tags: "",
         paperLink: "",
-        paperFile: null, // Single file (manual upload)
-        coAuthors: "", // Manual text input
+        paperFile: null,
+        coAuthors: "",
         publicationDate: "",
         publicationName: "",
         doi: "",
+        paperType: "",
+        citationCount: "",
     });
 
     // AI state
-    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-    const enhanceMutation = useEnhanceDescription();
     const parsePdfMutation = useParsePdf();
 
 
@@ -115,6 +115,8 @@ const CreatePaper = () => {
             data.append("publicationDate", postData.payload.publicationDate);
             data.append("publicationName", postData.payload.publicationName);
             data.append("doi", postData.payload.doi);
+            data.append("paperType", postData.payload.paperType);
+            if (postData.payload.citationCount) data.append("citationCount", postData.payload.citationCount);
 
 
             if (postData.file) {
@@ -171,7 +173,7 @@ const CreatePaper = () => {
                 if (!response.ok) throw new Error("Failed to fetch");
                 const blob = await response.blob();
                 fileToScan = new File([blob], selectedWorkspaceFile.title || "document.pdf", { type: "application/pdf" });
-            } catch (error) {
+            } catch {
                 toast.dismiss("pdf-scan");
                 toast.error("Failed to fetch file from workspace.");
                 return;
@@ -270,6 +272,8 @@ const CreatePaper = () => {
             publicationDate: formData.publicationDate,
             publicationName: formData.publicationName,
             doi: formData.doi,
+            paperType: formData.paperType,
+            citationCount: formData.citationCount,
         };
 
 
@@ -296,12 +300,26 @@ const CreatePaper = () => {
     };
 
 
+    // Fetch unique domains for suggestions
+    const { data: domainsData } = useQuery({
+        queryKey: ["paper-domains"],
+        queryFn: paperApi.getResearchDomains,
+    });
+    const existingDomains = useMemo(() => domainsData?.data || [], [domainsData]);
+
     return (
         <div className="p-4 md:p-8 h-full">
+            {/* ... rest of the JSX ... */}
             <div className="w-full max-w-7xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Publish Research Paper</h2>
-
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-gray-100 dark:border-slate-800">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="w-1 h-5 bg-blue-600 rounded-full inline-block"></span>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Submit Research Paper</h2>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-4">Share your research with the academic community</p>
+                    </div>
                 </div>
 
 
@@ -543,21 +561,47 @@ const CreatePaper = () => {
                     </div>
 
 
-                    {/* Row 2: 4 Columns for Meta Data */}
+                    {/* Row 2: Meta Data */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                         <div className="lg:col-span-1">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Research Domain
+                                Research Domain <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="researchDomain"
+                                list="research-domains-list"
                                 value={formData.researchDomain}
                                 onChange={handleChange}
-                                placeholder="e.g., CS"
+                                placeholder="e.g., Computer Science"
                                 className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                                 required
                             />
+                            <datalist id="research-domains-list">
+                                {existingDomains.map(domain => (
+                                    <option key={domain} value={domain} />
+                                ))}
+                            </datalist>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Paper Type
+                            </label>
+                            <select
+                                name="paperType"
+                                value={formData.paperType}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            >
+                                <option value="">Select type</option>
+                                <option value="Journal Article">Journal Article</option>
+                                <option value="Conference Paper">Conference Paper</option>
+                                <option value="Workshop Paper">Workshop Paper</option>
+                                <option value="Preprint">Preprint</option>
+                                <option value="Thesis">Thesis</option>
+                                <option value="Book Chapter">Book Chapter</option>
+                                <option value="Technical Report">Technical Report</option>
+                            </select>
                         </div>
                         <div className="lg:col-span-1">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -571,19 +615,35 @@ const CreatePaper = () => {
                                 className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>
-                        <div className="lg:col-span-2">
+                        <div className="lg:col-span-1">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Journal / Conference Name
+                                Citation Count (Optional)
                             </label>
                             <input
-                                type="text"
-                                name="publicationName"
-                                value={formData.publicationName}
+                                type="number"
+                                name="citationCount"
+                                min="0"
+                                value={formData.citationCount}
                                 onChange={handleChange}
-                                placeholder="e.g., IEEE Access"
+                                placeholder="e.g., 42"
                                 className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>
+                    </div>
+
+                    {/* Journal Name Full Row */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Journal / Conference Name
+                        </label>
+                        <input
+                            type="text"
+                            name="publicationName"
+                            value={formData.publicationName}
+                            onChange={handleChange}
+                            placeholder="e.g., IEEE Transactions on Neural Networks, NeurIPS 2024"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
                     </div>
 
 
@@ -670,9 +730,9 @@ const CreatePaper = () => {
                         <button
                             type="submit"
                             disabled={createPaperMutation.isPending}
-                            className="px-6 py-2 rounded-full bg-black dark:bg-white text-white dark:text-black font-semibold hover:opacity-90 disabled:opacity-60 transition shadow-lg active:scale-95 flex items-center gap-2"
+                            className="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold disabled:opacity-60 transition shadow-lg active:scale-95 flex items-center gap-2"
                         >
-                            {createPaperMutation.isPending ? "Publishing..." : "Publish Paper"}
+                            {createPaperMutation.isPending ? "Submitting..." : "Share Paper"}
                         </button>
                     </div>
 

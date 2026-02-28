@@ -1,5 +1,21 @@
-import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB } from "./paper.service.js";
+import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB, getUniqueResearchDomainsFromDB } from "./paper.service.js";
 import User from "../../models/user.model.js";
+
+
+export const getResearchDomains = async (req, res) => {
+    try {
+        const domains = await getUniqueResearchDomainsFromDB();
+        return res.status(200).json({
+            success: true,
+            data: domains,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
 
 
@@ -7,14 +23,7 @@ import User from "../../models/user.model.js";
 export const createPaper = async (req, res) => {
     try {
 
-
-
-
         const { uid, title, abstract, researchDomain, tags, paperLink, coAuthors, publicationDate, publicationName, doi, workspaceFile } = req.body;
-
-
-
-
         // Handle file upload (paperFile)
         let paperFile = null;
         if (req.file) {
@@ -24,7 +33,6 @@ export const createPaper = async (req, res) => {
             };
         } else if (workspaceFile) {
             // Handle workspace file
-            // Expected workspaceFile structure: { name: string, url: string, ... }
             if (typeof workspaceFile === 'string') {
                 try {
                     paperFile = JSON.parse(workspaceFile);
@@ -104,12 +112,37 @@ export const createPaper = async (req, res) => {
 
 export const getAllPapers = async (req, res) => {
     try {
-        const { excludeUid } = req.query;
-        const papers = await getAllPapersInDB({ excludeUid });
+        const { excludeUid, page, limit, q, domains, yearFrom, yearTo, hasPdf, hasLink, sort } = req.query;
+        
+        let domainsArray = [];
+        if (domains) {
+            domainsArray = domains.split(",").filter(Boolean);
+        }
+
+        const result = await getAllPapersInDB({ 
+            excludeUid, 
+            page, 
+            limit, 
+            q, 
+            domains: domainsArray, 
+            yearFrom, 
+            yearTo, 
+            hasPdf, 
+            hasLink, 
+            sort 
+        });
+
         return res.status(200).json({
             success: true,
-            count: papers.length,
-            data: papers,
+            data: result.papers,
+            meta: {
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                totalCount: result.totalCount,
+                perPage: parseInt(limit) || 10,
+                hasNextPage: result.hasNextPage,
+                hasPrevPage: result.hasPrevPage,
+            },
         });
     } catch (error) {
         return res.status(500).json({
@@ -122,17 +155,28 @@ export const getAllPapers = async (req, res) => {
 export const getAllPapersByUser = async (req, res) => {
     try {
         const { uid } = req.params;
+        const { page, limit } = req.query;
+        
         if (!uid) {
             return res.status(400).json({
                 success: false,
                 message: "uid is required",
             });
         }
-        const papers = await getAllPapersByUserInDB(uid);
+        
+        const result = await getAllPapersByUserInDB(uid, { page, limit });
+        
         return res.status(200).json({
             success: true,
-            count: papers.length,
-            data: papers,
+            data: result.papers,
+            meta: {
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                totalCount: result.totalCount,
+                perPage: parseInt(limit) || 10,
+                hasNextPage: result.hasNextPage,
+                hasPrevPage: result.hasPrevPage,
+            },
         });
     } catch (error) {
         return res.status(500).json({
@@ -141,6 +185,7 @@ export const getAllPapersByUser = async (req, res) => {
         });
     }
 };
+
 
 export const getPaperById = async (req, res) => {
     try {

@@ -9,7 +9,8 @@
     "build": "echo 'No build step required for raw Node.js' && exit 0",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "seed:proposals": "node seed/seedProposals.js",
-    "seed:reviews": "node seed/seedReviews.js"
+    "seed:reviews": "node seed/seedReviews.js",
+    "seed:papers": "node seed/seedPapers.js"
   },
   "keywords": [],
   "author": "",
