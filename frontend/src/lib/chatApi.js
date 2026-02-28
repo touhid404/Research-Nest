@@ -73,4 +73,16 @@ export const chatApi = {
         const response = await axiosInstance.delete(`/messages/conversations/${conversationId}`);
         return response.data;
     },
+
+    // Upload attachment
+    uploadAttachment: async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await axiosInstance.post("/messages/upload-attachment", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        return response.data;
+    },
 };

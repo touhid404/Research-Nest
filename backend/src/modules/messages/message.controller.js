@@ -740,3 +740,30 @@ export const markAsRead = async (req, res) => {
         });
     }
 };
+
+// Attachments
+export const uploadAttachment = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded",
+            });
+        }
+
+        // Return the public URL of the uploaded file
+        const fileUrl = `/public/chat-attachments/${req.file.filename}`;
+
+        res.status(200).json({
+            success: true,
+            data: fileUrl,
+        });
+    } catch (error) {
+        console.error("Error uploading chat attachment:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to upload attachment",
+            error: error.message,
+        });
+    }
+};

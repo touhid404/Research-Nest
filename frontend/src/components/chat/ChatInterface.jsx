@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers } from "react-icons/fa";
+import { FaPaperPlane, FaCircle, FaTrash, FaArrowLeft, FaUsers, FaPaperclip, FaFilePdf, FaTimes } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi";
 import { useNavigate } from "react-router";
 import useChatStore from "../../store/useChatStore";
@@ -8,6 +8,8 @@ import ConversationInfoModal from "./ConversationInfoModal";
 import ConversationLoader from "../loader/ConversationLoader";
 import AiSpellCheckModal from "../ai-common/AiSpellCheckModal";
 import { aiApi } from "../../lib/aiApi";
+import { chatApi } from "../../lib/chatApi";
+import toast from "react-hot-toast";
 
 const ChatInterface = () => {
     const { user } = useAuth();
@@ -19,8 +21,47 @@ const ChatInterface = () => {
     const [corrections, setCorrections] = useState([]);
     const [fullCorrectedText, setFullCorrectedText] = useState("");
     const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
+    const [attachment, setAttachment] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+    const fileInputRef = useRef(null);
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Limit size 10MB
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error("File is too large! Maximum limit is 10MB.");
+            return;
+        }
+
+        // Restrict to PDF only
+        if (file.type !== "application/pdf") {
+            toast.error("Only PDF files are allowed!");
+            return;
+        }
+
+        setIsUploading(true);
+        const loadingToast = toast.loading("Uploading attachment...");
+
+        try {
+            const response = await chatApi.uploadAttachment(file);
+            if (response.success) {
+                setAttachment(response.data);
+                toast.success("Attachment uploaded!", { id: loadingToast });
+            } else {
+                toast.error(response.message || "Failed to upload", { id: loadingToast });
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error(error.response?.data?.message || "Failed to upload attachment", { id: loadingToast });
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const checkSpelling = async () => {
         if (!messageText.trim()) return;
@@ -80,7 +121,13 @@ const ChatInterface = () => {
     const isOnline = otherUser && onlineUsers.includes(otherUser.uid);
     const isGroup = selectedConversation?.isGroup;
     const chatName = isGroup ? selectedConversation.groupName : otherUser?.name;
-    const chatPhoto = isGroup ? null : otherUser?.photoURL;
+
+    const getAttachmentUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith("http")) return path;
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+        return `${backendUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+    };
 
     useEffect(() => {
         if (selectedConversation?._id) {
@@ -119,15 +166,17 @@ const ChatInterface = () => {
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!messageText.trim() || !selectedConversation) return;
+        if ((!messageText.trim() && !attachment) || !selectedConversation) return;
 
         try {
             const newMessage = await sendMessageToStore(
                 selectedConversation._id,
-                messageText
+                messageText,
+                attachment
             );
             sendSocketMessage(selectedConversation._id, newMessage);
             setMessageText("");
+            setAttachment(null);
             setIsTyping(false);
             emitStopTyping(selectedConversation._id);
         } catch (error) {
@@ -322,7 +371,38 @@ const ChatInterface = () => {
                                             >
                                                 {message.text && <p>{message.text}</p>}
                                                 {message.attachment && (
-                                                    <img src={message.attachment} alt="attachment" className="mt-2 rounded-lg max-w-full" />
+                                                    <div className="mt-2 group/attachment">
+                                                        {message.attachment.toLowerCase().match(/\.(pdf)$/) ? (
+                                                            <a
+                                                                href={getAttachmentUrl(message.attachment)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className={`flex items-center gap-3 p-3 rounded-xl border ${isOwnMessage
+                                                                    ? "bg-white/10 border-white/20 text-white"
+                                                                    : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                                                                    } transition-colors hover:bg-opacity-20`}
+                                                            >
+                                                                <div className={`p-2 rounded-lg ${isOwnMessage ? "bg-white/20" : "bg-red-100 dark:bg-red-900/30 text-red-600"}`}>
+                                                                    <FaFilePdf size={20} />
+                                                                </div>
+                                                                <div className="flex flex-col min-w-0">
+                                                                    <span className="text-xs font-bold truncate max-w-[150px]">
+                                                                        {message.attachment.split('/').pop()}
+                                                                    </span>
+                                                                    <span className="text-[10px] opacity-70">View Document</span>
+                                                                </div>
+                                                            </a>
+                                                        ) : (
+                                                            /* Fallback for other files if any, though restricted now */
+                                                            <a
+                                                                href={getAttachmentUrl(message.attachment)}
+                                                                target="_blank"
+                                                                className="text-xs underline flex items-center gap-2"
+                                                            >
+                                                                <FaPaperclip /> View Attachment
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 )}
 
                                                 {isOwnMessage && (
@@ -368,7 +448,47 @@ const ChatInterface = () => {
                         isLoading={isCheckingSpelling}
                     />
 
+                    {/* Attachment Preview */}
+                    {attachment && (
+                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-3 min-w-[200px]">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-lg">
+                                    <FaFilePdf size={18} />
+                                </div>
+                                <span className="text-xs font-medium truncate text-slate-700 dark:text-slate-300">
+                                    {attachment.split('/').pop()}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setAttachment(null)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                            >
+                                <FaTimes size={14} />
+                            </button>
+                        </div>
+                    )}
+
                     <div className="flex gap-2 items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1.5 pr-1.5 border border-transparent focus-within:border-violet-500/30 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all shadow-sm">
+                        
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept="application/pdf"
+                        />
+                        
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className={`p-2.5 text-slate-500 hover:text-violet-600 dark:text-slate-400 dark:hover:text-violet-400 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all ${isUploading ? "animate-pulse" : ""}`}
+                            title="Attach File"
+                        >
+                            <FaPaperclip className={isUploading ? "animate-spin" : ""} />
+                        </button>
+
                         <input
                             type="text"
                             value={messageText}
@@ -381,7 +501,7 @@ const ChatInterface = () => {
                                 }
                             }}
                             placeholder="Type a message..."
-                            className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-4 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
+                            className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-2 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
                         />
 
                         {messageText.length > 1 && (
@@ -403,15 +523,15 @@ const ChatInterface = () => {
 
                         <button
                             type="submit"
-                            disabled={!messageText.trim()}
+                            disabled={!messageText.trim() && !attachment}
                             className={`
                                 btn btn-circle btn-sm border-none shadow-md transition-all duration-300
-                                ${messageText.trim()
+                                ${messageText.trim() || attachment
                                     ? "bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white hover:scale-105 active:scale-95 shadow-violet-500/30"
                                     : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"}
                             `}
                         >
-                            <FaPaperPlane className={`text-xs ${messageText.trim() ? "translate-x-0.5" : ""}`} />
+                            <FaPaperPlane className={`text-xs ${messageText.trim() || attachment ? "translate-x-0.5" : ""}`} />
                         </button>
                     </div>
                 </form>
