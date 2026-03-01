@@ -36,7 +36,7 @@ const PaperHub = () => {
             {/* Main Content */}
             <div className="flex-1 border-r border-gray-100 dark:border-slate-900 overflow-y-auto custom-scrollbar flex flex-col">
                 {/* Header with Tabs + Publish Button */}
-                <div className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-40 px-4 md:px-6 shadow-sm border-b border-gray-100 dark:border-slate-800/50">
+                <div className="sticky top-0 bg-transparent backdrop-blur-md z-40 px-4 md:px-6">
                     <div className="flex flex-row justify-between items-center gap-2 py-2 min-h-[64px]">
                         {/* Tabs */}
                         <div className="flex gap-4 md:gap-8 overflow-x-auto no-scrollbar">

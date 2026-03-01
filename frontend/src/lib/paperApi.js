@@ -58,6 +58,12 @@ export const paperApi = {
         const response = await axiosInstance.delete(`/papers/${id}`);
         return response.data;
     },
+    
+    // Update a paper
+    updatePaper: async (id, paperData) => {
+        const response = await axiosInstance.patch(`/papers/${id}`, paperData);
+        return response.data;
+    },
 
     // Get unique research domains
     getResearchDomains: async () => {

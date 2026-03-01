@@ -6,7 +6,7 @@ import { BiUpload, BiX, BiCheck, BiFile, BiBuilding, BiUserPlus } from "react-ic
 import { FaMagic } from "react-icons/fa";
 import { paperApi } from "../../lib/paperApi";
 import { workspaceApi } from "../../lib/workspaceApi";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 import { useParsePdf } from "../../hooks/useParsePdf";
 
@@ -15,6 +15,8 @@ const CreatePaper = () => {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEdit = !!id;
 
 
     const [uploadMode, setUploadMode] = useState("manual"); // 'manual' | 'workspace'
@@ -109,12 +111,12 @@ const CreatePaper = () => {
             data.append("title", postData.payload.title);
             data.append("abstract", postData.payload.abstract);
             data.append("researchDomain", postData.payload.researchDomain);
-            data.append("paperLink", postData.payload.paperLink);
+            data.append("paperLink", postData.payload.paperLink || "");
             data.append("tags", postData.payload.tags);
             data.append("coAuthors", postData.payload.coAuthors);
             data.append("publicationDate", postData.payload.publicationDate);
-            data.append("publicationName", postData.payload.publicationName);
-            data.append("doi", postData.payload.doi);
+            data.append("publicationName", postData.payload.publicationName || "");
+            data.append("doi", postData.payload.doi || "");
             data.append("paperType", postData.payload.paperType);
             if (postData.payload.citationCount) data.append("citationCount", postData.payload.citationCount);
 
@@ -125,25 +127,65 @@ const CreatePaper = () => {
 
 
             if (postData.workspaceFile) {
-                // Pass workspace file as stringified JSON or handle in backend
                 data.append("workspaceFile", JSON.stringify(postData.workspaceFile));
             }
 
 
+            if (isEdit) {
+                return await paperApi.updatePaper(id, data);
+            }
             return await paperApi.createPaper(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["papers"] });
+            if (id) queryClient.invalidateQueries({ queryKey: ["paper", id] });
             if (user?.uid) queryClient.invalidateQueries({ queryKey: ["papers", user.uid] });
-            toast.success("Paper published successfully!");
+            toast.success(isEdit ? "Paper updated successfully!" : "Paper published successfully!");
             navigate("/home/paper-hub/my-papers");
         },
         onError: (error) => {
             console.error("Mutation Error:", error);
-            const msg = error.response?.data?.message || error.message || "Failed to publish paper";
+            const msg = error.response?.data?.message || error.message || `Failed to ${isEdit ? 'update' : 'publish'} paper`;
             toast.error("Error: " + msg);
         },
     });
+
+    // Fetch paper for editing
+    const { data: paperToEdit } = useQuery({
+        queryKey: ["paper", id],
+        queryFn: async () => {
+            const res = await paperApi.getPaperById(id);
+            return res.data;
+        },
+        enabled: isEdit,
+    });
+
+    useEffect(() => {
+        if (isEdit && paperToEdit) {
+            // Check if user is owner
+            if (user && paperToEdit.user.uid !== user.uid) {
+                toast.error("You are not authorized to edit this paper");
+                navigate("/home/paper-hub/my-papers");
+                return;
+            }
+
+            setFormData({
+                title: paperToEdit.title || "",
+                abstract: paperToEdit.abstract || "",
+                researchDomain: paperToEdit.researchDomain || "",
+                tags: (paperToEdit.tags || []).join(", "),
+                paperLink: paperToEdit.paperLink || "",
+                paperFile: null, // Keep null for now, can't easily re-set file input
+                coAuthors: (paperToEdit.coAuthors || []).join(", "),
+                publicationDate: paperToEdit.publicationDate ? new Date(paperToEdit.publicationDate).toISOString().split('T')[0] : "",
+                publicationName: paperToEdit.publicationName || "",
+                doi: paperToEdit.doi || "",
+                paperType: paperToEdit.paperType || "",
+                citationCount: paperToEdit.citationCount || "",
+            });
+            // If it was a workspace file, we might need more logic, but for simple edit this is okay
+        }
+    }, [isEdit, paperToEdit, user, navigate]);
 
 
     const handleFileChange = (e) => {
@@ -238,17 +280,10 @@ const CreatePaper = () => {
         }
 
 
-        // Validation based on mode
-        if (uploadMode === 'manual') {
-            if (!formData.paperFile && !formData.paperLink) {
-                toast.error("Please provide either a Paper Link or upload a PDF file.");
-                return;
-            }
-        } else {
-            if (!selectedWorkspaceFile) {
-                toast.error("Please select a file from your workspace.");
-                return;
-            }
+        // Validation based on mode - Removed asset requirement
+        if (uploadMode === 'workspace' && !selectedWorkspaceFile) {
+            toast.error("Please select a file from your workspace if using Workspace mode.");
+            return;
         }
 
 
@@ -316,34 +351,36 @@ const CreatePaper = () => {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="w-1 h-5 bg-blue-600 rounded-full inline-block"></span>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Submit Research Paper</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{isEdit ? "Edit Research Paper" : "Submit Research Paper"}</h2>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-4">Share your research with the academic community</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-4">{isEdit ? "Update your paper details" : "Share your research with the academic community"}</p>
                     </div>
                 </div>
 
 
-                {/* Upload Mode Tabs */}
-                <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-lg mb-8 w-fit">
-                    <button
-                        onClick={() => setUploadMode("manual")}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${uploadMode === "manual"
-                            ? "bg-white dark:bg-slate-700 text-black dark:text-white shadow-sm"
-                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                            }`}
-                    >
-                        Manual Upload
-                    </button>
-                    <button
-                        onClick={() => setUploadMode("workspace")}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${uploadMode === "workspace"
-                            ? "bg-white dark:bg-slate-700 text-black dark:text-white shadow-sm"
-                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                            }`}
-                    >
-                        From Workspace
-                    </button>
-                </div>
+                {/* Upload Mode Tabs - Hide in Edit Mode for simplicity unless needed */}
+                {!isEdit && (
+                    <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-lg mb-8 w-fit">
+                        <button
+                            onClick={() => setUploadMode("manual")}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${uploadMode === "manual"
+                                ? "bg-white dark:bg-slate-700 text-black dark:text-white shadow-sm"
+                                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                }`}
+                        >
+                            Manual Upload
+                        </button>
+                        <button
+                            onClick={() => setUploadMode("workspace")}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${uploadMode === "workspace"
+                                ? "bg-white dark:bg-slate-700 text-black dark:text-white shadow-sm"
+                                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                }`}
+                        >
+                            From Workspace
+                        </button>
+                    </div>
+                )}
 
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -470,7 +507,7 @@ const CreatePaper = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Paper Link
+                                    Paper Link (Optional)
                                 </label>
                                 <input
                                     type="url"
@@ -483,7 +520,7 @@ const CreatePaper = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Upload PDF
+                                    Upload PDF (Optional)
                                 </label>
                                 {!formData.paperFile ? (
                                     <label className="flex items-center justify-center gap-3 px-4 py-2 rounded-lg border border-dashed border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 cursor-pointer hover:bg-gray-200 transition h-[42px]">
@@ -722,7 +759,7 @@ const CreatePaper = () => {
                     <div className="flex justify-end gap-3 pt-4">
                         <button
                             type="button"
-                            onClick={() => navigate("/home/paper-hub")}
+                            onClick={() => navigate("/home/paper-hub/my-papers")}
                             className="px-6 py-2 rounded-full border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-slate-800 transition"
                         >
                             Cancel
@@ -732,7 +769,7 @@ const CreatePaper = () => {
                             disabled={createPaperMutation.isPending}
                             className="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold disabled:opacity-60 transition shadow-lg active:scale-95 flex items-center gap-2"
                         >
-                            {createPaperMutation.isPending ? "Submitting..." : "Share Paper"}
+                            {createPaperMutation.isPending ? (isEdit ? "Updating..." : "Submitting...") : (isEdit ? "Update Paper" : "Share Paper")}
                         </button>
                     </div>
 

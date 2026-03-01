@@ -209,6 +209,10 @@ export const router = createBrowserRouter([
                         element: <CreatePaper />,
                     },
                     {
+                        path: "edit-paper/:id",
+                        element: <CreatePaper />,
+                    },
+                    {
                         path: "paper/:id",
                         element: <PaperDetails />,
                     },

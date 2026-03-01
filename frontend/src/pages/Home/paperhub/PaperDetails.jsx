@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useNavigate, Link } from 'react-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paperApi } from '../../../lib/paperApi';
-import { BiArrowBack, BiLinkExternal, BiCopy, BiCalendar, BiBookOpen, BiMessageDetail } from "react-icons/bi";
+import { BiArrowBack, BiLinkExternal, BiCopy, BiCalendar, BiBookOpen, BiMessageDetail, BiEditAlt, BiHide, BiShow, BiDotsVerticalRounded } from "react-icons/bi";
 import { AiOutlineFilePdf } from "react-icons/ai";
 import { MdOutlineSchool } from "react-icons/md";
 import { HiOutlineDocumentText } from "react-icons/hi";
@@ -10,6 +10,8 @@ import PostLoader from '../../../components/loader/PostLoader';
 import toast from 'react-hot-toast';
 import useAuth from '../../../hooks/useAuth';
 import useChatStore from '../../../store/useChatStore';
+import PaperMenu from '../../../components/papers/PaperMenu';
+import ConfirmModal from '../../../components/common/ConfirmModal';
 
 
 const MetaRow = ({ label, value }) => {
@@ -24,7 +26,9 @@ const MetaRow = ({ label, value }) => {
 
 const PaperDetails = () => {
     const { id } = useParams();
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { user: currentUser } = useAuth();
     const { getOrCreateConversation, sendMessage } = useChatStore();
     const [requestStatus, setRequestStatus] = useState(null);
@@ -55,6 +59,33 @@ const PaperDetails = () => {
         enabled: !!id,
     });
 
+    const updatePaperMutation = useMutation({
+        mutationFn: ({ id, data }) => paperApi.updatePaper(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["paper", id] });
+            queryClient.invalidateQueries({ queryKey: ["papers"] });
+            toast.success("Paper updated successfully");
+        },
+        onError: (err) => {
+            toast.error(err.response?.data?.message || "Failed to update paper");
+        }
+    });
+
+    const deletePaperMutation = useMutation({
+        mutationFn: (id) => paperApi.deletePaper(id),
+        onSuccess: () => {
+            toast.success("Paper deleted successfully");
+            queryClient.invalidateQueries({ queryKey: ["papers"] });
+            if (currentUser?.uid) {
+                queryClient.invalidateQueries({ queryKey: ["papers", currentUser.uid] });
+            }
+            navigate("/home/paper-hub/my-papers");
+        },
+        onError: (err) => {
+            toast.error(err.message || "Failed to delete paper");
+        }
+    });
+
     if (isPending) return <div className="p-6"><PostLoader count={1} /></div>;
 
     if (error || !data) {
@@ -72,6 +103,7 @@ const PaperDetails = () => {
     }
 
     const paper = data;
+    const isOwner = currentUser?.uid === paper.user?.uid;
 
     const postedDate = new Date(paper.createdAt).toLocaleDateString("en-US", {
         year: "numeric", month: "long", day: "numeric",
@@ -98,13 +130,27 @@ const PaperDetails = () => {
         }
     };
 
+    const handleCopyLink = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard!");
+    };
+
+    const handleHidePaper = () => {
+        const newStatus = paper.status === 'archived' ? 'published' : 'archived';
+        updatePaperMutation.mutate({
+            id: paper._id,
+            data: { status: newStatus }
+        });
+    };
+
     const handleRequestPaper = async () => {
         if (!currentUser) {
             toast.error("Please login to request papers");
             return;
         }
 
-        if (currentUser.uid === paper.user.uid) {
+        if (isOwner) {
             toast.error("This is your own paper!");
             return;
         }
@@ -116,16 +162,9 @@ const PaperDetails = () => {
 
         const loadingToast = toast.loading("Sending request...");
         try {
-            // 1. Get or create conversation with author
             const conversation = await getOrCreateConversation(paper.user.uid);
-            
-            // 2. Format formal request message
             const requestMsg = `Hello! I am interested in your paper '${paper.title}'. Would it be possible to share the full PDF for research purposes? Thank you!`;
-            
-            // 3. Send message
             await sendMessage(conversation._id, requestMsg);
-            
-            // 4. Record the request in the database
             await paperApi.recordRequest({
                 paperId: id,
                 requesterUid: currentUser.uid,
@@ -153,7 +192,22 @@ const PaperDetails = () => {
                     <span className="font-bold hidden sm:inline">Back</span>
                     <span className="font-bold sm:hidden">Papers</span>
                 </button>
-                <div className="flex gap-2 items-center">
+
+                <div className="flex gap-2 items-center flex-1 justify-end">
+                    {/* Owner Actions */}
+                    {isOwner && (
+                        <div className="mr-2 pr-2 border-r border-gray-100 dark:border-slate-800">
+                            <PaperMenu
+                                isOwner={true}
+                                onEdit={() => navigate(`/home/paper-hub/edit-paper/${paper._id}`)}
+                                onDelete={() => setIsDeleteModalOpen(true)}
+                                onToggleStatus={handleHidePaper}
+                                onCopyLink={handleCopyLink}
+                                status={paper.status}
+                            />
+                        </div>
+                    )}
+
                     {paper.paperLink && (
                         <a
                             href={paper.paperLink}
@@ -186,6 +240,24 @@ const PaperDetails = () => {
 
                 {/* Left / Main Content */}
                 <div className="lg:col-span-8 space-y-8">
+
+                    {paper.status === 'archived' && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-amber-800 dark:text-amber-300">
+                                <BiHide size={24} />
+                                <div>
+                                    <p className="font-bold text-sm">This paper is currently hidden</p>
+                                    <p className="text-xs opacity-80">It won't appear in public explore or searches.</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleHidePaper}
+                                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-full transition shadow-sm"
+                            >
+                                Make Public
+                            </button>
+                        </div>
+                    )}
 
                     {/* Badges row */}
                     <div className="flex flex-wrap items-center gap-2">
@@ -287,7 +359,7 @@ const PaperDetails = () => {
                                     <span className="text-[10px] opacity-75 hidden sm:inline">↗ external</span>
                                 </a>
                             )}
-                            {!paper.paperFile?.url && (
+                            {!paper.paperFile?.url && !isOwner && (
                                 <button
                                     onClick={handleRequestPaper}
                                     disabled={requestStatus || isCheckingStatus}
@@ -303,7 +375,7 @@ const PaperDetails = () => {
                         </div>
                     </div>
 
-                    {/* Abstract */}
+                {/* Abstract */}
                     <div className="space-y-3">
                         <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-widest border-b border-gray-100 dark:border-slate-800 pb-2">Abstract</h3>
                         <p className="text-gray-700 dark:text-gray-300 leading-8 text-[15px]">
@@ -401,7 +473,7 @@ const PaperDetails = () => {
                                         className="flex items-center gap-1.5 text-[11px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition">
                                         <AiOutlineFilePdf size={13} /> PDF
                                     </a>
-                                ) : (
+                                ) : !isOwner ? (
                                     <button
                                         onClick={handleRequestPaper}
                                         disabled={requestStatus || isCheckingStatus}
@@ -412,6 +484,8 @@ const PaperDetails = () => {
                                     >
                                         <BiMessageDetail size={13} /> {isCheckingStatus ? "..." : requestStatus ? "Requested" : "Request PDF"}
                                     </button>
+                                ) : (
+                                    <span className="text-[11px] text-blue-600 font-bold px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">Owner Access</span>
                                 )}
                                 {paper.paperLink ? (
                                     <a href={paper.paperLink} target="_blank" rel="noreferrer"
@@ -432,9 +506,18 @@ const PaperDetails = () => {
                     </div>
                 </div>
             </div>
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={() => deletePaperMutation.mutate(paper._id)}
+                title="Delete Paper"
+                message="Are you sure you want to delete this paper? This action cannot be undone."
+                confirmText="Yes, Delete"
+                isDanger={true}
+            />
         </div>
     );
 };
 
-
 export default PaperDetails;
+

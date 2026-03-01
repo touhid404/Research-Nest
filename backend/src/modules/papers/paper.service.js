@@ -21,7 +21,7 @@ export const getAllPapersInDB = async (options = {}) => {
         sort = "newest" 
     } = options;
 
-    let filter = {};
+    let filter = { status: "published" };
     let andFilters = [];
 
     if (excludeUid) {
@@ -195,6 +195,12 @@ export const getPaperByIdInDB = async (id) => {
 
 export const deletePaperInDB = async (id) => {
     const result = await Paper.findByIdAndDelete(id);
+    return result;
+};
+
+
+export const updatePaperInDB = async (id, updateData) => {
+    const result = await Paper.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
     return result;
 };
 

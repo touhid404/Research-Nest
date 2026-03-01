@@ -1,34 +1,10 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { paperApi } from "../../lib/paperApi";
 import { useNavigate } from "react-router";
-import useAuth from "../../hooks/useAuth";
-import toast from "react-hot-toast";
-import ConfirmModal from "../common/ConfirmModal";
-import { BiTrash, BiCalendar } from "react-icons/bi";
+import { BiCalendar } from "react-icons/bi";
 import { MdOutlineSchool } from "react-icons/md";
 
 const PaperCard = ({ paper }) => {
-    const { user: currentUser } = useAuth();
     const navigate = useNavigate();
     const { user, title, abstract, researchDomain, tags, createdAt, _id } = paper;
-
-    const queryClient = useQueryClient();
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-    const deleteMutation = useMutation({
-        mutationFn: (id) => paperApi.deletePaper(id),
-        onSuccess: () => {
-            toast.success("Paper deleted successfully");
-            queryClient.invalidateQueries({ queryKey: ["papers"] });
-            if (currentUser?.uid) {
-                queryClient.invalidateQueries({ queryKey: ["papers", currentUser.uid] });
-            }
-        },
-        onError: (err) => {
-            toast.error(err.message || "Failed to delete paper");
-        }
-    });
 
     const coAuthorsList = paper.coAuthors
         ? (Array.isArray(paper.coAuthors) ? paper.coAuthors : paper.coAuthors.split(',').map(s => s.trim()))
@@ -68,20 +44,15 @@ const PaperCard = ({ paper }) => {
                     </span>
                 )}
                 <div className="ml-auto flex items-center gap-2 shrink-0">
+                    {paper.status === "archived" && (
+                        <span className="text-[9px] md:text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
+                            Hidden
+                        </span>
+                    )}
                     <span className="text-[10px] md:text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
                         <BiCalendar size={11} />
                         {publicationYear}
                     </span>
-
-                    {currentUser?.uid === user?.uid && (
-                        <button
-                            onClick={(e) => { stopProp(e); setIsDeleteModalOpen(true); }}
-                            className="p-1.5 text-gray-400 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition rounded sm:opacity-0 group-hover:opacity-100"
-                            title="Delete Paper"
-                        >
-                            <BiTrash size={15} />
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -137,15 +108,6 @@ const PaperCard = ({ paper }) => {
 
 
 
-            <ConfirmModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={() => deleteMutation.mutate(_id)}
-                title="Delete Paper"
-                message="Are you sure you want to delete this paper? This action cannot be undone."
-                confirmText="Yes, Delete"
-                isDanger={true}
-            />
         </div>
     );
 };

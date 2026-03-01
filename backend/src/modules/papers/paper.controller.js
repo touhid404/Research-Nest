@@ -1,4 +1,4 @@
-import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB, getUniqueResearchDomainsFromDB, checkPaperRequestStatusInDB, recordPaperRequestInDB } from "./paper.service.js";
+import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB, updatePaperInDB, getUniqueResearchDomainsFromDB, checkPaperRequestStatusInDB, recordPaperRequestInDB } from "./paper.service.js";
 import User from "../../models/user.model.js";
 
 
@@ -223,6 +223,52 @@ export const deletePaper = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Paper deleted successfully",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
+export const updatePaper = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+
+        // If there's a file, update paperFile
+        if (req.file) {
+            updateData.paperFile = {
+                name: req.file.originalname,
+                url: `${req.protocol}://${req.get("host")}/public/papers-hub/${req.file.filename}`
+            };
+        }
+
+        // Parse tags if sent as string
+        if (updateData.tags && typeof updateData.tags === 'string') {
+            updateData.tags = updateData.tags.split(',').map(t => t.trim()).filter(Boolean);
+        }
+
+        // Parse coAuthors if sent as string
+        if (updateData.coAuthors && typeof updateData.coAuthors === 'string') {
+            updateData.coAuthors = updateData.coAuthors.split(',').map(name => name.trim()).filter(Boolean);
+        }
+
+        const updatedPaper = await updatePaperInDB(id, updateData);
+
+        if (!updatedPaper) {
+            return res.status(404).json({
+                success: false,
+                message: "Paper not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Paper updated successfully",
+            data: updatedPaper,
         });
     } catch (error) {
         return res.status(500).json({
