@@ -88,6 +88,10 @@ const userSchema = new mongoose.Schema(
             ref: "Workspace",
             default: null,
         },
+        blockedUsers: {
+            type: [String],
+            default: [],
+        },
     },
     {
         timestamps: true,

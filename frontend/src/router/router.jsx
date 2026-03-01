@@ -34,6 +34,7 @@ import PaperHub from "../pages/Home/paperhub/PaperHubBase";
 import Overview from "../pages/Home/profile/Overview";
 import PostDetails from "../pages/Home/proposalFeed/PostDetails";
 import UserProfile from "../pages/Home/profile/UserProfile";
+import BlockedUsers from "../pages/Home/messages/BlockedUsers";
 
 export const router = createBrowserRouter([
     {
@@ -163,6 +164,7 @@ export const router = createBrowserRouter([
             { path: "messages", element: <MessagesBase /> },
             { path: "messages/:uid", element: <MessagesBase /> },
             { path: "messages/c/:conversationId", element: <MessagesBase /> },
+            { path: "messages/blocked", element: <BlockedUsers /> },
             {
                 path: "profile/:uid",
                 element: <UserProfile />

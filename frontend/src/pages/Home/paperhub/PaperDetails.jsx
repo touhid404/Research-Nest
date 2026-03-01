@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { paperApi } from '../../../lib/paperApi';
@@ -25,7 +26,25 @@ const PaperDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
-    const { getOrCreateConversation, sendMessage, sendSocketMessage } = useChatStore();
+    const { getOrCreateConversation, sendMessage } = useChatStore();
+    const [requestStatus, setRequestStatus] = useState(null);
+    const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            if (!currentUser || !id) return;
+            setIsCheckingStatus(true);
+            try {
+                const res = await paperApi.checkRequestStatus(id, currentUser.uid);
+                setRequestStatus(res.data.isRequested);
+            } catch (error) {
+                console.error("Error checking request status:", error);
+            } finally {
+                setIsCheckingStatus(false);
+            }
+        };
+        checkStatus();
+    }, [id, currentUser]);
 
     const { data, isPending, error } = useQuery({
         queryKey: ["paper", id],
@@ -90,6 +109,11 @@ const PaperDetails = () => {
             return;
         }
 
+        if (requestStatus) {
+            toast.info("You already requested this paper");
+            return;
+        }
+
         const loadingToast = toast.loading("Sending request...");
         try {
             // 1. Get or create conversation with author
@@ -99,15 +123,20 @@ const PaperDetails = () => {
             const requestMsg = `Hello! I am interested in your paper '${paper.title}'. Would it be possible to share the full PDF for research purposes? Thank you!`;
             
             // 3. Send message
-            const newMessage = await sendMessage(conversation._id, requestMsg);
+            await sendMessage(conversation._id, requestMsg);
             
-            // 4. Emit via socket if available
-            sendSocketMessage(conversation._id, newMessage);
+            // 4. Record the request in the database
+            await paperApi.recordRequest({
+                paperId: id,
+                requesterUid: currentUser.uid,
+                authorUid: paper.user.uid
+            });
 
-            toast.success("Request sent to author's inbox!", { id: loadingToast });
+            setRequestStatus(true);
+            toast.success("Request sent to author!", { id: loadingToast });
         } catch (error) {
             console.error("Error requesting paper:", error);
-            toast.error("Failed to send request", { id: loadingToast });
+            toast.error(error.response?.data?.message || "Failed to send request", { id: loadingToast });
         }
     };
 
@@ -261,10 +290,14 @@ const PaperDetails = () => {
                             {!paper.paperFile?.url && (
                                 <button
                                     onClick={handleRequestPaper}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold transition shadow-sm"
+                                    disabled={requestStatus || isCheckingStatus}
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm ${requestStatus
+                                        ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                                        : "bg-violet-600 hover:bg-violet-700 text-white shadow-blue-100"
+                                        }`}
                                 >
                                     <BiMessageDetail size={16} />
-                                    Request Full Paper
+                                    {isCheckingStatus ? "Checking..." : requestStatus ? "Already Requested" : "Request Full Paper"}
                                 </button>
                             )}
                         </div>
@@ -314,17 +347,8 @@ const PaperDetails = () => {
                                     <p className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-blue-600 transition truncate">
                                         {paper.user.name}
                                     </p>
-                                    <p className="text-[9px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Corresponding ✉</p>
+                                    <p className="text-[9px] uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold">Corresponding</p>
                                 </div>
-                                {currentUser?.uid !== paper.user.uid && (
-                                    <button
-                                        onClick={handleRequestPaper}
-                                        className="p-2 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                                        title="Send message to author"
-                                    >
-                                        <BiMessageDetail size={18} />
-                                    </button>
-                                )}
                             </div>
                             {coAuthorsList.map((name, idx) => (
                                 <div key={idx} className="flex items-center gap-3 pl-1">
@@ -380,9 +404,13 @@ const PaperDetails = () => {
                                 ) : (
                                     <button
                                         onClick={handleRequestPaper}
-                                        className="flex items-center gap-1.5 text-[11px] bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-800 px-3 py-1.5 rounded-lg font-bold hover:bg-violet-100 dark:hover:bg-violet-900/40 transition"
+                                        disabled={requestStatus || isCheckingStatus}
+                                        className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-bold transition ${requestStatus
+                                            ? "bg-gray-50 text-gray-300 border border-gray-100 cursor-not-allowed"
+                                            : "bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/40"
+                                            }`}
                                     >
-                                        <BiMessageDetail size={13} /> Request PDF
+                                        <BiMessageDetail size={13} /> {isCheckingStatus ? "..." : requestStatus ? "Requested" : "Request PDF"}
                                     </button>
                                 )}
                                 {paper.paperLink ? (

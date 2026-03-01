@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { create } from 'zustand';
 import { chatApi } from '../lib/chatApi';
 import toast from 'react-hot-toast';
@@ -8,6 +9,7 @@ const initialChatState = {
     selectedConversation: null,
     messages: [],
     users: [],
+    blockedUsers: [],
     isLoading: false,
     error: null,
 };
@@ -33,6 +35,38 @@ const useChatStore = create((set, get) => ({
     setLoading: (isLoading) => set({ isLoading }),
 
     setError: (error) => set({ error }),
+
+    // Fetch blocked users
+    fetchBlockedUsers: async () => {
+        try {
+            const res = await chatApi.getBlockedUsers();
+            set({ blockedUsers: res.data || [] });
+        } catch (error) {
+            console.error("Error fetching blocked users:", error);
+        }
+    },
+
+    // Block user
+    blockUser: async (blockUid) => {
+        try {
+            await chatApi.blockUser(blockUid);
+            toast.success("User blocked");
+            get().fetchBlockedUsers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to block user");
+        }
+    },
+
+    // Unblock user
+    unblockUser: async (unblockUid) => {
+        try {
+            await chatApi.unblockUser(unblockUid);
+            toast.success("User unblocked");
+            get().fetchBlockedUsers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to unblock user");
+        }
+    },
 
     // Fetch all conversations
     fetchConversations: async () => {

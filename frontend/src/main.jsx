@@ -7,18 +7,21 @@ import { router } from "./router/router";
 import ThemeProvider from "./provider/ThemeProvider.jsx";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ToastProvider from "./components/common/ToastProvider.jsx";
+import { HelmetProvider } from "react-helmet-async";
 
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ToastProvider />
-      <ThemeProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
-      </ThemeProvider>
+      <HelmetProvider>
+        <ToastProvider />
+        <ThemeProvider>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </ThemeProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   </StrictMode>
 );

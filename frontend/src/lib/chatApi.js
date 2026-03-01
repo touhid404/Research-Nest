@@ -85,4 +85,22 @@ export const chatApi = {
         });
         return response.data;
     },
+
+    // Block a user
+    blockUser: async (blockUid) => {
+        const response = await axiosInstance.post("/messages/block", { blockUid });
+        return response.data;
+    },
+
+    // Unblock a user
+    unblockUser: async (unblockUid) => {
+        const response = await axiosInstance.post("/messages/unblock", { unblockUid });
+        return response.data;
+    },
+
+    // Get blocked users
+    getBlockedUsers: async () => {
+        const response = await axiosInstance.get("/messages/blocked-users");
+        return response.data;
+    },
 };

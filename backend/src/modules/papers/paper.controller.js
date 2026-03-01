@@ -1,4 +1,4 @@
-import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB, getUniqueResearchDomainsFromDB } from "./paper.service.js";
+import { createPaperInDB, getAllPapersByUserInDB, getAllPapersInDB, getPaperByIdInDB, deletePaperInDB, getUniqueResearchDomainsFromDB, checkPaperRequestStatusInDB, recordPaperRequestInDB } from "./paper.service.js";
 import User from "../../models/user.model.js";
 
 
@@ -231,12 +231,49 @@ export const deletePaper = async (req, res) => {
         });
     }
 };
+export const checkPaperRequestStatus = async (req, res) => {
+    try {
+        const { paperId, requesterUid } = req.query;
+        if (!paperId || !requesterUid) {
+            return res.status(400).json({
+                success: false,
+                message: "paperId and requesterUid are required",
+            });
+        }
+        const isRequested = await checkPaperRequestStatusInDB(paperId, requesterUid);
+        return res.status(200).json({
+            success: true,
+            data: { isRequested },
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
-
-
-
-
-
-
+export const recordPaperRequest = async (req, res) => {
+    try {
+        const { paperId, requesterUid, authorUid } = req.body;
+        if (!paperId || !requesterUid || !authorUid) {
+            return res.status(400).json({
+                success: false,
+                message: "paperId, requesterUid, and authorUid are required",
+            });
+        }
+        const result = await recordPaperRequestInDB({ paperId, requesterUid, authorUid });
+        return res.status(201).json({
+            success: true,
+            message: "Paper request recorded successfully",
+            data: result,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
 

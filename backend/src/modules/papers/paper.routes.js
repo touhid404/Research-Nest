@@ -13,6 +13,11 @@ router.get("/domains", authCheck(), getResearchDomains);
 router.get("/:id", authCheck(), getPaperById);
 router.delete("/:id", authCheck(), deletePaper);
 
+// Paper Request Routes
+import { checkPaperRequestStatus, recordPaperRequest } from "./paper.controller.js";
+router.get("/request/status", authCheck(), checkPaperRequestStatus);
+router.post("/request/record", authCheck(), recordPaperRequest);
+
 
 export const paperRoutes = router;
 

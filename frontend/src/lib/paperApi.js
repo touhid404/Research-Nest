@@ -64,6 +64,18 @@ export const paperApi = {
         const response = await axiosInstance.get("/papers/domains");
         return response.data;
     },
+
+    // Check if paper is already requested
+    checkRequestStatus: async (paperId, requesterUid) => {
+        const response = await axiosInstance.get(`/papers/request/status?paperId=${paperId}&requesterUid=${requesterUid}`);
+        return response.data;
+    },
+
+    // Record paper request
+    recordRequest: async (requestData) => {
+        const response = await axiosInstance.post("/papers/request/record", requestData);
+        return response.data;
+    },
 };
 
 

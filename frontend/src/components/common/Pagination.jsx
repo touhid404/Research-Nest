@@ -53,14 +53,14 @@ const Pagination = ({ meta, currentPage, onPageChange, perPage = 8 }) => {
 
       {/* Pagination controls */}
       <nav
-        className="flex flex-wrap items-center justify-center gap-1 w-full sm:justify-center"
+        className="flex flex-nowrap items-center justify-center gap-0.5 sm:gap-1 w-full sm:justify-center overflow-x-auto no-scrollbar"
         aria-label="Pagination"
       >
         {/* First page */}
         <button
           onClick={() => onPageChange(1)}
           disabled={!hasPrevPage}
-          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+          className="hidden sm:flex p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
           aria-label="First page"
         >
           <HiChevronDoubleLeft className="w-5 h-5" />
@@ -78,7 +78,7 @@ const Pagination = ({ meta, currentPage, onPageChange, perPage = 8 }) => {
         </button>
 
         {/* Page numbers */}
-        <div className="flex flex-wrap items-center gap-1 mx-2 justify-center">
+        <div className="flex flex-nowrap items-center gap-0.5 sm:gap-1 mx-1 sm:mx-2 justify-center">
           {pageNumbers.map((page, idx) =>
             page === '...' ? (
               <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-gray-500">
@@ -88,7 +88,7 @@ const Pagination = ({ meta, currentPage, onPageChange, perPage = 8 }) => {
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
-                className={`min-w-10 h-10 rounded-lg text-sm font-medium transition-all px-2 ${
+                className={`min-w-8 sm:min-w-10 h-8 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all px-1 sm:px-2 ${
                   currentPage === page
                     ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
                     : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -116,7 +116,7 @@ const Pagination = ({ meta, currentPage, onPageChange, perPage = 8 }) => {
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={!hasNextPage}
-          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
+          className="hidden sm:flex p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors"
           aria-label="Last page"
         >
           <HiChevronDoubleRight className="w-5 h-5" />

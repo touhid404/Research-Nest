@@ -10,6 +10,7 @@ import AiSpellCheckModal from "../ai-common/AiSpellCheckModal";
 import { aiApi } from "../../lib/aiApi";
 import { chatApi } from "../../lib/chatApi";
 import toast from "react-hot-toast";
+import ConfirmModal from "../common/ConfirmModal";
 
 const ChatInterface = () => {
     const { user } = useAuth();
@@ -22,6 +23,7 @@ const ChatInterface = () => {
     const [fullCorrectedText, setFullCorrectedText] = useState("");
     const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
     const [attachment, setAttachment] = useState(null);
+    const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
     const messagesEndRef = useRef(null);
@@ -114,8 +116,18 @@ const ChatInterface = () => {
         emitStopTyping,
         typingUsers,
         onlineUsers,
-        isLoading
+        isLoading,
+        blockedUsers,
+        fetchBlockedUsers,
+        blockUser,
+        unblockUser
     } = useChatStore();
+
+    useEffect(() => {
+        if (selectedConversation?._id && !selectedConversation.isGroup) {
+            fetchBlockedUsers();
+        }
+    }, [selectedConversation, fetchBlockedUsers]);
 
     const otherUser = selectedConversation?.otherUser;
     const isOnline = otherUser && onlineUsers.includes(otherUser.uid);
@@ -181,6 +193,7 @@ const ChatInterface = () => {
             emitStopTyping(selectedConversation._id);
         } catch (error) {
             console.error("Error sending message:", error);
+            toast.error(error.response?.data?.message || "Failed to send message");
         }
     };
 
@@ -274,7 +287,42 @@ const ChatInterface = () => {
                             )}
                         </div>
                     </div>
+
+                    {!isGroup && otherUser && (
+                        <div className="flex items-center gap-2">
+                            {blockedUsers.some(u => u.uid === otherUser.uid) ? (
+                                <button
+                                    onClick={() => unblockUser(otherUser.uid)}
+                                    className="text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors border border-red-100"
+                                >
+                                    Unblock
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsBlockModalOpen(true)}
+                                    className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                    Block
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
+
+                {otherUser && (
+                    <ConfirmModal
+                        isOpen={isBlockModalOpen}
+                        onClose={() => setIsBlockModalOpen(false)}
+                        onConfirm={() => {
+                            blockUser(otherUser.uid);
+                            setIsBlockModalOpen(false);
+                        }}
+                        title={`Block ${otherUser.name}?`}
+                        message={`Are you sure you want to block ${otherUser.name}? They will no longer be able to message you.`}
+                        confirmText="Block User"
+                        isDanger={true}
+                    />
+                )}
             </div>
 
             <ConversationInfoModal
@@ -437,104 +485,112 @@ const ChatInterface = () => {
             </div>
 
             <div className="flex-none z-20 p-2 bg-white/60 dark:bg-slate-950 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 relative">
-                <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative">
-                    <AiSpellCheckModal
-                        isOpen={corrections.length > 0}
-                        onClose={ignoreCorrections}
-                        originalText={messageText}
-                        correctedText={fullCorrectedText}
-                        corrections={corrections}
-                        onApply={applyAllCorrections}
-                        isLoading={isCheckingSpelling}
-                    />
+                {!isGroup && otherUser && blockedUsers.some(u => u.uid === otherUser.uid) ? (
+                    <div className="max-w-4xl mx-auto p-4 text-center bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                        <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                            You have blocked this user. Unblock them to send a message.
+                        </p>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative">
+                        <AiSpellCheckModal
+                            isOpen={corrections.length > 0}
+                            onClose={ignoreCorrections}
+                            originalText={messageText}
+                            correctedText={fullCorrectedText}
+                            corrections={corrections}
+                            onApply={applyAllCorrections}
+                            isLoading={isCheckingSpelling}
+                        />
 
-                    {/* Attachment Preview */}
-                    {attachment && (
-                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-3 min-w-[200px]">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-lg">
-                                    <FaFilePdf size={18} />
+                        {/* Attachment Preview */}
+                        {attachment && (
+                            <div className="absolute bottom-full left-0 mb-2 p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg animate-in slide-in-from-bottom-2 duration-200 flex items-center gap-3 min-w-[200px]">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-lg">
+                                        <FaFilePdf size={18} />
+                                    </div>
+                                    <span className="text-xs font-medium truncate text-slate-700 dark:text-slate-300">
+                                        {attachment.split('/').pop()}
+                                    </span>
                                 </div>
-                                <span className="text-xs font-medium truncate text-slate-700 dark:text-slate-300">
-                                    {attachment.split('/').pop()}
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setAttachment(null)}
+                                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                >
+                                    <FaTimes size={14} />
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setAttachment(null)}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                            >
-                                <FaTimes size={14} />
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="flex gap-2 items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1.5 pr-1.5 border border-transparent focus-within:border-violet-500/30 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all shadow-sm">
-                        
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            accept="application/pdf"
-                        />
-                        
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
-                            className={`p-2.5 text-slate-500 hover:text-violet-600 dark:text-slate-400 dark:hover:text-violet-400 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all ${isUploading ? "animate-pulse" : ""}`}
-                            title="Attach File"
-                        >
-                            <FaPaperclip className={isUploading ? "animate-spin" : ""} />
-                        </button>
-
-                        <input
-                            type="text"
-                            value={messageText}
-                            onChange={(e) => {
-                                setMessageText(e.target.value);
-                                handleTyping();
-                                if (corrections.length > 0) {
-                                    setCorrections([]);
-                                    setFullCorrectedText("");
-                                }
-                            }}
-                            placeholder="Type a message..."
-                            className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-2 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
-                        />
-
-                        {messageText.length > 1 && (
-                            <button
-                                type="button"
-                                onClick={checkSpelling}
-                                disabled={isCheckingSpelling}
-                                className={`group relative overflow-hidden rounded-full p-2 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 ${isCheckingSpelling ? "ring-2 ring-violet-500/50" : ""}`}
-                                title="Check Spelling"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
-                                {isCheckingSpelling ? (
-                                    <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                                ) : (
-                                    <HiSparkles className="text-lg text-violet-500 drop-shadow-[0_0_2px_rgba(139,92,246,0.2)] group-hover:rotate-12 transition-transform" />
-                                )}
-                            </button>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={!messageText.trim() && !attachment}
-                            className={`
-                                btn btn-circle btn-sm border-none shadow-md transition-all duration-300
-                                ${messageText.trim() || attachment
-                                    ? "bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white hover:scale-105 active:scale-95 shadow-violet-500/30"
-                                    : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"}
-                            `}
-                        >
-                            <FaPaperPlane className={`text-xs ${messageText.trim() || attachment ? "translate-x-0.5" : ""}`} />
-                        </button>
-                    </div>
-                </form>
+                        <div className="flex gap-2 items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1.5 pr-1.5 border border-transparent focus-within:border-violet-500/30 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all shadow-sm">
+                            
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                accept="application/pdf"
+                            />
+                            
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className={`p-2.5 text-slate-500 hover:text-violet-600 dark:text-slate-400 dark:hover:text-violet-400 rounded-xl hover:bg-white dark:hover:bg-slate-700 transition-all ${isUploading ? "animate-pulse" : ""}`}
+                                title="Attach File"
+                            >
+                                <FaPaperclip className={isUploading ? "animate-spin" : ""} />
+                            </button>
+
+                            <input
+                                type="text"
+                                value={messageText}
+                                onChange={(e) => {
+                                    setMessageText(e.target.value);
+                                    handleTyping();
+                                    if (corrections.length > 0) {
+                                        setCorrections([]);
+                                        setFullCorrectedText("");
+                                    }
+                                }}
+                                placeholder="Type a message..."
+                                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 px-2 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-medium"
+                            />
+
+                            {messageText.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={checkSpelling}
+                                    disabled={isCheckingSpelling}
+                                    className={`group relative overflow-hidden rounded-full p-2 transition-all hover:scale-110 active:scale-95 disabled:opacity-50 ${isCheckingSpelling ? "ring-2 ring-violet-500/50" : ""}`}
+                                    title="Check Spelling"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/10 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
+                                    {isCheckingSpelling ? (
+                                        <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                        <HiSparkles className="text-lg text-violet-500 drop-shadow-[0_0_2px_rgba(139,92,246,0.2)] group-hover:rotate-12 transition-transform" />
+                                    )}
+                                </button>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={!messageText.trim() && !attachment}
+                                className={`
+                                    btn btn-circle btn-sm border-none shadow-md transition-all duration-300
+                                    ${messageText.trim() || attachment
+                                        ? "bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white hover:scale-105 active:scale-95 shadow-violet-500/30"
+                                        : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"}
+                                `}
+                            >
+                                <FaPaperPlane className={`text-xs ${messageText.trim() || attachment ? "translate-x-0.5" : ""}`} />
+                            </button>
+                        </div>
+                    </form>
+                )}
             </div>
         </div>
     );

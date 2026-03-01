@@ -312,6 +312,27 @@ export const sendMessage = async (req, res) => {
             receivers = [singleReceiver];
         }
 
+        // Check if blocked
+        if (!conversation.isGroup) {
+            const receiverUid = receivers[0];
+            const senderUser = await User.findOne({ uid });
+            const receiverUser = await User.findOne({ uid: receiverUid });
+
+            if (senderUser.blockedUsers.includes(receiverUid)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You have blocked this user",
+                });
+            }
+
+            if (receiverUser.blockedUsers.includes(uid)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "This user has blocked you",
+                });
+            }
+        }
+
         // Create message
         const message = new Message({
             conversationId: conversationId,
@@ -765,5 +786,65 @@ export const uploadAttachment = async (req, res) => {
             message: "Failed to upload attachment",
             error: error.message,
         });
+    }
+};// Block/Unblock Users
+export const blockUser = async (req, res) => {
+    try {
+        const uid = req.user.uid;
+        const { blockUid } = req.body;
+
+        if (!uid || !blockUid) {
+            return res.status(400).json({ success: false, message: "User IDs are required" });
+        }
+
+        await User.findOneAndUpdate(
+            { uid },
+            { $addToSet: { blockedUsers: blockUid } }
+        );
+
+        res.status(200).json({ success: true, message: "User blocked successfully" });
+    } catch (error) {
+        console.error("Error blocking user:", error);
+        res.status(500).json({ success: false, message: "Failed to block user" });
+    }
+};
+
+export const unblockUser = async (req, res) => {
+    try {
+        const uid = req.user.uid;
+        const { unblockUid } = req.body;
+
+        if (!uid || !unblockUid) {
+            return res.status(400).json({ success: false, message: "User IDs are required" });
+        }
+
+        await User.findOneAndUpdate(
+            { uid },
+            { $pull: { blockedUsers: unblockUid } }
+        );
+
+        res.status(200).json({ success: true, message: "User unblocked successfully" });
+    } catch (error) {
+        console.error("Error unblocking user:", error);
+        res.status(500).json({ success: false, message: "Failed to unblock user" });
+    }
+};
+
+export const getBlockedUsers = async (req, res) => {
+    try {
+        const uid = req.user.uid;
+        if (!uid) return res.status(400).json({ success: false, message: "User ID is required" });
+
+        const user = await User.findOne({ uid });
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        const blockedUsers = await User.find({
+            uid: { $in: user.blockedUsers }
+        }).select("name email photoURL uid");
+
+        res.status(200).json({ success: true, data: blockedUsers });
+    } catch (error) {
+        console.error("Error fetching blocked users:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch blocked users" });
     }
 };

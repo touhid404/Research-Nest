@@ -204,6 +204,19 @@ export const getUniqueResearchDomainsFromDB = async () => {
     return domains.filter(Boolean).sort();
 };
 
+// Paper Request Services
+import PaperRequest from "../../models/paperRequest.model.js";
+
+export const checkPaperRequestStatusInDB = async (paperId, requesterUid) => {
+    const request = await PaperRequest.findOne({ paperId, requesterUid });
+    return !!request;
+};
+
+export const recordPaperRequestInDB = async (requestData) => {
+    const result = await PaperRequest.create(requestData);
+    return result;
+};
+
 
 
 
