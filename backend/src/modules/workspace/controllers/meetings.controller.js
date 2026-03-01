@@ -75,7 +75,7 @@ export const createMeeting = async (req, res) => {
                     recipient: recipient._id,
                     sender: senderUser._id,
                     type: type,
-                    message: `${action} a meeting in "**${workspace.name}**"`,
+                    message: JSON.stringify({ text: `${action} a meeting in "**${workspace.name}**"`, workspaceId: workspaceId }),
                     relatedId: result.data._id,
                     relatedModel: 'Meeting',
                     isRead: false

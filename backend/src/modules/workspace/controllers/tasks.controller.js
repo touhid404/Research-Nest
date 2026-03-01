@@ -59,7 +59,7 @@ export const createTask = async (req, res) => {
                             recipient: recipient._id,
                             sender: senderUser._id,
                             type: 'task_assigned',
-                            message: `assigned you a new task in workspace "**${workspace.name}**"`,
+                            message: JSON.stringify({ text: `assigned you a new task in workspace "**${workspace.name}**"`, workspaceId: workspaceId }),
                             relatedId: result.data._id, // Task ID
                             relatedModel: 'Task', // Assuming Task model name, though schema isn't strictly defined for 'relatedModel' yet, using string is fine
                             isRead: false

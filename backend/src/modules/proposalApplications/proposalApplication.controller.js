@@ -336,7 +336,7 @@ export const formGroup = async (req, res) => {
                         recipient: user._id,
                         sender: senderUser._id,
                         type: 'workspace_invite',
-                        message: `invited you to the workspace "**${groupName}**"`,
+                        message: JSON.stringify({ text: `invited you to the workspace "**${groupName}**"`, workspaceId: workspace._id }),
                         relatedId: workspace._id,
                         relatedModel: 'Workspace',
                         isRead: false
