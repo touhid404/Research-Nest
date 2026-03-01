@@ -11,17 +11,35 @@ import {
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import useAuth from "../../../hooks/useAuth";
 import { videoApi } from "../../../lib/videoApi";
+import { aiApi } from "../../../lib/aiApi";
 import { initializeStreamClient } from "../../../lib/streamClient";
 import useWorkspaceStore from "../../../store/useWorkspaceStore";
+import useCallRecording from "../../../hooks/useCallRecording";
 import toast from "react-hot-toast";
-import { Loader2, Users, AlertTriangle } from "lucide-react";
+import { Loader2, Users, AlertTriangle, Mic, MicOff, Circle } from "lucide-react";
 import ConfirmModal from "../../common/ConfirmModal";
 import MeetingJoinLoader from "../../loader/MeetingJoinLoader";
 
-const VideoCallUI = ({ onLeave, isOwner, onEndSession }) => {
-    const { useCallCallingState, useParticipantCount } = useCallStateHooks();
+/**
+ * Format seconds into MM:SS display
+ */
+const formatDurationTimer = (seconds) => {
+    const m = Math.floor(seconds / 60)
+        .toString()
+        .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+};
+
+const VideoCallUI = ({ onLeave, isOwner, onEndSession, recording }) => {
+    const { useCallCallingState } = useCallStateHooks();
     const callingState = useCallCallingState();
-    const participantCount = useParticipantCount();
+
+    const {
+        isRecording,
+        recordingDuration,
+        onToggleRecording,
+    } = recording;
 
     if (callingState === CallingState.JOINING) {
         return <MeetingJoinLoader />;
@@ -29,6 +47,14 @@ const VideoCallUI = ({ onLeave, isOwner, onEndSession }) => {
 
     return (
         <div className="md:h-[85vh] h-full flex flex-col gap-3 p-1 relative">
+            {/* Recording Indicator */}
+            {isRecording && (
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-2 bg-red-600/90 text-white px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm shadow-lg animate-pulse">
+                    <Circle className="w-2.5 h-2.5 fill-white" />
+                    REC {formatDurationTimer(recordingDuration)}
+                </div>
+            )}
+
             {/* Main Video Area - SpeakerLayout automatically handles screen sharing */}
             <div className="flex-1 rounded-lg overflow-y-auto custom-scrollbar relative">
                 <SpeakerLayout participantsBarPosition="bottom" />
@@ -37,6 +63,29 @@ const VideoCallUI = ({ onLeave, isOwner, onEndSession }) => {
             {/* Controls */}
             <div className="flex flex-col md:flex-row items-center justify-center gap-4">
                 <CallControls onLeave={onLeave} />
+
+                {/* Record Toggle Button */}
+                <button
+                    onClick={onToggleRecording}
+                    className={`flex items-center gap-2 p-2 px-3 rounded-3xl font-semibold transition-all text-sm ${
+                        isRecording
+                            ? "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20"
+                            : "bg-gray-700 hover:bg-gray-600 text-white shadow-lg"
+                    }`}
+                    title={isRecording ? "Stop Recording" : "Start Recording"}
+                >
+                    {isRecording ? (
+                        <>
+                            <MicOff className="w-4 h-4" />
+                            Stop Rec
+                        </>
+                    ) : (
+                        <>
+                            <Mic className="w-4 h-4" />
+                            Record
+                        </>
+                    )}
+                </button>
 
                 {isOwner && (
                     <button
@@ -53,7 +102,7 @@ const VideoCallUI = ({ onLeave, isOwner, onEndSession }) => {
     );
 };
 
-const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
+const VideoMeetingRoom = ({ meeting, onLeave }) => {
     const { user } = useAuth();
     const { updateMeeting } = useWorkspaceStore();
     const [client, setClient] = useState(null);
@@ -63,6 +112,16 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
     const [isEnding, setIsEnding] = useState(false);
     const hasJoinedRef = useRef(false);
 
+    // Recording hook
+    const {
+        isRecording,
+        recordingDuration,
+        audioBlob,
+        startRecording,
+        stopRecording,
+        resetRecording,
+    } = useCallRecording();
+
     const displayName = useMemo(
         () => user?.displayName || user?.name || user?.email || "Guest",
         [user]
@@ -70,14 +129,146 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
 
     const isOwner = meeting?.scheduledBy === user?.uid;
 
+    /**
+     * Get a mixed audio stream of all participants (local + remote)
+     */
+    const getMixedAudioStream = useCallback(async () => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const dest = audioContext.createMediaStreamDestination();
+        const sources = [];
+
+        try {
+            // 1. Add local participant stream
+            const localStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                }
+            });
+            const localSource = audioContext.createMediaStreamSource(localStream);
+            localSource.connect(dest);
+            sources.push(localStream);
+
+            // 2. Add remote participants streams
+            // We can get them from the call object
+            if (call) {
+                const participants = call.state.participants;
+                participants.forEach(p => {
+                    if (!p.isLocal && p.audioStream) {
+                        const remoteSource = audioContext.createMediaStreamSource(p.audioStream);
+                        remoteSource.connect(dest);
+                    }
+                });
+            }
+
+            return { stream: dest.stream, audioContext, sources };
+        } catch (error) {
+            console.error("Error mixing audio streams:", error);
+            // Fallback to local mic only if mixing fails
+            return null;
+        }
+    }, [call]);
+
+    /**
+     * Upload audio recording and trigger transcription + summarization
+     */
+    const processRecording = useCallback(async (blob) => {
+        if (!blob || blob.size === 0 || !meeting?._id) return;
+
+        const toastId = toast.loading("Processing recording... Transcribing & generating summary");
+
+        try {
+            // Pass user info so we know who recorded it
+            const result = await aiApi.transcribeMeeting(
+                blob, 
+                meeting._id, 
+                user?.uid, 
+                user?.displayName || user?.name || "Participant"
+            );
+
+            if (result.success) {
+                toast.success("Meeting summary generated successfully!", { id: toastId });
+            } else {
+                toast.error(result.message || "Failed to generate summary", { id: toastId });
+            }
+        } catch (error) {
+            console.error("Error processing recording:", error);
+            toast.error(
+                error.response?.data?.message || "Failed to process recording. Please try again.",
+                { id: toastId }
+            );
+        } finally {
+            resetRecording();
+        }
+    }, [meeting?._id, resetRecording, user]);
+
+    /**
+     * Toggle recording on/off
+     */
+    const handleToggleRecording = useCallback(async () => {
+        if (isRecording) {
+            const blob = await stopRecording();
+            if (blob) {
+                // Attach recordedBy info to the blob context if needed, 
+                // but we'll pass it to processRecording directly
+                processRecording(blob);
+            }
+        } else {
+            try {
+                const mixed = await getMixedAudioStream();
+                if (mixed) {
+                    await startRecording(mixed.stream);
+                } else {
+                    // Fallback to default behavior in hook (mic only)
+                    await startRecording();
+                }
+                toast.success("Recording started. All participant audio will be captured.");
+            } catch (err) {
+                toast.error(err.message || "Failed to start recording");
+            }
+        }
+    }, [isRecording, startRecording, stopRecording, processRecording, getMixedAudioStream]);
+
+    /**
+     * Handle leaving the call - process recording if exists
+     */
+    const handleLeave = useCallback(async () => {
+        // Stop recording if still active
+        let recordingBlob = audioBlob;
+        if (isRecording) {
+            recordingBlob = await stopRecording();
+        }
+
+        // If we have a recording, process it in background
+        if (recordingBlob && recordingBlob.size > 0) {
+            // Process in background - don't block leaving
+            processRecording(recordingBlob);
+        }
+
+        onLeave();
+    }, [audioBlob, isRecording, stopRecording, processRecording, onLeave]);
+
     const handleConfirmEndSession = useCallback(async () => {
         try {
             setIsEnding(true);
+
+            // Stop recording if active
+            let recordingBlob = audioBlob;
+            if (isRecording) {
+                recordingBlob = await stopRecording();
+            }
+
             await updateMeeting(meeting._id, { status: "completed" });
             toast.success("Meeting ended for everyone");
 
             if (call) {
                 await call.endCall();
+            }
+
+            // Process recording if exists
+            if (recordingBlob && recordingBlob.size > 0) {
+                processRecording(recordingBlob);
             }
         } catch (error) {
             console.error("Error ending meeting", error);
@@ -87,7 +278,7 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
             setIsEndModalOpen(false);
             onLeave();
         }
-    }, [call, meeting?._id, updateMeeting, onLeave]);
+    }, [call, meeting?._id, updateMeeting, onLeave, audioBlob, isRecording, stopRecording, processRecording]);
 
     // Initialize Stream Video client and join call
     useEffect(() => {
@@ -182,9 +373,14 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
             <StreamTheme className="">
                 <StreamCall call={call}>
                     <VideoCallUI
-                        onLeave={onLeave}
+                        onLeave={handleLeave}
                         isOwner={isOwner}
                         onEndSession={() => setIsEndModalOpen(true)}
+                        recording={{
+                            isRecording,
+                            recordingDuration,
+                            onToggleRecording: handleToggleRecording,
+                        }}
                     />
 
                     <ConfirmModal
@@ -192,7 +388,11 @@ const VideoMeetingRoom = ({ meeting, workspace, onLeave }) => {
                         onClose={() => setIsEndModalOpen(false)}
                         onConfirm={handleConfirmEndSession}
                         title="End Session"
-                        message="Are you sure you want to end this session? This will disconnect all participants."
+                        message={
+                            isRecording
+                                ? "Are you sure you want to end this session? The recording will be processed and a summary will be generated automatically."
+                                : "Are you sure you want to end this session? This will disconnect all participants."
+                        }
                         confirmText="End Session"
                         isDanger={true}
                         isLoading={isEnding}

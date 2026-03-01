@@ -61,6 +61,37 @@ const meetingSchema = new mongoose.Schema(
             enum: ["scheduled", "live", "completed", "cancelled"],
             default: "scheduled",
         },
+        // Recording & AI Summary
+        recordingStatus: {
+            type: String,
+            enum: ["none", "processing", "completed", "failed"],
+            default: "none",
+        },
+        transcript: {
+            type: String,
+            default: "",
+        },
+        summary: {
+            summary: [String],
+            actionItems: [{
+                who: String,
+                action: String,
+                due: String,
+            }],
+            decisions: [String],
+        },
+        summaryGeneratedAt: {
+            type: Date,
+            default: null,
+        },
+        recordedBy: {
+            type: String, // uid
+            default: null,
+        },
+        recordedByName: {
+            type: String,
+            default: null,
+        },
     },
     { timestamps: true }
 );

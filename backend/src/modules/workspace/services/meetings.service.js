@@ -190,7 +190,7 @@ export const updateMeetingService = async (id, uid, updates) => {
 
     // Only scheduler can update meeting details
     const allowedUpdates = meeting.scheduledBy === uid
-        ? ["title", "description", "startTime", "endTime", "status"]
+        ? ["title", "description", "startTime", "endTime", "status", "recordingStatus"]
         : [];
 
     allowedUpdates.forEach((field) => {

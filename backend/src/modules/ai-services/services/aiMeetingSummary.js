@@ -86,9 +86,10 @@ export const generateMeetingSummary = async ({ sourceType, content, metadata }) 
 You are a meeting assistant. Summarize the following meeting content (chat log or notes).
 Return the result strictly as valid JSON in the following format:
 {
-  "summary": ["string", "string"],
-  "actionItems": [{ "who": "string (optional)", "action": "string", "due": "string (optional)" }],
-  "decisions": ["string", "string"]
+  "overview": "A concise 1-2 paragraph summary of the entire meeting",
+  "summary": ["Key point 1", "Key point 2"],
+  "actionItems": [{ "who": "Name", "action": "Task", "due": "Deadline" }],
+  "decisions": ["Important decision 1"]
 }
 
 Content:

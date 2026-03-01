@@ -10,6 +10,7 @@ import {
     IoAddOutline,
     IoPeopleOutline,
     IoCalendarOutline,
+    IoSparkles,
 } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -17,6 +18,7 @@ import useWorkspaceStore from "../../../store/useWorkspaceStore";
 import useAuth from "../../../hooks/useAuth";
 import CreateMeetingModal from "./CreateMeetingModal";
 import ConfirmModal from "../../common/ConfirmModal";
+import MeetingSummaryModal from "./MeetingSummaryModal";
 import { formatDateTime, formatDuration } from "../../../utils/formatTime";
 
 const MeetingScheduler = ({ workspace }) => {
@@ -28,6 +30,7 @@ const MeetingScheduler = ({ workspace }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filter, setFilter] = useState("upcoming");
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, meetingId: null, isLoading: false });
+    const [summaryMeeting, setSummaryMeeting] = useState(null);
 
     // Count live meetings
     const liveMeetingsCount = meetings.filter(m => m.status === "live").length;
@@ -86,9 +89,16 @@ const MeetingScheduler = ({ workspace }) => {
                 return meeting.status !== "cancelled";
         }
     }).sort((a, b) => {
-        // Live meetings first
+        // Live meetings always come first
         if (a.status === "live" && b.status !== "live") return -1;
         if (b.status === "live" && a.status !== "live") return 1;
+
+        // For past/scheduled meetings, sort by date
+        if (filter === "past") {
+            // Newest first for past meetings
+            return new Date(b.startTime) - new Date(a.startTime);
+        }
+        // Oldest first (chronological) for upcoming/all
         return new Date(a.startTime) - new Date(b.startTime);
     });
 
@@ -250,6 +260,7 @@ const MeetingScheduler = ({ workspace }) => {
                                                     canJoin={canJoinMeeting(meeting)}
                                                     onJoin={() => handleJoinMeeting(meeting)}
                                                     onDelete={(e) => handleDeleteMeeting(meeting._id, e)}
+                                                    onViewSummary={() => setSummaryMeeting(meeting)}
                                                 />
                                             ))}
                                         </AnimatePresence>
@@ -278,12 +289,18 @@ const MeetingScheduler = ({ workspace }) => {
                 isDanger={true}
                 isLoading={deleteConfirm.isLoading}
             />
+
+            <MeetingSummaryModal
+                isOpen={!!summaryMeeting}
+                onClose={() => setSummaryMeeting(null)}
+                meeting={summaryMeeting}
+            />
         </div>
     );
 };
 
 // Meeting Card Component
-const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
+const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete, onViewSummary }) => {
     const isScheduler = meeting.scheduledBy === user?.uid;
     const isLive = meeting.status === "live";
     const isCompleted = meeting.status === "completed";
@@ -459,11 +476,35 @@ const MeetingCard = ({ meeting, user, canJoin, onJoin, onDelete }) => {
                         </button>
                     )}
 
-                    {/* Completed badge for past meetings */}
-                    {isCompleted && (
-                        <span className="px-2.5 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 rounded-full">
-                            Ended
-                        </span>
+                    {/* Completed or recorded meeting: Show Summary button or processing badge */}
+                    {(isCompleted || (meeting.recordingStatus && meeting.recordingStatus !== "none")) && (
+                        <div className="flex items-center gap-2">
+                            {meeting.recordingStatus === "processing" && (
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 rounded-full animate-pulse">
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                    Processing...
+                                </span>
+                            )}
+                            {meeting.recordingStatus === "completed" && meeting.summary && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onViewSummary(); }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 rounded-full transition-all active:scale-95"
+                                >
+                                    <IoSparkles className="w-3.5 h-3.5" />
+                                    View Summary
+                                </button>
+                            )}
+                            {meeting.recordingStatus === "failed" && (
+                                <span className="px-2.5 py-1 text-xs font-medium text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-full">
+                                    Summary Failed
+                                </span>
+                            )}
+                            {isCompleted && (!meeting.recordingStatus || meeting.recordingStatus === "none") && (
+                                <span className="px-2.5 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 rounded-full">
+                                    Ended
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
