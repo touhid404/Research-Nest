@@ -1,66 +1,49 @@
 # Research-Nest
 
-A collaborative research platform designed to bridge the gap between researchers with real-time tools and AI-powered insights.
+**Bridging the Gap Between Collaborative Research and AI-Powered Insights.**
 
-## Core Features
+Research-Nest is a cutting-edge, real-time collaboration platform designed for the modern researcher. It provides a unified ecosystem for document co-authoring, research discovery, automated meeting management, and intelligent networking.
 
-### Real-time Collaboration
-- **Interactive Workspace:** Synchronous document editing and brainstorming using Yjs and WebSockets.
-- **Collaborative Paper Hub:** Centralized system for uploading, discovering, and discussing research publications.
+## Key Features
 
-### AI-Powered Capabilities
-- **Meeting Summarizer:** Automatic generation of summaries, action items, and decision logs from chats.
-- **Paper Summarizer:** AI-driven extraction of abstracts and conclusions from research papers.
-- **Intelligent Spellcheck:** Strategic spell correction for research documentation.
+### Collaborative Paper Hub
+*   **Discovery & Sharing**: A centralized repository to upload, discover, and discuss research papers with **Infinite Scroll** for a seamless browsing experience.
+*   **Unified Action System**: Manage your publications with a professional, unified menu for editing, hiding, deleting, and sharing.
+*   **Flexible Submissions**: Share full PDF documents or provide just metadata (Title, Abstract, DOI) for quick dissemination of ongoing research.
+*   **Public/Archived States**: Control the visibility of your papers with instant "Hide/Show" functionality.
+
+### Intelligent Workspace & Editor
+*   **Real-time Co-authoring**: Powered by **Yjs** and **Tiptap**, enabling synchronous document editing with multi-user presence and caret tracking.
+*   **Format Flexibility**: Export your work to **PDF** or **DOCX** formats with a single click.
+*   **Workspace Management**: Dedicated spaces for projects including shared documents, resource storage, and integrated calendars.
+
+### AI-Powered Research Assistance
+*   **AI Metadata Extraction**: Automagically scan and pre-fill paper details (Title, Abstract, co-authors) using LLM-powered OCR.
+*   **Intelligent Summarization**: Generate concise summaries, action items, and decision logs from brainstorms and meetings.
+*   **Semantic Search**: Advanced filtering by research domains, publication years, and content types.
 
 ### Networking & Proposals
-- **Research Proposal System:** Post research ideas or apply to join existing collaborative teams.
-- **Secure Messaging:** Real-time communication channels for project coordination.
-- **Notification Engine:** Instant updates on proposal status, messages, and workspace activity.
+*   **Proposal Feed**: Post research ideas or find collaborators with a high-performance, **Infinite Scrolling** feed.
+*   **Secure Real-time Messaging**: Built-in communication channels for project coordination and team discussions.
+*   **Request PDF Workflow**: Seamlessly request full papers from authors who haven't publicly shared their documents.
 
-### Researcher Portfolios
-- **Professional Profiles:** Showcase expertise, contributions, and active projects.
-
-## Quick Start
-
-### 1. Backend Setup
-```bash
-cd backend
-npm install
-# Configure .env file
-npm run dev
-```
-
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-# Configure .env file
-npm run dev
-```
-
-### 3. AI API Setup
-Research-Nest uses external LLMs for features like meeting summarization and intelligent spellcheck. It supports **Groq** (recommended for speed) and **xAI (Grok)**.
-
-#### Obtaining an API Key
-- **Groq (Free Tier available):**
-  1. Go to the [Groq Cloud Console](https://console.groq.com/).
-  2. Sign up or log in.
-  3. Navigate to **API Keys** and click **Create API Key**.
-  4. Copy your key (starts with `gsk_`).
-
-- **xAI Grok:**
-  1. Go to the [x.AI Console](https://console.x.ai/).
-  2. Sign up or log in.
-  3. Create a new API key (starts with `xai-`).
-
-#### Configuration
-In your `backend/.env` file, add your key:
-```env
-GROQ_API_KEY=your_api_key_here
-```
-*(The system automatically detects the provider based on the key's prefix.)*
+---
 
 ## Tech Stack
-- **Frontend:** React, Tailwind CSS, DaisyUI, Zustand, TanStack Query, Yjs.
-- **Backend:** Node.js, Express, MongoDB, Socket.io, Firebase, Groq/Grok API, Stream Chat.
+
+### Frontend
+- **Framework**: [React 19](https://react.dev/) + [Vite](https://vite.dev/)
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) & [TanStack Query v5](https://tanstack.com/query/latest)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) & [DaisyUI 5](https://daisyui.com/)
+- **Real-time**: [Yjs](https://yjs.dev/), [Socket.io](https://socket.io/), & [Stream Video SDK](https://getstream.io/video/)
+- **Editor**: [Tiptap](https://tiptap.dev/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+
+### Backend
+- **Engine**: [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/)
+- **Database**: [MongoDB](https://www.mongodb.com/) (Mongoose)
+- **Auth & Storage**: [Firebase](https://firebase.google.com/)
+- **AI Models**: Support for **Groq** (LLaMA 3) & **xAI (Grok)**
+- **Real-time**: [Socket.io](https://socket.io/)
+
+Developed with ❤️ by the Research-Nest Team.
